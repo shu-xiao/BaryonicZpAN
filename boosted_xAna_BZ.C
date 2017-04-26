@@ -23,26 +23,6 @@ void efferr(float nsig,float ntotal,float factor=1)
     //myfile << err*factor;
 }
 using namespace std;
-vector<string> scanTri(std::string fileName) {
-    TreeReader data(fileName.data());
-    for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
-
-        if (jEntry % 10000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
-
-        data.GetEntry(jEntry);
-        std::string* trigName = data.GetPtrString("hlt_trigName");
-        vector<bool> &trigResult = *((vector<bool>*) data.GetPtr("hlt_trigResult"));
-
-        bool passTrigger=false;
-        vector <string> triList;
-        for(unsigned int it=0; it< trigResult.size(); it++) {
-            if (find(triList.begin(),triList.end(),trigName) == triList.end()) triList.push_back(trigName)
-            //cout << thisTrig << endl;
-        } // end of trigger
-    }
-    for (int i=0;i<triList.size();i++) cout << triList[i];
-    return triList
-}
 void boosted_xAna_BZ(std::string inputFile){
 
     //get TTree from file ...
@@ -60,6 +40,7 @@ void boosted_xAna_BZ(std::string inputFile){
     TH1F* h_higgsEta = new TH1F("h_higgsEta", "higgs Eta", 30,-3,3);
     TH1F* h_higgsJetM = new TH1F("h_higgsJetMass", "higgs jet Mass", 24,50,170);
     TH1F* h_diJetM = new TH1F("h_diJetMass", "dijet reduced Mass", 24,50,170);
+    TH1F* h_HT = new TH1F("h_HT", "HT", 20,0,1500);
 
     Int_t nPass[20]={0};
     int Hindex[2]={-1,-1};
@@ -101,9 +82,8 @@ void boosted_xAna_BZ(std::string inputFile){
 
         if(!passTrigger) continue;
         nPass[1]++;
-
         //2. tight PF jet selection
-
+        cout << "Tri1a" << endl;
         Float_t* neuHadFrac = data.GetPtrFloat("FATjetNHadEF");
         Float_t* neuEmFrac = data.GetPtrFloat("FATjetNEmEF");
         //Float_t* neuCons = data.GetPtrFloat("FATjet_nSV");
@@ -114,7 +94,7 @@ void boosted_xAna_BZ(std::string inputFile){
         
         if (neuHadFrac[0] > 0.9) continue;
         if (neuEmFrac[0] > 0.9)  continue;
-        //if (neuCons[0] <= 1) continue;
+        ////if (neuCons[0] <= 1) continue;
         if (muoFrac[0] > 0.8) continue;
         if (chaHadFrac[0] <= 0) continue;
         if (chaMulti[0] <= 0) continue;
@@ -136,22 +116,21 @@ void boosted_xAna_BZ(std::string inputFile){
         vector<float>   *subjetSDE   =  data.GetPtrVectorFloat("FATsubjetSDE", nFATJets);  // subjet 4 vector
         vector<bool>    &passFatJetTightID = *((vector<bool>*) data.GetPtr("FATjetPassIDTight"));
     
-        // take LO and NLO jet
+        // take LO and NLO jet and observe HT
         int HIndex[2]={-1,-1};
+        Float_t HT = 0;
         for(int ij=0; ij<nFATJets; ij++)
         {
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
+            //HT += thisJet->Pt();
             if(thisJet->Pt()<300)continue;
             if(fabs(thisJet->Eta())>2.4)continue;
             if(!passFatJetTightID[ij])continue;
             if (HIndex[0]<0) HIndex[0]=ij;
-            else
-            {
-                HIndex[1]=ij;
-                break;
-            }
+            else if (Hindex[1]<0) HIndex[1]=ij;
+            //else break;
         }
-    
+        h_HT->Fill(HT);
         if(HIndex[1]<0)continue;
         nPass[3]++;
         
