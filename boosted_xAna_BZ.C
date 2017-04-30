@@ -17,7 +17,7 @@ void efferr(float nsig,float ntotal,float factor=1)
     float eff = nsig/ntotal;
     float err = sqrt( (1-eff)*eff/ntotal);
     cout << "efficiency = " << eff*factor << " +- " << err*factor << endl;
-    ofstream myfile;
+    //ofstream myfile;
     //myfile.open();
     //myfile << eff*factor << endl;
     //myfile << err*factor;
@@ -30,7 +30,7 @@ void boosted_xAna_BZ(std::string inputFile){
 
     TString zpmass;
     zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%_gq*}; echo \"${test}\"",inputFile.data()));
-    string outputFile=Form("baryonicZp_MZp%s.txt",zpmass.Data());
+    string outputFile=Form("effiMZp%s.txt",zpmass.Data());
 
     TCanvas* c1 = new TCanvas("c1","",889*1.5,768);
     TH1F* h_ZpPt = new TH1F("h_ZpPt", "ZpPt", 25,0,2500);
@@ -44,7 +44,8 @@ void boosted_xAna_BZ(std::string inputFile){
 
     Int_t nPass[20]={0};
     int Hindex[2]={-1,-1};
-
+    string cutName[6] = {"total","goodVtx","\\\\trig","PassID", "findJet", "diJetCut"};
+    //for(Long64_t jEntry=0; jEntry<100 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
 
         if (jEntry % 20000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
@@ -80,10 +81,15 @@ void boosted_xAna_BZ(std::string inputFile){
                 }
         } // end of trigger
 
-        if(!passTrigger) continue;
+        //if(!passTrigger) continue;
         nPass[1]++;
-        //2. tight PF jet selection
-        cout << "Tri1a" << endl;
+        //2.0 tight PF jet selection
+        int nFATJets = data.GetInt("FATnJet");
+        if (nFATJets < 2) continue;
+        vector<bool> &passFatJetTightID = *((vector<bool>*) data.GetPtr("FATjetPassIDTight"));
+        //if (!passFatJetTightID[0]) continue;
+        
+        /*
         Float_t* neuHadFrac = data.GetPtrFloat("FATjetNHadEF");
         Float_t* neuEmFrac = data.GetPtrFloat("FATjetNEmEF");
         //Float_t* neuCons = data.GetPtrFloat("FATjet_nSV");
@@ -99,13 +105,20 @@ void boosted_xAna_BZ(std::string inputFile){
         if (chaHadFrac[0] <= 0) continue;
         if (chaMulti[0] <= 0) continue;
         if (chaEmFrac[0] > 0.9) continue;
+        */
+        
+        // 2.1 use particle ID
+        int nGenPar = data.GetInt("nGenPar");
+        int *genParId = data.GetPtrInt("genParId");
+        int *genParSt = data.GetPtrInt("genParSt");
+        for (int i=0;i<nGenPar;i++) {
+        
+        }
         nPass[2]++;
 
         // select fatjet 
 
-        int nFATJets = data.GetInt("FATnJet");
         TClonesArray    *fatjetP4 = (TClonesArray*) data.GetPtrTObject("FATjetP4");
-        float   *fatjetPRmassL2L3Corr = data.GetPtrFloat("FATjetPRmassL2L3Corr");
         float   *FatjetTau1 = data.GetPtrFloat("FATjetPuppiTau1");
         float   *FatjetTau2 = data.GetPtrFloat("FATjetPuppiTau2");
         float Tau21 = *FatjetTau2 / *FatjetTau1;
@@ -114,7 +127,7 @@ void boosted_xAna_BZ(std::string inputFile){
         vector<float>   *subjetSDPy  =  data.GetPtrVectorFloat("FATsubjetSDPy", nFATJets); // integral number need fix
         vector<float>   *subjetSDPz  =  data.GetPtrVectorFloat("FATsubjetSDPz", nFATJets);
         vector<float>   *subjetSDE   =  data.GetPtrVectorFloat("FATsubjetSDE", nFATJets);  // subjet 4 vector
-        vector<bool>    &passFatJetTightID = *((vector<bool>*) data.GetPtr("FATjetPassIDTight"));
+        //vector<bool>    &passFatJetTightID = *((vector<bool>*) data.GetPtr("FATjetPassIDTight"));
     
         // take LO and NLO jet and observe HT
         int HIndex[2]={-1,-1};
@@ -125,10 +138,10 @@ void boosted_xAna_BZ(std::string inputFile){
             //HT += thisJet->Pt();
             if(thisJet->Pt()<300)continue;
             if(fabs(thisJet->Eta())>2.4)continue;
-            if(!passFatJetTightID[ij])continue;
+            //if(!passFatJetTightID[ij])continue;
             if (HIndex[0]<0) HIndex[0]=ij;
             else if (Hindex[1]<0) HIndex[1]=ij;
-            //else break;
+            else break;
         }
         h_HT->Fill(HT);
         if(HIndex[1]<0)continue;
@@ -139,6 +152,7 @@ void boosted_xAna_BZ(std::string inputFile){
         TLorentzVector* subjetP4[2][2];
         for(int i=0;i<2;i++){
             for(int j=0;j<2;j++){
+                if( !passFatJetTightID[i] )continue;
                 subjetP4[i][j]=new TLorentzVector;
                 subjetP4[i][j]->SetPxPyPzE(subjetSDPx[HIndex[i]][j],subjetSDPy[HIndex[i]][j],subjetSDPz[HIndex[i]][j],subjetSDE[HIndex[i]][j]);
             }
@@ -159,7 +173,7 @@ void boosted_xAna_BZ(std::string inputFile){
         *diJet = *higgsJet + *ZpJet;
        
         float redMass2Jet = diJet->M() - (higgsJet->M()-125) - (ZpJet->M()-std::stof(zpmass.Data()));
-        if (redMass2Jet < 200) continue;
+        //if (redMass2Jet < 200) continue;
         float higgsPt, higgsEta, ZpPt, ZpEta;
         higgsPt = higgsJet->Pt();
         higgsEta = higgsJet->Eta();
@@ -182,6 +196,17 @@ void boosted_xAna_BZ(std::string inputFile){
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "]= " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
+    
+    // write efficiency
+    string outputPath = "efficiency" + outputFile;
+    fstream file;
+    file.open(outputPath,ios::out|ios::trunc);
+    file << cutName[0] << "\t" << nTotal << "\n";  
+    for (int i=0;i<5;i++) {
+        file << cutName[i+1] << "\t" << float(nPass[i])/nTotal << "\n";
+    }
+    file.close();
+
     h_higgsPt->Draw("hist");
     c1->SaveAs("higgsPt.png");
     h_higgsEta->Draw("hist");
@@ -196,6 +221,8 @@ void boosted_xAna_BZ(std::string inputFile){
     c1->SaveAs("ZpJetM.png");
     h_diJetM->Draw("hist");
     c1->SaveAs("diJetM.png");
+    h_HT->Draw("hist");
+    c1->SaveAs("HT.png");
     /*
     outputRootFile=Form("%s_boost.root",zpmass.Data());
     TFile* outFile = new TFile(outputRootFile,"recreate");
