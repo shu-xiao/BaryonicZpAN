@@ -94,7 +94,7 @@ void boosted_xAna_BZ(std::string inputFile){
         Float_t* muoFrac = data.GetPtrFloat("FATjetMuoEF");
         Float_t* chaHadFrac = data.GetPtrFloat("FATjetCHadEF");
         Int_t* chaMulti = data.GetPtrInt("FATjetCMulti");
-        Float_t* chaEmFrac = data.GetPtrFloat("FATjetCEmEF");
+    Float_t* chaEmFrac = data.GetPtrFloat("FATjetCEmEF");
         
         if (neuHadFrac[0] > 0.9) continue;
         if (neuEmFrac[0] > 0.9)  continue;
@@ -153,13 +153,26 @@ void boosted_xAna_BZ(std::string inputFile){
         // select b quarks
         TLorentzVector* subjetP4[2][2];
         for(int i=0;i<2;i++){
-            //if( !passFatJetTightID[i] )continue;
+            if( !passFatJetTightID[i] )continue;
             for(int j=0;j<2;j++){
                 subjetP4[i][j]=new TLorentzVector;
                 subjetP4[i][j]->SetPxPyPzE(subjetSDPx[HIndex[i]][j],subjetSDPy[HIndex[i]][j],subjetSDPz[HIndex[i]][j],subjetSDE[HIndex[i]][j]);
             }
         }
         nPass[4]++; 
+        // Scan for DM, 9000001
+        vector<Int_t> *parID = data.GetPtrInt("genParId");
+        Int_t nPar = data.GetInt("nGenPar");
+        Int_t zpIndex = -1;
+        for (int ij=0;ij<nPar;ij++) {
+            if (parID[ij]==9000001) {
+                zpIndex=ij;
+                break;
+            }
+        }
+        if ( zpIndex < 0 ) continue;
+        
+        
         // assume MZp > M_higss
         TLorentzVector* higgsJet = (TLorentzVector*)fatjetP4->At(HIndex[0]);
         TLorentzVector* ZpJet = (TLorentzVector*)fatjetP4->At(HIndex[1]);
