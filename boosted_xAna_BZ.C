@@ -1,4 +1,3 @@
-// example code to run 2015 mono-Higgs boosted selections on signal (EXO-16-012)
 
 #include <vector>
 #include <iostream>
@@ -73,7 +72,7 @@ void boosted_xAna_BZ(std::string inputFile){
             tri[5] = thisTrig.find("AK8PFJet360")!=std::string::npos;
             tri[6] = thisTrig.find("HLT_AK8DiPFJet280_200_TrimMass30_BTagCSV_p20")!=std::string::npos;
             tri[7] = thisTrig.find("AK8DIPFJET280")!=std::string::npos;
-            if ( tri[5] && results==1 )    
+            if ( tri[0] && tri[1] && tri[2] && tri[3] && tri[4] && tri[5] && tri[6] && tri[7] && results==1 )    
                 {
                     //cout << thisTrig << endl;
                     passTrigger=true;
@@ -87,9 +86,8 @@ void boosted_xAna_BZ(std::string inputFile){
         int nFATJets = data.GetInt("FATnJet");
         if (nFATJets < 2) continue;
         vector<bool> &passFatJetTightID = *((vector<bool>*) data.GetPtr("FATjetPassIDTight"));
-        //if (!passFatJetTightID[0]) continue;
+        if (!passFatJetTightID[0]) continue;
         
-        /*
         Float_t* neuHadFrac = data.GetPtrFloat("FATjetNHadEF");
         Float_t* neuEmFrac = data.GetPtrFloat("FATjetNEmEF");
         //Float_t* neuCons = data.GetPtrFloat("FATjet_nSV");
@@ -105,15 +103,19 @@ void boosted_xAna_BZ(std::string inputFile){
         if (chaHadFrac[0] <= 0) continue;
         if (chaMulti[0] <= 0) continue;
         if (chaEmFrac[0] > 0.9) continue;
-        */
         
         // 2.1 use particle ID
         int nGenPar = data.GetInt("nGenPar");
         int *genParId = data.GetPtrInt("genParId");
         int *genParSt = data.GetPtrInt("genParSt");
+        bool zpPass=false, higgsPass=false;
         for (int i=0;i<nGenPar;i++) {
-        
+            if (genParId[i]==9000001) zpPass=true;
+            //if (genParId[i]==32) zpPass=true;
+            if (genParId[i]==25) higgsPass=true;
         }
+        if (!(zpPass && higgsPass)) continue;
+        if (!(higgsPass)) continue;
         nPass[2]++;
 
         // select fatjet 
@@ -135,10 +137,10 @@ void boosted_xAna_BZ(std::string inputFile){
         for(int ij=0; ij<nFATJets; ij++)
         {
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
-            //HT += thisJet->Pt();
+            HT += thisJet->Pt();
             if(thisJet->Pt()<300)continue;
             if(fabs(thisJet->Eta())>2.4)continue;
-            //if(!passFatJetTightID[ij])continue;
+            if(!passFatJetTightID[ij])continue;
             if (HIndex[0]<0) HIndex[0]=ij;
             else if (Hindex[1]<0) HIndex[1]=ij;
             else break;
@@ -151,25 +153,33 @@ void boosted_xAna_BZ(std::string inputFile){
         // select b quarks
         TLorentzVector* subjetP4[2][2];
         for(int i=0;i<2;i++){
+            //if( !passFatJetTightID[i] )continue;
             for(int j=0;j<2;j++){
-                if( !passFatJetTightID[i] )continue;
                 subjetP4[i][j]=new TLorentzVector;
                 subjetP4[i][j]->SetPxPyPzE(subjetSDPx[HIndex[i]][j],subjetSDPy[HIndex[i]][j],subjetSDPz[HIndex[i]][j],subjetSDE[HIndex[i]][j]);
             }
         }
-        
+        nPass[4]++; 
         // assume MZp > M_higss
         TLorentzVector* higgsJet = (TLorentzVector*)fatjetP4->At(HIndex[0]);
         TLorentzVector* ZpJet = (TLorentzVector*)fatjetP4->At(HIndex[1]);
+        Float_t*  fatjetPuppiSDmass = data.GetPtrFloat("FATjetPuppiSDmass");
         TLorentzVector *diJet = new TLorentzVector();
+        //cout << "HIndex=0: " << higgsJet->M() << "\tHIndex=1: " << ZpJet->M() << endl;
+        /*
         if (higgsJet->M() > ZpJet->M())
         {
             higgsJet = (TLorentzVector*)fatjetP4->At(HIndex[1]);
             ZpJet = (TLorentzVector*)fatjetP4->At(HIndex[0]);
         }
-        
-        //mass loose cut
-        //if (higgsJet->M() > 150 || higgsJet->M() < 100) continue;
+        */
+        //crab_50jobs/crab_MonoH-_ZpBaryonic_bb_MZp900_gq25_MDM100_hbbcout << "Index1: " << fatjetPuppiSDmass[Hindex[0]] << "\tIndex2: " <<fatjetPuppiSDmass[Hindex[1]] << endl;
+        // mass loose cut
+
+        // if (!((higgsJet->M() > 100 && higgsJet->M() < 150) || (ZpJet->M() > 100 && ZpJet->M() < 150))) continue;
+        //if ((fatjetPuppiSDmass[Hindex[0]] < 100 || fatjetPuppiSDmass[Hindex[0]] > 150) && (fatjetPuppiSDmass[Hindex[1]] < 100 || fatjetPuppiSDmass[Hindex[1]] > 150)) continue;
+        if ((fatjetPuppiSDmass[0] < 100 || fatjetPuppiSDmass[0] > 150) && (fatjetPuppiSDmass[1] < 100 || fatjetPuppiSDmass[1] > 150)) continue;
+        nPass[5]++;
         *diJet = *higgsJet + *ZpJet;
        
         float redMass2Jet = diJet->M() - (higgsJet->M()-125) - (ZpJet->M()-std::stof(zpmass.Data()));
@@ -181,7 +191,7 @@ void boosted_xAna_BZ(std::string inputFile){
         ZpEta = ZpJet->Eta();
         if (abs(higgsEta-ZpEta) > 1.3) continue;
         if (Tau21 > 0.55) continue;
-        nPass[4]++;
+        nPass[6]++;
         
         h_higgsJetM->Fill(higgsJet->M());
         h_higgsPt->Fill(higgsPt);
@@ -195,14 +205,15 @@ void boosted_xAna_BZ(std::string inputFile){
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "]= " << nPass[i] << std::endl;
-    efferr(nPass[4],nTotal);
+    efferr(nPass[6],nTotal);
     
     // write efficiency
-    string outputPath = "efficiency" + outputFile;
+    string outputPath = "efficiency/" + outputFile;
+    /*
     fstream file;
     file.open(outputPath,ios::out|ios::trunc);
     file << cutName[0] << "\t" << nTotal << "\n";  
-    for (int i=0;i<5;i++) {
+    for (int i=0;i<7;i++) {
         file << cutName[i+1] << "\t" << float(nPass[i])/nTotal << "\n";
     }
     file.close();
@@ -223,6 +234,7 @@ void boosted_xAna_BZ(std::string inputFile){
     c1->SaveAs("diJetM.png");
     h_HT->Draw("hist");
     c1->SaveAs("HT.png");
+    */
     /*
     outputRootFile=Form("%s_boost.root",zpmass.Data());
     TFile* outFile = new TFile(outputRootFile,"recreate");
