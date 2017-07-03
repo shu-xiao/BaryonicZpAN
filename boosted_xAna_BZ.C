@@ -158,7 +158,7 @@ void boosted_xAna_BZ(std::string inputFile){
         Int_t *genMomParId = data.GetPtrInt("genMomParId");
         Int_t *genParSt = data.GetPtrInt("genParSt");
         Int_t nPar = data.GetInt("nGenPar");
-        Int_t zpIndex[2] = {-1}, higgsIndex[2] = {-1};
+        Int_t zpIndex[2] = {-1,-1}, higgsIndex[2] = {-1,-1};
         Int_t nZpmo = 0, nHiggsmo = 0;
         for (int ij=0;ij<30;ij++) {
             if (genParSt[ij] != 23) continue;
