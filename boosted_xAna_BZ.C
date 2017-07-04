@@ -165,8 +165,8 @@ void boosted_xAna_BZ(std::string inputFile){
         for (int ij=0;ij<30;ij++) {
             if (genParSt[ij] != 23) continue;
             TLorentzVector *thisJet = (TLorentzVector*)genParP4->At(ij);
-            //if (thisJet->Pt() < 300) continue;
-            if (thisJet->Eta() > 2.4) continue;
+            //if (abs(thisJet->Pt()) < 300) continue;
+            if (abs(thisJet->Eta()) > 2.4) continue;
             if (genMomParId[ij]==9000001) {
                 nZpDa += 1;
                 if (zpIndex[0] < 0) zpIndex[0] = ij;
