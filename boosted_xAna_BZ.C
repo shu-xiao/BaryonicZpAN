@@ -40,6 +40,8 @@ void boosted_xAna_BZ(std::string inputFile){
     TH1F* h_higgsJetM = new TH1F("h_higgsJetMass", "higgs jet Mass", 25,100,150);
     TH1F* h_4bJetM = new TH1F("h_4bMass", "4b mass", 16,100,3300);
     TH1F* h_HT = new TH1F("h_HT", "HT", 20,0,1500);
+    TH1F* h_nHiggsDa = new TH1F("h_nHiggsDa", "h_nHiggsDa", 5,-0.5,4.5);
+    TH1F* h_nZp = new TH1F("h_nZp", "h_nZp", 5,-0.5,4.5);
 
     Int_t nPass[20]={0};
     int Hindex[2]={-1,-1};
@@ -159,22 +161,25 @@ void boosted_xAna_BZ(std::string inputFile){
         Int_t *genParSt = data.GetPtrInt("genParSt");
         Int_t nPar = data.GetInt("nGenPar");
         Int_t zpIndex[2] = {-1,-1}, higgsIndex[2] = {-1,-1};
-        Int_t nZpmo = 0, nHiggsmo = 0;
+        Int_t nZpDa = 0, nHiggsDa = 0;
         for (int ij=0;ij<30;ij++) {
             if (genParSt[ij] != 23) continue;
+            TLorentzVector *thisJet = (TLorentzVector*)genParP4->At(ij);
+            //if (thisJet->Pt() < 300) continue;
+            if (thisJet->Eta() > 2.4) continue;
             if (genMomParId[ij]==9000001) {
-                nZpmo += 1;
+                nZpDa += 1;
                 if (zpIndex[0] < 0) zpIndex[0] = ij;
                 else if (zpIndex[1] < 0) zpIndex[1] = ij;
             }
             if (genMomParId[ij]==25) {
-                nHiggsmo += 1;
+                nHiggsDa += 1;
                 if (higgsIndex[0] < 0) higgsIndex[0] = ij;
                 else if (higgsIndex[1] < 1) higgsIndex[1] = ij;
             }
-            if (higgsIndex[1] > 0 && zpIndex[1] > 0) break;
+            //if (higgsIndex[1] > 0 && zpIndex[1] > 0) break;
         }
-        if (nZpmo < 2 || nHiggsmo < 2) continue;
+        if (nZpDa < 2 || nHiggsDa < 2) continue;
         
         TLorentzVector* zpJetDa1 = (TLorentzVector*)genParP4->At(zpIndex[0]);
         TLorentzVector* zpJetDa2 = (TLorentzVector*)genParP4->At(zpIndex[1]);
@@ -239,6 +244,8 @@ void boosted_xAna_BZ(std::string inputFile){
         h_ZpPt->Fill(zpJetPt);
         h_ZpEta->Fill(zpJetEta);
         h_4bJetM->Fill(b4Mass);
+        h_nHiggsDa->Fill(nHiggsDa);
+        h_nZp->Fill(nZpDa);
         //h_diJetM->Fill(redMass2Jet); 
     
     } // end of loop over entries
@@ -259,6 +266,7 @@ void boosted_xAna_BZ(std::string inputFile){
     }
     file.close();
     */
+    c1->Clear();
     h_higgsPt->Draw("hist");
     c1->SaveAs("higgsPt.png");
     h_higgsEta->Draw("hist");
@@ -273,6 +281,10 @@ void boosted_xAna_BZ(std::string inputFile){
     c1->SaveAs("ZpJetM.png");
     h_4bJetM->Draw("hist");
     c1->SaveAs("4bMass.png");
+    h_nZp->Draw("hist");
+    c1->SaveAs("nZpDa.png");
+    h_nHiggsDa->Draw("hist");
+    c1->SaveAs("nHiggsDa.png");
     //h_HT->Draw("hist");
     //c1->SaveAs("HT.png");
     
