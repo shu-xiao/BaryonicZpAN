@@ -1,0 +1,3 @@
+import model Higgs_ZB_UFO
+generate p p > Zp h, Zp > b b~ QED=3
+output ZpBaryonic_bb_MZp1300_gq25_MDM100 -nojpeg

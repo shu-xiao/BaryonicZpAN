@@ -1,0 +1,6 @@
+set param_card mass 9000001 1300
+set param_card mass 18 100
+set param_card np 2 1
+set param_card np 3 0.25
+set param_card np 4 1300
+set param_card DECAY 9000001 73.2581
