@@ -34,7 +34,7 @@ void boosted_xAna_BZ(std::string inputFile){
     TCanvas* c1 = new TCanvas("c1","",889*1.5,768);
     TH1F* h_ZpPt = new TH1F("h_ZpPt", "ZpPt", 25,0,2500);
     TH1F* h_ZpEta = new TH1F("h_ZpEta", "ZpEta", 30,-3,3);
-    TH1F* h_ZpJetM = new TH1F("h_ZpJetM", "ZpJetM", 30,0,4500);
+    TH1F* h_ZpJetM = new TH1F("h_ZpJetM", "ZpJetM", 25,0,2500);
     TH1F* h_higgsPt = new TH1F("h_higgsPt", "higgs Pt", 20,0,2000);
     TH1F* h_higgsEta = new TH1F("h_higgsEta", "higgs Eta", 30,-3,3);
     TH1F* h_higgsJetM = new TH1F("h_higgsJetMass", "higgs jet Mass", 25,100,150);
@@ -198,7 +198,7 @@ void boosted_xAna_BZ(std::string inputFile){
         float higgsJetM = higgsJet->M();
         float higgsJetPt = higgsJet->Pt();
         float higgsJetEta = higgsJet->Eta();
-        
+        //if (abs(higgsJetEta) > 2.4) continue;
         Float_t*  fatjetPuppiSDmass = data.GetPtrFloat("FATjetPuppiSDmass");
         //if ((fatjetPuppiSDmass[0] < 100 || fatjetPuppiSDmass[0] > 150) && (fatjetPuppiSDmass[1] < 100 || fatjetPuppiSDmass[1] > 150)) continue;
         nPass[4]++;
@@ -232,9 +232,11 @@ void boosted_xAna_BZ(std::string inputFile){
         // if (abs(higgsEta-ZpEta) > 1.3) continue;
         */
         float redMass2Jet = b4Jet->M() - ( higgsJetM -125 ) - ( zpJetM - 1500 );
+        /*
         if (redMass2Jet < 200) continue;
         if (abs(zpJetEta-higgsJetEta) > 1.3) continue;
         if (Tau21 > 0.55) continue;
+        */
         nPass[5]++;
         
         h_higgsJetM->Fill(higgsJetM);
@@ -288,10 +290,16 @@ void boosted_xAna_BZ(std::string inputFile){
     //h_HT->Draw("hist");
     //c1->SaveAs("HT.png");
     
-    /*
-    outputRootFile=Form("%s_boost.root",zpmass.Data());
-    TFile* outFile = new TFile(outputRootFile,"recreate");
+    
+    string outputRootFile=Form("%s_boost.root","1500");
+    TFile* outFile = new TFile(outputRootFile.data(),"recreate");
+    h_higgsPt->Write();
+    h_higgsEta->Write();
+    h_higgsJetM->Write();
+    h_ZpPt->Write();
+    h_ZpEta->Write();
+    h_ZpJetM->Write();
+    h_4bJetM->Write();
     outFile->Close();
-    */
+    
 }
-
