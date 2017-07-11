@@ -54,10 +54,10 @@ void fitMassWidth(std::string rootFile) {
     RooRealVar sl("sl","sigma landau",40,0.1,100) ;
   
     RooRealVar mean("mean","mean",240,0,2500) ;
-    RooRealVar sigma("sigma","sigma",200,0.1,500) ;
+    RooRealVar sigma("sigma","sigma",100,0.1,500) ;
     RooGaussian gauss("gauss","gauss",x,mean,sigma) ;
 
-    RooRealVar meanW("meanW", "meanW",100,0,2500) ;
+    RooRealVar meanW("meanW", "meanW",240,0,2500) ;
     RooRealVar width("width","width",20,0.1,400) ;
     RooBreitWigner BW("BW","BW",x,meanW,width);
     

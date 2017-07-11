@@ -34,11 +34,11 @@ void boosted_xAna_BZ(std::string inputFile){
     TCanvas* c1 = new TCanvas("c1","",889*1.5,768);
     TH1F* h_ZpPt = new TH1F("h_ZpPt", "ZpPt", 25,0,2500);
     TH1F* h_ZpEta = new TH1F("h_ZpEta", "ZpEta", 30,-3,3);
-    TH1F* h_ZpJetM = new TH1F("h_ZpJetM", "ZpJetM", 25,0,2500);
+    TH1F* h_ZpJetM = new TH1F("h_ZpJetM", "ZpJetM", 100,0,2500);
     TH1F* h_higgsPt = new TH1F("h_higgsPt", "higgs Pt", 20,0,2000);
     TH1F* h_higgsEta = new TH1F("h_higgsEta", "higgs Eta", 30,-3,3);
     TH1F* h_higgsJetM = new TH1F("h_higgsJetMass", "higgs jet Mass", 25,100,150);
-    TH1F* h_4bJetM = new TH1F("h_4bMass", "4b mass", 16,100,3300);
+    TH1F* h_4bJetM = new TH1F("h_4bMass", "4b mass", 100,100,3300);
     TH1F* h_HT = new TH1F("h_HT", "HT", 20,0,1500);
     TH1F* h_nHiggsDa = new TH1F("h_nHiggsDa", "h_nHiggsDa", 5,-0.5,4.5);
     TH1F* h_nZp = new TH1F("h_nZp", "h_nZp", 5,-0.5,4.5);
@@ -291,7 +291,8 @@ void boosted_xAna_BZ(std::string inputFile){
     //c1->SaveAs("HT.png");
     
     
-    string outputRootFile=Form("%s_boost.root","1500");
+    string outputRootFile=Form("nTuple/%s_boost.root","1500");
+    //string outputRootFile=Form("%s_boost.root","1500");
     TFile* outFile = new TFile(outputRootFile.data(),"recreate");
     h_higgsPt->Write();
     h_higgsEta->Write();
