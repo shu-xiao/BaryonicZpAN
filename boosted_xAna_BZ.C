@@ -46,7 +46,7 @@ void boosted_xAna_BZ(std::string inputFile){
     Int_t nPass[20]={0};
     int Hindex[2]={-1,-1};
     string cutName[6] = {"total","goodVtx","\\\\trig","PassID", "findJet", "diJetCut"};
-    //for(Long64_t jEntry=0; jEntry<100 ;jEntry++){
+    //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
 
         if (jEntry % 20000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
@@ -64,6 +64,7 @@ void boosted_xAna_BZ(std::string inputFile){
         bool passTrigger=false;
         for(unsigned int it=0; it< trigResult.size(); it++) {
             std::string thisTrig= trigName[it];
+            //cout << thisTrig << endl;
             bool results = trigResult[it];
             bool tri[10];
             tri[0] = thisTrig.find("HLT_PFHT650_WideJetMJJ900DEtaJJ1p5")!=std::string::npos;
@@ -74,9 +75,9 @@ void boosted_xAna_BZ(std::string inputFile){
             tri[5] = thisTrig.find("AK8PFJet360")!=std::string::npos;
             tri[6] = thisTrig.find("HLT_AK8DiPFJet280_200_TrimMass30_BTagCSV_p20")!=std::string::npos;
             tri[7] = thisTrig.find("AK8DIPFJET280")!=std::string::npos;
-            if ( tri[0] && tri[1] && tri[2] && tri[3] && tri[4] && tri[5] && tri[6] && tri[7] && results==1 )    
+            tri[8] = thisTrig.find("HLT_PFJet260_v9")!=std::string::npos;
+            if ( (tri[0] || tri[1] || tri[2] || tri[3] || tri[4] || tri[5] || tri[6] || tri[7] || tri[8] ) && results==1 )    
                 {
-                    //cout << thisTrig << endl;
                     passTrigger=true;
                     break;
                 }
