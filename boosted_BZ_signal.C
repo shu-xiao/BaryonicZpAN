@@ -22,7 +22,7 @@ void efferr(float nsig,float ntotal,float factor=1)
     //myfile << err*factor;
 }
 using namespace std;
-void boosted_xAna_BZ(int w, std::string inputFile){
+void boosted_BZ_signal(int w, std::string inputFile){
 
     //get TTree from file ...
     TreeReader data(inputFile.data());
@@ -166,7 +166,7 @@ void boosted_xAna_BZ(int w, std::string inputFile){
         float HT = 0;
         for (int ij=0;ij<30;ij++) {
             TLorentzVector *thisJet = (TLorentzVector*)genParP4->At(ij);
-            HT += thisJet->Pt();
+            //HT += thisJet->Pt();
             if (genParSt[ij] != 23) continue;
             //if (abs(thisJet->Pt()) < 300) continue;
             if (abs(thisJet->Eta()) > 2.4) continue;
@@ -271,7 +271,6 @@ void boosted_xAna_BZ(int w, std::string inputFile){
     }
     file.close();
     */
-    /*
     c1->Clear();
     h_higgsPt->Draw("hist");
     c1->SaveAs("higgsPt.png");
@@ -291,7 +290,6 @@ void boosted_xAna_BZ(int w, std::string inputFile){
     c1->SaveAs("nZpDa.png");
     h_nHiggsDa->Draw("hist");
     c1->SaveAs("nHiggsDa.png");
-    */
     //h_HT->Draw("hist");
     //c1->SaveAs("HT.png");
     
