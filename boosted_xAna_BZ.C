@@ -22,7 +22,7 @@ void efferr(float nsig,float ntotal,float factor=1)
     //myfile << err*factor;
 }
 using namespace std;
-void boosted_xAna_BZ(std::string inputFile){
+void boosted_xAna_BZ(int w, std::string inputFile){
 
     //get TTree from file ...
     TreeReader data(inputFile.data());
@@ -163,9 +163,11 @@ void boosted_xAna_BZ(std::string inputFile){
         Int_t nPar = data.GetInt("nGenPar");
         Int_t zpIndex[2] = {-1,-1}, higgsIndex[2] = {-1,-1};
         Int_t nZpDa = 0, nHiggsDa = 0;
+        float HT = 0;
         for (int ij=0;ij<30;ij++) {
-            if (genParSt[ij] != 23) continue;
             TLorentzVector *thisJet = (TLorentzVector*)genParP4->At(ij);
+            HT += thisJet->Pt();
+            if (genParSt[ij] != 23) continue;
             //if (abs(thisJet->Pt()) < 300) continue;
             if (abs(thisJet->Eta()) > 2.4) continue;
             if (genMomParId[ij]==9000001) {
@@ -199,7 +201,6 @@ void boosted_xAna_BZ(std::string inputFile){
         float higgsJetM = higgsJet->M();
         float higgsJetPt = higgsJet->Pt();
         float higgsJetEta = higgsJet->Eta();
-        //if (abs(higgsJetEta) > 2.4) continue;
         Float_t*  fatjetPuppiSDmass = data.GetPtrFloat("FATjetPuppiSDmass");
         //if ((fatjetPuppiSDmass[0] < 100 || fatjetPuppiSDmass[0] > 150) && (fatjetPuppiSDmass[1] < 100 || fatjetPuppiSDmass[1] > 150)) continue;
         nPass[4]++;
@@ -249,6 +250,7 @@ void boosted_xAna_BZ(std::string inputFile){
         h_4bJetM->Fill(b4Mass);
         h_nHiggsDa->Fill(nHiggsDa);
         h_nZp->Fill(nZpDa);
+        h_HT->Fill(HT);
         //h_diJetM->Fill(redMass2Jet); 
     
     } // end of loop over entries
@@ -269,6 +271,7 @@ void boosted_xAna_BZ(std::string inputFile){
     }
     file.close();
     */
+    /*
     c1->Clear();
     h_higgsPt->Draw("hist");
     c1->SaveAs("higgsPt.png");
@@ -288,6 +291,7 @@ void boosted_xAna_BZ(std::string inputFile){
     c1->SaveAs("nZpDa.png");
     h_nHiggsDa->Draw("hist");
     c1->SaveAs("nHiggsDa.png");
+    */
     //h_HT->Draw("hist");
     //c1->SaveAs("HT.png");
     
