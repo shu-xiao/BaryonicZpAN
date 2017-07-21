@@ -32,19 +32,18 @@ void boosted_genmatch(int w, std::string inputFile){
     zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
     string outputFile=Form("effiMZp%s.txt",zpmass.Data());
 
-    TCanvas* c1 = new TCanvas("c1","",800,800);
-    TH1F* h_matchid = new TH1F("h_matchid","h_matchid",2,0,2);
+    TCanvas* c1 = new TCanvas("c1","",600,600);
 
-    TH1F* h_hpt = new TH1F("h_hpt", "h_hpt", 20,0,1000);
-    TH1F* h_zppt = new TH1F("h_zppt", "h_zppt", 20,0,1000);
+    TH1F* h_hpt = new TH1F("h_higgsPt", "h_higgsPt", 20,0,1400);
+    TH1F* h_zppt = new TH1F("h_ZpPt", "h_ZpPt", 20,0,1400);
 
-    TH1F* h_htau = new TH1F("h_htau", "h_htau", 20,0,1);
-    TH1F* h_zptau = new TH1F("h_zptau", "h_zptau", 20,0,1);
+    TH1F* h_htau = new TH1F("h_higgsTau21", "h_higgsTau21", 20,0,1);
+    TH1F* h_zptau = new TH1F("h_ZpTau21", "h_ZpTau21", 20,0,1);
     
-    TH1F* h_heta = new TH1F("h_heta", "h_heta", 20,-3,3);
-    TH1F* h_zpeta = new TH1F("h_zpeta", "h_zpeta", 20,-3,3);
-    TH1F* h_hM = new TH1F("h_hM", "h_hM", 20,-3,3);
-    TH1F* h_zpM = new TH1F("h_zpM", "h_zpM", 20,-3,3);
+    TH1F* h_heta = new TH1F("h_higgsEta", "h_higgsEta", 20,-3,3);
+    TH1F* h_zpeta = new TH1F("h_ZpEta", "h_ZpEta", 20,-3,3);
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM", 25,0,600);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM", 25,0,600);
     Int_t nPass[20]={0};
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
@@ -126,6 +125,10 @@ void boosted_genmatch(int w, std::string inputFile){
         TLorentzVector* bbjet = new TLorentzVector();
         *bbjet = *bJet0 + *bJet1;
         // take Leading and Trailing jet and observe HT
+        float *jetSDmass = data.GetPtrFloat("FATjetPuppiSDmass");
+        float   *FatjetTau1 = data.GetPtrFloat("FATjetPuppiTau1");
+        float   *FatjetTau2 = data.GetPtrFloat("FATjetPuppiTau2");
+        float Tau21[2];
         int matchHIndex = -1, matchzpIndex = -1;
         for(int ij=0; ij<nFATJets; ij++)
         {
@@ -136,8 +139,17 @@ void boosted_genmatch(int w, std::string inputFile){
                 break;
             }
         }
-        if (matchHIndex<0 ) continue;
+        //if (matchHIndex<0 ) continue;
         nPass[5]++;
+        if (matchHIndex>=0) {
+            TLorentzVector* hjet = (TLorentzVector*)fatjetP4->At(matchHIndex); 
+            Tau21[0]= FatjetTau2[matchHIndex] / FatjetTau1[matchHIndex];
+            h_hM->Fill(jetSDmass[matchHIndex]);
+            h_hpt->Fill(hjet->Pt());
+            h_heta->Fill(hjet->Eta());
+            h_htau->Fill(Tau21[0]);
+        }
+        
         for(int ij=0; ij<nFATJets; ij++) {
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
             //if (thisJet->DeltaR(*bJet0)<0.8 && thisJet->DeltaR(*bJet1)<0.8) {
@@ -146,27 +158,17 @@ void boosted_genmatch(int w, std::string inputFile){
                 break;
             }
         }
-        if (matchzpIndex<0 || matchHIndex==matchzpIndex) continue;
+        //if (matchzpIndex<0 || matchHIndex==matchzpIndex) continue;
         
         nPass[6]++;
-        TLorentzVector* hjet = (TLorentzVector*)fatjetP4->At(matchHIndex); 
-        TLorentzVector* zpjet = (TLorentzVector*)fatjetP4->At(matchzpIndex);
-        // select fatjet 
-        float   *FatjetTau1 = data.GetPtrFloat("FATjetPuppiTau1");
-        float   *FatjetTau2 = data.GetPtrFloat("FATjetPuppiTau2");
-        float Tau21[2];
-        for (int i=0;i<2;i++) {
-            Tau21[i]= FatjetTau2[i] / FatjetTau1[i];
+        if (matchzpIndex>=0) {
+            TLorentzVector* zpjet = (TLorentzVector*)fatjetP4->At(matchzpIndex);
+            Tau21[1]= FatjetTau2[matchzpIndex] / FatjetTau1[matchzpIndex];
+            h_zpM->Fill(jetSDmass[matchzpIndex]);
+            h_zppt->Fill(zpjet->Pt());
+            h_zpeta->Fill(zpjet->Eta());
+            h_zptau->Fill(Tau21[1]);
         }
-        h_zpM->Fill(zpjet->M());
-        h_hM->Fill(hjet->M());
-        h_zppt->Fill(zpjet->Pt());
-        h_hpt->Fill(hjet->Pt());
-        h_zpeta->Fill(hjet->Eta());
-        h_heta->Fill(hjet->Eta());
-        h_zptau->Fill(Tau21[matchzpIndex]);
-        h_htau->Fill(Tau21[matchHIndex]);
-
         
     } // end of loop over entries
 
@@ -199,7 +201,10 @@ void boosted_genmatch(int w, std::string inputFile){
     // write efficiency
     string outputPath = "efficiency/" + outputFile;
     string outputRootFile=Form("nTuple/%s_boost_match.root",zpmass.Data());
+    
     TFile* outFile = new TFile(outputRootFile.data(),"recreate");
+    h_hM->Write();
+    h_zpM->Write();
     h_hpt->Write();
     h_zppt->Write();
     h_htau->Write();
