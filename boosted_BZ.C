@@ -29,16 +29,12 @@ void boosted_BZ(int w, std::string inputFile){
     TreeReader data(inputFile.data());
 
     TString zpmass;
-    zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%_gq*}; echo \"${test}\"",inputFile.data()));
+    zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
     string outputFile=Form("effiMZp%s.txt",zpmass.Data());
 
     TCanvas* c1 = new TCanvas("c1","",889*1.5,768);
     TH1F* h_4bJetM = new TH1F("h_4bMass", "4b mass", 100,100,3300);
     TH1F* h_HT = new TH1F("h_HT", "HT", 20,0,1500);
-    TH1F* h_ptb = new TH1F("h_ptb0", "h_ptb0", 20,0,1000);
-    TH1F* h_pta = new TH1F("h_pta0", "h_pta0", 20,0,1000);
-    TH1F* h_ptb1 = new TH1F("h_ptb1", "h_ptb1", 20,0,1000);
-    TH1F* h_pta1 = new TH1F("h_pta1", "h_pta1", 20,0,1000);
     TH1F* h_jetM[2], *h_jetPt[2], *h_jetEta[2];
     for (int i=0;i<2;i++) {
         h_jetM[i] = new TH1F(Form("h_jetM_%d",i),Form("h_jetM_%d",i),20,0,1000);
@@ -46,9 +42,20 @@ void boosted_BZ(int w, std::string inputFile){
         h_jetEta[i] = new TH1F(Form("h_jetEta_%d",i),Form("h_jetEta_%d",i),20,-3,3);
     }
 
+    TH1F* h_ptb = new TH1F("h_ptb0", "h_ptb0", 20,0,1000);
+    TH1F* h_pta = new TH1F("h_pta0", "h_pta0", 20,0,1000);
+    TH1F* h_ptb1 = new TH1F("h_ptb1", "h_ptb1", 20,0,1000);
+    TH1F* h_pta1 = new TH1F("h_pta1", "h_pta1", 20,0,1000);
+
+    TH1F* h_taub = new TH1F("h_taub0", "h_taub0", 20,0,1);
+    TH1F* h_taua = new TH1F("h_taua0", "h_taua0", 20,0,1);
+    TH1F* h_taub1 = new TH1F("h_taub1", "h_taub1", 20,0,1);
+    TH1F* h_taua1 = new TH1F("h_taua1", "h_taua1", 20,0,1);
+    
     Int_t nPass[20]={0};
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
+        
         // broken events
         if (jEntry==1370) continue;
         if (jEntry==2974) continue;
@@ -56,6 +63,7 @@ void boosted_BZ(int w, std::string inputFile){
         if (jEntry==9888) continue;
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
+        
         //0. has a good vertex
         int nVtx = data.GetInt("nVtx");
         if(nVtx<1)continue;
@@ -67,6 +75,7 @@ void boosted_BZ(int w, std::string inputFile){
 
         bool passTrigger=false;
         for(unsigned int it=0; it< trigResult.size(); it++) {
+        
             std::string thisTrig= trigName[it];
             //cout << thisTrig << endl;
             bool results = trigResult[it];
@@ -97,31 +106,36 @@ void boosted_BZ(int w, std::string inputFile){
         if (!passFatJetTightID[0]) continue;
         if (!passFatJetTightID[1]) continue;
         nPass[2]++;
-
-
-        Float_t* neuHadFrac = data.GetPtrFloat("FATjetNHadEF");
-        Float_t* neuEmFrac = data.GetPtrFloat("FATjetNEmEF");
-        //Float_t* neuCons = data.GetPtrFloat("FATjet_nSV");
-        Float_t* muoFrac = data.GetPtrFloat("FATjetMuoEF");
-        Float_t* chaHadFrac = data.GetPtrFloat("FATjetCHadEF");
-        Int_t* chaMulti = data.GetPtrInt("FATjetCMulti");
-        Float_t* chaEmFrac = data.GetPtrFloat("FATjetCEmEF");
         
         TClonesArray    *fatjetP4 = (TClonesArray*) data.GetPtrTObject("FATjetP4");
-        bool pf = false;
-        for (int i=0;i<2;i++) {
-            if (neuHadFrac[i] > 0.9) pf=true;
-            if (neuEmFrac[i] > 0.9)  pf=true;
-            ////if (neuCons[0] <= 1) continue;
-            if (muoFrac[i] > 0.8) pf=true;
-            if (chaHadFrac[i] <= 0) pf=true;
-            if (chaMulti[i] <= 0) pf=true;
-            if (chaEmFrac[i] > 0.9) pf=true;
-        }
-        if (pf) continue;
         nPass[3]++;
         
-            
+        
+        // take Leading and Trailing jet and observe HT
+        float *jetMass = data.GetPtrFloat("FATjetPuppiSDmass");
+        TLorentzVector* hzpJet = new TLorentzVector();
+        Float_t HT = 0;
+        Float_t jetEta[2], jetPt[2], jetM[2];
+        int hm = 0, hPt = 0;
+        for(int ij=0; ij<nFATJets; ij++)
+        {
+            TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
+            HT += thisJet->Pt();
+            if (ij>1) continue;
+            if (ij==0) h_ptb->Fill(thisJet->Pt());
+            if (ij==1) h_ptb1->Fill(thisJet->Pt());
+            if (fabs(thisJet->Eta())>2.4) continue;
+            if (thisJet->Pt()>300) hPt++;
+            if (jetMass[ij]>105 && jetMass[ij]<135) hm++;
+   
+        }
+        if (hPt<1) continue;
+        nPass[5]++;
+        TLorentzVector* thisjet = (TLorentzVector*)fatjetP4->At(0); 
+        TLorentzVector* thatjet = (TLorentzVector*)fatjetP4->At(1);
+        h_pta->Fill(thisjet->Pt());
+        h_pta1->Fill(thatjet->Pt());
+        
         // select fatjet 
         float   *FatjetTau1 = data.GetPtrFloat("FATjetPuppiTau1");
         float   *FatjetTau2 = data.GetPtrFloat("FATjetPuppiTau2");
@@ -129,53 +143,16 @@ void boosted_BZ(int w, std::string inputFile){
         for (int i=0;i<2;i++) {
             Tau21[i]= FatjetTau2[i] / FatjetTau1[i];
         }
-
-        
-        // take LO and NLO jet and observe HT
-        float *jetMass = data.GetPtrFloat("FATjetPuppiSDmass");
-        TLorentzVector* hzpJet = new TLorentzVector();
-        //cout << jetLO->Pt() << "\t" << jetNLO->Pt() << endl;
-        Float_t HT = 0;
-        Float_t jetEta[2], jetPt[2], jetM[2];
-        bool hPt[2] = {false,false};
-        bool hm[2] = {false,false};
-        for(int ij=0; ij<nFATJets; ij++)
-        {
-            TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
-            HT += thisJet->Pt();
-            if (ij>1) continue;
-            //if (ij==0) h_ptb->Fill(thisJet->Pt());
-            //if (ij==1) h_ptb1->Fill(thisJet->Pt());
-            jetEta[ij] = thisJet->Eta();
-            jetPt[ij] = thisJet->Pt();
-            jetM[ij] = thisJet->M();
-            if(fabs(thisJet->Eta())>2.4) continue;
-            if(abs(thisJet->Pt())>300) hPt[ij] = true;
-            if (jetMass[ij]>105 && jetMass[ij]<135) hm[ij] = true;
-   
-        }
-        //TLorentzVector* jetLO = (TLorentzVector*)fatjetP4->At(0); 
-        //TLorentzVector* jetNLO = (TLorentzVector*)fatjetP4->At(1);
-        //h_pta->Fill(jetLO->Pt());
-        //h_pta1->Fill(jetNLO->Pt());
-        for (int i=0;i<2;i++) {
-            TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(i);
-            if (i==0) h_ptb->Fill(thisJet->Pt());
-            if (i==1) h_ptb1->Fill(thisJet->Pt());
-        }
-        if (!(hPt[0] || hPt[1])) continue;
-        for (int i=0;i<2;i++) {
-            TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(i);
-            if (i==0) h_pta->Fill(thisJet->Pt());
-            if (i==1) h_pta1->Fill(thisJet->Pt());
-        }
-        //h_ptb->Fill(jetLO->Pt());
-        //h_ptb1->Fill(jetNLO->Pt());
-        nPass[5]++;
+        h_taub->Fill(Tau21[0]);
+        h_taub1->Fill(Tau21[1]);
         if (Tau21[0] > 0.55) continue;
         if (Tau21[1] > 0.55) continue;
         nPass[4]++;
-        if (!(hm[0]||hm[1])) continue;
+        h_taua->Fill(Tau21[0]);
+        h_taua1->Fill(Tau21[1]);
+        
+        
+        if (hm<1) continue;
         nPass[6]++;
         if (fabs(jetEta[0]-jetEta[1]) > 1.3) continue; // Eta of LO and NLO fatjet
         nPass[7]++;
@@ -206,14 +183,6 @@ void boosted_BZ(int w, std::string inputFile){
     }
     file.close();
     */
-    h_pta->Draw();
-    c1->SaveAs("LOcut.png");
-    h_pta1->Draw();
-    c1->SaveAs("NLOcut.png");
-    h_ptb->Draw();
-    c1->SaveAs("LOnocut.png");
-    h_ptb1->Draw();
-    c1->SaveAs("NLOnocut.png");
     string outputRootFile=Form("nTuple/%s_boost_w.root",zpmass.Data());
     //string outputRootFile=Form("%s_boost.root","1500");
     TFile* outFile = new TFile(outputRootFile.data(),"recreate");
@@ -223,10 +192,10 @@ void boosted_BZ(int w, std::string inputFile){
         h_jetM[i]->Write();
         h_jetPt[i]->Write();
         h_jetEta[i]->Write();
-        h_pta->Write();
-        h_ptb->Write();
-        h_pta1->Write();
-        h_ptb1->Write();
+        h_taub->Write();
+        h_taub1->Write();
+        h_taua->Write();
+        h_taua1->Write();
 
     }
     outFile->Close();

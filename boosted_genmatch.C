@@ -32,7 +32,7 @@ void boosted_genmatch(int w, std::string inputFile){
     zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
     string outputFile=Form("effiMZp%s.txt",zpmass.Data());
 
-    //TCanvas* c1 = new TCanvas("c1","",800,800);
+    TCanvas* c1 = new TCanvas("c1","",800,800);
     TH1F* h_matchid = new TH1F("h_matchid","h_matchid",2,0,2);
 
     TH1F* h_hpt = new TH1F("h_hpt", "h_hpt", 20,0,1000);
@@ -43,6 +43,8 @@ void boosted_genmatch(int w, std::string inputFile){
     
     TH1F* h_heta = new TH1F("h_heta", "h_heta", 20,-3,3);
     TH1F* h_zpeta = new TH1F("h_zpeta", "h_zpeta", 20,-3,3);
+    TH1F* h_hM = new TH1F("h_hM", "h_hM", 20,-3,3);
+    TH1F* h_zpM = new TH1F("h_zpM", "h_zpM", 20,-3,3);
     Int_t nPass[20]={0};
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
@@ -114,7 +116,7 @@ void boosted_genmatch(int w, std::string inputFile){
             if (genParId[i]==25) {
                 Hindex = i;
             }
-            if (Hindex>0&&zpindex[1]>0) break;
+            if (Hindex>=0&&zpindex[1]>=0) break;
         }
         if (Hindex<0||zpindex[1]<0) continue;
         nPass[4]++;
@@ -129,7 +131,7 @@ void boosted_genmatch(int w, std::string inputFile){
         {
             
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
-            if (thisJet->DeltaR(*genHJet)<0.4) {
+            if (thisJet->DeltaR(*genHJet)<0.8) {
                 matchHIndex=ij;
                 break;
             }
@@ -156,6 +158,8 @@ void boosted_genmatch(int w, std::string inputFile){
         for (int i=0;i<2;i++) {
             Tau21[i]= FatjetTau2[i] / FatjetTau1[i];
         }
+        h_zpM->Fill(zpjet->M());
+        h_hM->Fill(hjet->M());
         h_zppt->Fill(zpjet->Pt());
         h_hpt->Fill(hjet->Pt());
         h_zpeta->Fill(hjet->Eta());
@@ -171,6 +175,27 @@ void boosted_genmatch(int w, std::string inputFile){
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[6],nTotal);
     
+    h_zpM->Draw("hist");
+    c1->Print("genMatch.pdf(");
+    h_hM->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_zppt->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_hpt->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_zptau->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_htau->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_heta->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_zpeta->Draw("hist");
+    c1->Print("genMatch.pdf)");
+
+
+
+
+
     // write efficiency
     string outputPath = "efficiency/" + outputFile;
     string outputRootFile=Form("nTuple/%s_boost_match.root",zpmass.Data());
