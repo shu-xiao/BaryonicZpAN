@@ -143,7 +143,7 @@ void boosted_BZ(int w, std::string inputFile){
         {
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
             HT += thisJet->Pt();
-            if (ij<2) continue;
+            if (ij>1) continue;
             //if (ij==0) h_ptb->Fill(thisJet->Pt());
             //if (ij==1) h_ptb1->Fill(thisJet->Pt());
             jetEta[ij] = thisJet->Eta();
