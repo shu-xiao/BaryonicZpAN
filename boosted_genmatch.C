@@ -45,8 +45,9 @@ void boosted_genmatch(int w, std::string inputFile){
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM", 25,0,600);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM", 25,0,600);
     Int_t nPass[20]={0};
-    TH1F* h_hDeltaR = new TH1F("h_higgsdeltaR", "h_higgsdeltaR", 25,0,1);
-    TH1F* h_zpDeltaR = new TH1F("h_ZpdeltaR", "h_ZpdeltaR", 25,0,6);
+    TH1F* h_hGenDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR", 25,0,6);
+    TH1F* h_zpGenDeltaR = new TH1F("h_ZptobbDeltaR", "h_ZptobbDeltaR", 25,0,6);
+    
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
@@ -109,29 +110,37 @@ void boosted_genmatch(int w, std::string inputFile){
         
         // take genPar and find the higgs and zp jet, pdg=25 or 9000001
         int *genParId = data.GetPtrInt("genParId");
+        int *da1 = data.GetPtrInt("genDa1");
+        int *da2 = data.GetPtrInt("genDa2");
         int Hindex = -1;
         int zpindex[2] = {-1,-1};
+        int HdaIndex[2] = {-1,-1};
         for (int i=0 ; i<30 ; i++) {
             if (genMomParId[i]==9000001&&zpindex[0]<0) zpindex[0] = i;
-            else if (genMomParId[i]==9000001) zpindex[1] = i;
+            else if (genMomParId[i]==9000001&&zpindex[1]<0) zpindex[1] = i;
             if (genParId[i]==25) {
                 Hindex = i;
             }
-            if (Hindex>=0&&zpindex[1]>=0) break;
+            if (genMomParId[i]==25&&HdaIndex[0]<0) HdaIndex[0] = i;
+            else if (genMomParId[i]==25&&HdaIndex[1]<0) HdaIndex[1] = i;
+
+            //if (Hindex>=0&&zpindex[1]>=0) break;
         }
-        if (Hindex<0||zpindex[1]<0) continue;
+        if (Hindex<0||zpindex[1]<0||HdaIndex[1]<0) continue;
         nPass[4]++;
         TLorentzVector* genHJet = (TLorentzVector*)genParP4->At(Hindex);
-        TLorentzVector* bJet0 = (TLorentzVector*)genParP4->At(zpindex[0]);
-        TLorentzVector* bJet1 = (TLorentzVector*)genParP4->At(zpindex[1]);
-        TLorentzVector* bbjet = new TLorentzVector();
-        *bbjet = *bJet0 + *bJet1;
+        TLorentzVector* genZptobJet0 = (TLorentzVector*)genParP4->At(zpindex[0]);
+        TLorentzVector* genZptobJet1 = (TLorentzVector*)genParP4->At(zpindex[1]);
+        TLorentzVector* genHtobJet0 = (TLorentzVector*)genParP4->At(HdaIndex[0]);
+        TLorentzVector* genHtobJet1 = (TLorentzVector*)genParP4->At(HdaIndex[1]);
+        TLorentzVector* ZptobbJet = new TLorentzVector();
+        *ZptobbJet = *genZptobJet0 + *genZptobJet1;
+        h_zpGenDeltaR->Fill(genZptobJet0->DeltaR(*genZptobJet1));
+        h_hGenDeltaR->Fill(genHtobJet0->DeltaR(*genHtobJet1));
         // take Leading and Trailing jet and observe HT
         float *jetSDmass = data.GetPtrFloat("FATjetPuppiSDmass");
         float   *FatjetTau1 = data.GetPtrFloat("FATjetPuppiTau1");
         float   *FatjetTau2 = data.GetPtrFloat("FATjetPuppiTau2");
-        int *da1 = data.GetPtrInt("genDa1");
-        int *da2 = data.GetPtrInt("genDa2");
         float Tau21[2];
         int matchHIndex = -1, matchzpIndex = -1;
         
@@ -160,8 +169,8 @@ void boosted_genmatch(int w, std::string inputFile){
         // Zp
         for(int ij=0; ij<nFATJets; ij++) {
             TLorentzVector* thisJet = (TLorentzVector*)fatjetP4->At(ij);
-            //if (thisJet->DeltaR(*bJet0)<0.8 && thisJet->DeltaR(*bJet1)<0.8) {
-            if (thisJet->DeltaR(*bbjet)<0.8) {
+            //if (thisJet->DeltaR(*genZptobJet0)<0.8 && thisJet->DeltaR(*genZptobJet1)<0.8) {
+            if (thisJet->DeltaR(*ZptobbJet)<0.8) {
                 matchzpIndex = ij;
                 break;
             }
@@ -176,7 +185,6 @@ void boosted_genmatch(int w, std::string inputFile){
             h_zppt->Fill(zpjet->Pt());
             h_zpeta->Fill(zpjet->Eta());
             h_zptau->Fill(Tau21[1]);
-            h_zpDeltaR->Fill(bJet0->DeltaR(*bJet1));
         }
         
     } // end of loop over entries
@@ -202,7 +210,9 @@ void boosted_genmatch(int w, std::string inputFile){
     c1->Print("genMatch.pdf");
     h_zpeta->Draw("hist");
     c1->Print("genMatch.pdf");
-    h_zpDeltaR->Draw("hist");
+    h_hGenDeltaR->Draw("hist");
+    c1->Print("genMatch.pdf");
+    h_zpGenDeltaR->Draw("hist");
     c1->Print("genMatch.pdf)");
 
 
@@ -222,7 +232,8 @@ void boosted_genmatch(int w, std::string inputFile){
     h_zptau->Write();
     h_heta->Write();
     h_zpeta->Write();
-    h_zpDeltaR->Write();
+    h_zpGenDeltaR->Write();
+    h_hGenDeltaR->Write();
     outFile->Close();
     
 }
