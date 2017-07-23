@@ -34,19 +34,19 @@ void boosted_genmatch(int w, std::string inputFile){
 
     TCanvas* c1 = new TCanvas("c1","",600,600);
 
-    TH1F* h_hpt = new TH1F("h_higgsPt", "h_higgsPt", 20,0,1400);
-    TH1F* h_zppt = new TH1F("h_ZpPt", "h_ZpPt", 20,0,1400);
+    TH1F* h_hpt = new TH1F("h_higgsPt", "h_higgsPt_match", 20,0,1400);
+    TH1F* h_zppt = new TH1F("h_ZpPt", "h_ZpPt_match", 20,0,1400);
 
-    TH1F* h_htau = new TH1F("h_higgsTau21", "h_higgsTau21", 20,0,1);
-    TH1F* h_zptau = new TH1F("h_ZpTau21", "h_ZpTau21", 20,0,1);
+    TH1F* h_htau = new TH1F("h_higgsTau21", "h_higgsTau21_match", 20,0,1);
+    TH1F* h_zptau = new TH1F("h_ZpTau21", "h_ZpTau21_match", 20,0,1);
     
-    TH1F* h_heta = new TH1F("h_higgsEta", "h_higgsEta", 20,-3,3);
-    TH1F* h_zpeta = new TH1F("h_ZpEta", "h_ZpEta", 20,-3,3);
-    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM", 25,0,600);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM", 25,0,600);
+    TH1F* h_heta = new TH1F("h_higgsEta", "h_higgsEta_match", 20,-3,3);
+    TH1F* h_zpeta = new TH1F("h_ZpEta", "h_ZpEta_match", 20,-3,3);
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_match", 25,0,600);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_match", 25,0,600);
     Int_t nPass[20]={0};
-    TH1F* h_hGenDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR", 25,0,6);
-    TH1F* h_zpGenDeltaR = new TH1F("h_ZptobbDeltaR", "h_ZptobbDeltaR", 25,0,6);
+    TH1F* h_hGenDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_gen", 25,0,6);
+    TH1F* h_zpGenDeltaR = new TH1F("h_ZptobbDeltaR", "h_ZptobbDeltaR_gen", 25,0,6);
     
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
