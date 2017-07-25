@@ -42,13 +42,16 @@ void resolved_BZ4bjet(int w, std::string inputFile){
     TH1F* h_zptobbpt0 = new TH1F("h_zptobbpt0","h_zptobbpt0_match",20,0,1400);
     TH1F* h_zptobbpt1 = new TH1F("h_zptobbpt1","h_zptobbpt1_match",20,0,1400);
 
-    TH1F* h_hCIS0 = new TH1F("h_higgsCIS0", "h_higgstobCISVV2_0", 20,0,1);
-    TH1F* h_hCIS1 = new TH1F("h_higgsCIS1", "h_higgstobCISVV2_1", 20,0,1);
-    TH1F* h_zpCIS0 = new TH1F("h_zpCIS0", "h_zptobCISVV2_0", 20,0,1);
-    TH1F* h_zpCIS1 = new TH1F("h_zpCIS1", "h_zptobCISVV2_1", 20,0,1);
+    TH1F* h_oriCIS = new TH1F("h_oriCIS", "h_originCISVV2", 40,0,1);
+    TH1F* h_hCIS0 = new TH1F("h_higgsCIS0", "h_higgstobCISVV2_0", 40,0,1);
+    TH1F* h_hCIS1 = new TH1F("h_higgsCIS1", "h_higgstobCISVV2_1", 40,0,1);
+    TH1F* h_zpCIS0 = new TH1F("h_zpCIS0", "h_zptobCISVV2_0", 40,0,1);
+    TH1F* h_zpCIS1 = new TH1F("h_zpCIS1", "h_zptobCISVV2_1", 40,0,1);
+    TH1F* h_sumCIS = new TH1F("","",40,0,1);
     
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_match", 25,0,600);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_match", 25,0,1800);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_match", 25,0,2000);
+    TH1F* h_4bM = new TH1F("h_4bM","h_4bM_match", 25,500,2500);
     
     TH1F* h_hDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_match", 25,0,6);
     TH1F* h_zpDeltaR = new TH1F("h_ZptobbDeltaR", "h_ZptobbDeltaR_match", 25,0,6);
@@ -139,7 +142,10 @@ void resolved_BZ4bjet(int w, std::string inputFile){
 
         for(int k=0; k<nTHINJets; k++)
         {
+            if (thinJetCSV[k]>=0) h_oriCIS->Fill(thinJetCSV[k]);
             TLorentzVector* thisJet = (TLorentzVector*)thinjetP4->At(k);
+            if (abs(thisJet->Eta())>2.4) continue;
+            if (thisJet->Pt()<30) continue;
             if (thisJet->DeltaR(*genHtobJet0)<0.4 && matchHIndex[0]<0) {
                 matchHIndex[0]=k;
                 continue;
@@ -167,6 +173,7 @@ void resolved_BZ4bjet(int w, std::string inputFile){
         h_zppt->Fill((*matchZptobJet0+*matchZptobJet1).Pt());
         h_hM->Fill((*matchHtobJet0+*matchHtobJet1).M());
         h_hpt->Fill((*matchHtobJet0+*matchHtobJet1).Pt());
+        h_4bM->Fill((*matchHtobJet0+*matchHtobJet1+*matchZptobJet0+*matchZptobJet1).M());
         h_htobbpt0->Fill(matchHtobJet0->Pt());
         h_htobbpt1->Fill(matchHtobJet1->Pt());
         h_zptobbpt0->Fill(matchZptobJet0->Pt());
@@ -222,7 +229,7 @@ void resolved_BZ4bjet(int w, std::string inputFile){
 	        {
 	            Hindex[0]=jj;
 	            Hindex[1]=ij;
-	            maxHpt   =thisHpt;
+	            maxHpt=thisHpt;
 	        }
 
             } // end of inner loop jet
@@ -283,11 +290,20 @@ void resolved_BZ4bjet(int w, std::string inputFile){
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
-    
-    
+   
+    h_sumCIS->Add(h_hCIS0);
+    h_sumCIS->Add(h_hCIS1);
+    h_sumCIS->Add(h_zpCIS0);
+    h_sumCIS->Add(h_zpCIS1);
+    h_sumCIS->Draw("hist");
+    c1->SaveAs("te.png");
+    h_sumCIS->SetLineColor(kBlue);
+
     h_zpM->Draw("hist");
     c1->Print("thinJetgenMatch.pdf(");
     h_hM->Draw("hist");
+    c1->Print("thinJetgenMatch.pdf");
+    h_4bM->Draw("hist");
     c1->Print("thinJetgenMatch.pdf");
     h_zppt->Draw("hist");
     c1->Print("thinJetgenMatch.pdf");
@@ -300,6 +316,9 @@ void resolved_BZ4bjet(int w, std::string inputFile){
     h_zptobbpt0->Draw("hist");
     c1->Print("thinJetgenMatch.pdf");
     h_zptobbpt1->Draw("hist");
+    c1->Print("thinJetgenMatch.pdf");
+    h_oriCIS->Draw("hist");
+    h_sumCIS->Draw("histsame");
     c1->Print("thinJetgenMatch.pdf");
     h_hCIS0->Draw("hist");
     c1->Print("thinJetgenMatch.pdf");
