@@ -22,6 +22,12 @@ void efferr(float nsig,float ntotal,float factor=1)
     //myfile << eff*factor << endl;
     //myfile << err*factor;
 }
+float caldePhi(float phi1, float phi2) {
+    float dePhi = 0;
+    if (abs(phi1-phi2)>TMath::Pi()) dePhi = 2*TMath::Pi() - abs(phi1-phi2);
+    else dePhi = abs(phi1-phi2);
+    return dePhi;
+}
 using namespace std;
 void resolved_anBZ4bjet(int w, std::string inputFile){
     setNCUStyle(true);
@@ -30,35 +36,33 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
 
     TString zpmass;
     zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
-    string outputFile=Form("effiMZp%s.txt",zpmass.Data());
 
     TCanvas* c1 = new TCanvas("c1","",600,600);
 
-    TH1F* h_passCISt = new TH1F("h_passCISt","h_passCISSV2_tight",9,-0.5,8.5);
-    TH1F* h_passCISm = new TH1F("h_passCISm","h_passCISSV2_middle",9,-0.5,8.5);
-    TH1F* h_passCISl = new TH1F("h_passCISl","h_passCISSV2_loose",9,-0.5,8.5);
+    TH1F* h_passCISt = new TH1F("h_passCISt","h_nJetPassCISSV2_tight",11,-0.5,10.5);
+    TH1F* h_passCISm = new TH1F("h_passCISm","h_nJetPassCISSV2_medium",11,-0.5,10.5);
+    TH1F* h_passCISl = new TH1F("h_passCISl","h_nJetPassCISSV2_loose",11,-0.5,10.5);
+    TH1F* h_hpassCISt0 = new TH1F("h_htobb0_passCISt","h_htobb0_CISSV2_tight",3,-0.5,2.5);
+    TH1F* h_hpassCISm0 = new TH1F("h_htobb0_passCISm","h_htobb0_passCISSV2_medium",3,-0.5,2.5);
+    TH1F* h_hpassCISl0 = new TH1F("h_htobb0_passCISl","h_htobb0_passCISSV2_loose",3,-0.5,2.5);
+    TH1F* h_hpassCISt1 = new TH1F("h_htobb1_passCISt","h_htobb1_passCISSV2_tight",3,-0.5,2.5);
+    TH1F* h_hpassCISm1 = new TH1F("h_htobb1_passCISm","h_htobb1_passCISSV2_medium",3,-0.5,2.5);
+    TH1F* h_hpassCISl1 = new TH1F("h_htobb1_passCISl","h_htobb1_passCISSV2_loose",3,-0.5,2.5);
     
-    TH1F* h_hpt = new TH1F("h_higgsPt", "h_higgsPt_match", 20,0,1400);
-    TH1F* h_zppt = new TH1F("h_ZpPt", "h_ZpPt_match", 20,0,1400);
+    TH1F* h_hpt = new TH1F("h_higgsPt", "h_higgsPt_reco", 20,0,1400);
 
-    TH1F* h_htobbpt0 = new TH1F("h_htobbpt0","h_htobbpt0_match",20,0,1400);
-    TH1F* h_htobbpt1 = new TH1F("h_htobbpt1","h_htobbpt1_match",20,0,1400);
-    TH1F* h_zptobbpt0 = new TH1F("h_zptobbpt0","h_zptobbpt0_match",20,0,1400);
-    TH1F* h_zptobbpt1 = new TH1F("h_zptobbpt1","h_zptobbpt1_match",20,0,1400);
 
     TH1F* h_oriCIS = new TH1F("h_oriCIS", "h_originCISVV2", 40,0,1);
     TH1F* h_hCIS0 = new TH1F("h_higgsCIS0", "h_higgstobCISVV2_0", 40,0,1);
     TH1F* h_hCIS1 = new TH1F("h_higgsCIS1", "h_higgstobCISVV2_1", 40,0,1);
-    TH1F* h_zpCIS0 = new TH1F("h_zpCIS0", "h_zptobCISVV2_0", 40,0,1);
-    TH1F* h_zpCIS1 = new TH1F("h_zpCIS1", "h_zptobCISVV2_1", 40,0,1);
-    TH1F* h_sumCIS = new TH1F("","",40,0,1);
     
-    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_match", 25,0,600);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_match", 25,0,2000);
-    TH1F* h_4bM = new TH1F("h_4bM","h_4bM_match", 25,500,2500);
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_reco", 25,0,600);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_reco", 25,0,2000);
+    TH1F* h_4bM = new TH1F("h_4bM","h_4bM_reco", 25,500,2500);
     
-    TH1F* h_hDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_match", 25,0,6);
-    TH1F* h_zpDeltaR = new TH1F("h_ZptobbDeltaR", "h_ZptobbDeltaR_match", 25,0,6);
+    TH1F* h_hDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_reco", 30,0,6);
+    TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbdeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbdeltaEta", "h_HiggstobbDeltaEta_reco", 30,0,6);
     
     Int_t nPass[20]={0};
     
@@ -109,7 +113,7 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
         nPass[1]++;
         
         // study thin jet CISVV2
-        float* thinJetCSV =  data.GetPtrFloat("THINjetCISVV2");
+        float* thinJetCISV =  data.GetPtrFloat("THINjetCISVV2");
         const int nTHINJets     = data.GetInt("THINnJet");
         TClonesArray* thinjetP4 = (TClonesArray*) data.GetPtrTObject("THINjetP4");
         vector<bool>& passThinJetLooseID = *((vector<bool>*) data.GetPtr("THINjetPassIDLoose"));
@@ -120,7 +124,6 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
         float maxHpt=-999;
         float maxZppt=-999;
         const float ptCut = 30;
-        const float HptCut = 200;
         const float thinCISVV2cutL = 0.5426;
         const float thinCISVV2cutM = 0.8484; // mid cut
         const float thinCISVV2cutT = 0.9535; // tight cut
@@ -134,9 +137,9 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
             if(fabs(thisJet->Eta())>2.4)continue;
             if(!passThinJetLooseID[ij])continue;
             if(!passThinJetPUID[ij])continue;
-            if(thinJetCSV[ij]>thinCISVV2cutT) npJetT++;
-            if(thinJetCSV[ij]>thinCISVV2cutM) npJetM++;
-            if(thinJetCSV[ij]>thinCISVV2cutL) npJetL++;
+            if(thinJetCISV[ij]>thinCISVV2cutT) npJetT++;
+            if(thinJetCISV[ij]>thinCISVV2cutM) npJetM++;
+            if(thinJetCISV[ij]>thinCISVV2cutL) npJetL++;
             // reco higgs
             for (int jj=0;jj<ij;jj++) {
                 TLorentzVector* thatJet = (TLorentzVector*)thinjetP4->At(jj);
@@ -146,8 +149,9 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
                 if(!passThinJetPUID[jj])continue;
                 float diJetM = (*thisJet+*thatJet).M();
                 if (diJetM>140||diJetM<110) continue;
-                if (thinJetCSV[jj]>thinCISVV2cutT && thinJetCSV[ij]>thinCISVV2cutT) continue;
-                if (thinJetCSV[jj]<thinCISVV2cutL && thinJetCSV[ij]<thinCISVV2cutL) continue;
+                if (abs(thisJet->Eta()-thatJet->Eta())>1.0) continue;
+                if (thinJetCISV[jj]>thinCISVV2cutT && thinJetCISV[ij]>thinCISVV2cutT) continue;
+                if (thinJetCISV[jj]<thinCISVV2cutL && thinJetCISV[ij]<thinCISVV2cutL) continue;
                 if ((*thisJet+*thatJet).Pt()>HptMax) {
                     Hindex[0] = ij;
                     Hindex[1] = jj;
@@ -155,27 +159,64 @@ void resolved_anBZ4bjet(int w, std::string inputFile){
             }
         } // end of outer loop jet
         if (Hindex[0]<0||Hindex[1]<0) continue;
+        nPass[2]++;
         TLorentzVector* HbJet0 = (TLorentzVector*)thinjetP4->At(Hindex[0]);
         TLorentzVector* HbJet1 = (TLorentzVector*)thinjetP4->At(Hindex[1]);
+        int htobbPl[2]={0}, htobbPm[2]={0}, htobbPt[2]={0};
+        for (int i=0;i<2;i++) {
+            if (thinJetCISV[Hindex[i]]>thinCISVV2cutL) htobbPl[i]++;
+            if (thinJetCISV[Hindex[i]]>thinCISVV2cutM) htobbPm[i]++;
+            if (thinJetCISV[Hindex[i]]>thinCISVV2cutT) htobbPt[i]++;
+        }
+        h_hpassCISt0->Fill(htobbPt[0]);
+        h_hpassCISm0->Fill(htobbPm[0]);
+        h_hpassCISl0->Fill(htobbPl[0]);
+        h_hpassCISt1->Fill(htobbPt[1]);
+        h_hpassCISm1->Fill(htobbPm[1]);
+        h_hpassCISl1->Fill(htobbPl[1]);
+        h_hM->Fill((*HbJet0+*HbJet1).M());
         h_hDeltaR->Fill(HbJet0->DeltaR(*HbJet1));
+        h_hDeltaEta->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
+        h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
         h_hpt->Fill((*HbJet0+*HbJet1).Pt()); 
         h_passCISt->Fill(npJetT);
         h_passCISm->Fill(npJetM);
         h_passCISl->Fill(npJetL);
-        nPass[2]++;
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[2],nTotal);
     h_hDeltaR->Draw("hist");
-    c1->Print("thinJetAn.pdf(");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf(");
     h_hpt->Draw("hist");
-    c1->Print("thinJetAn.pdf");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_passCISt->Draw("hist");
-    c1->Print("thinJetAn.pdf");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_passCISm->Draw("hist");
-    c1->Print("thinJetAn.pdf");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_passCISl->Draw("hist");
-    c1->Print("thinJetAn.pdf)");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf)");
+    
+    string fileName = Form("bb2HDM_%d.root",w);
+    //string fileName = Form("QCDbg2HDMbb_%d.root",w);
+    TFile* outputFile = new TFile(fileName.data(),"recreate");
+    h_hpt->Write();
+    h_hM->Write();
+    h_hDeltaR->Write();
+    h_hDeltaPhi->Write();
+    h_hDeltaEta->Write();
+    h_hpassCISt0->Write();
+    h_hpassCISm0->Write();
+    h_hpassCISl0->Write();
+    h_hpassCISt1->Write();
+    h_hpassCISm1->Write();
+    h_hpassCISl1->Write();
+    h_passCISt->Write();
+    h_passCISm->Write();
+    h_passCISl->Write();
+    outputFile->Close();
+
+
+
 }

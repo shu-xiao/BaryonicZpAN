@@ -12,6 +12,7 @@
 #include <TCanvas.h>
 #include "string"
 #include "setNCUStyle.C"
+#include "TMath.h"
 void efferr(float nsig,float ntotal,float factor=1)
 {
     float eff = nsig/ntotal;
@@ -46,6 +47,8 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_match", 25,0,600);
     TH1F* h_a0M = new TH1F("h_A0M", "h_A0M_match", 25,0,600);
     
+    TH1F* h_nCA15jet = new TH1F("h_nCA15jet", "h_nCA15jet", 6,-0.5,5.5);
+    
     TH1F* h_hbbtag = new TH1F("h_higgsdoublebtag","h_higgsdoublebtag_match",40,-1,1);
     TH1F* h_a0bbtag = new TH1F("h_a0doublebtag","h_a0doublebtag_match",40,-1,1);
 
@@ -56,11 +59,14 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     TH1F* h_hECF_1_2_10 = new TH1F("h_higgsECF_1_2_10","h_higgsECF_1_2_10_match",50,0,0.5);
     TH1F* h_a0ECF_2_3_10 = new TH1F("h_a0ECF_2_3_10","h_a0ECF_2_3_10_match",50,0,0.1);
     TH1F* h_a0ECF_1_2_10 = new TH1F("h_a0ECF_1_2_10","h_a0ECF_1_2_10_match",50,0,0.5);
+    TH1F* h_hN2 = new TH1F("h_hN2","h_hN2",50,0,1);
+    TH1F* h_a0N2 = new TH1F("h_a0N2","h_a0N2",50,0,1);
 
     Int_t nPass[20]={0};
     //TH1F* h_hGenDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_gen", 25,0,6);
     //TH1F* h_a0GenDeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_gen", 25,0,6);
-    TH1F* h_a0HDeltaR = new TH1F("h_A0HDeltaR", "h_A0HDeltaR_gen", 25,0,6);
+    TH1F* h_a0HDeltaR_gen = new TH1F("h_A0HDeltaR_gen", "h_A0andhiggsDeltaR_gen", 25,0,6);
+    TH1F* h_a0HDeltaR_match = new TH1F("h_A0HDeltaR_match", "h_A0andhiggsDeltaR_match", 25,0,6);
     
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
@@ -107,6 +113,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         nPass[1]++;
         //2.0 tight PF jet selection
         int nCA15Jets = data.GetInt("CA15PuppinJet");
+        h_nCA15jet->Fill(nCA15Jets);
         if (nCA15Jets < 2) continue;
         vector<bool> &passCA15JetTightID = *((vector<bool>*) data.GetPtr("CA15PuppijetPassIDTight"));
         if (!passCA15JetTightID[0]) continue;
@@ -138,7 +145,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         nPass[4]++;
         TLorentzVector* genHJet = (TLorentzVector*)genParP4->At(Hindex);
         TLorentzVector* genA0Jet = (TLorentzVector*)genParP4->At(a0index);
-        h_a0HDeltaR->Fill(genHJet->DeltaR(*genA0Jet));
+        h_a0HDeltaR_gen->Fill(genHJet->DeltaR(*genA0Jet));
         // take Leading and Trailing jet and observe HT
         float *jetSDmass = data.GetPtrFloat("CA15PuppijetSDmass");
         float *CA15jetTau1 = data.GetPtrFloat("CA15PuppijetTau1");
@@ -149,7 +156,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         float *CA15jetECF_1_2_10 = data.GetPtrFloat("CA15PuppiECF_1_2_10");
         float Tau21[2];
         int matchHIndex = -1, matcha0Index = -1;
-        
+        TLorentzVector *hjet, *a0jet;        
         // Higgs
         for(int ij=0; ij<nCA15Jets; ij++)
         {
@@ -164,7 +171,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         nPass[5]++;
         
         if (matchHIndex>=0) {
-            TLorentzVector* hjet = (TLorentzVector*)CA15jetP4->At(matchHIndex); 
+            hjet = (TLorentzVector*)CA15jetP4->At(matchHIndex); 
             Tau21[0] = CA15jetTau2[matchHIndex] / CA15jetTau1[matchHIndex];
             h_hM->Fill(jetSDmass[matchHIndex]);
             h_hpt->Fill(hjet->Pt());
@@ -174,6 +181,8 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
             h_hECF_2_3_10->Fill(CA15jetECF_2_3_10[matchHIndex]);
             h_hECF_1_2_10->Fill(CA15jetECF_1_2_10[matchHIndex]);
             h_hCISVV2->Fill(CA15jetCISVV2[matchHIndex]);
+            float hN2 = CA15jetECF_2_3_10[matchHIndex]/pow(CA15jetECF_1_2_10[matchHIndex],2.00);
+            h_hN2->Fill(hN2);
         }
         
         // A0
@@ -189,7 +198,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         
         nPass[6]++;
         if (matcha0Index>=0) {
-            TLorentzVector* a0jet = (TLorentzVector*)CA15jetP4->At(matcha0Index);
+            a0jet = (TLorentzVector*)CA15jetP4->At(matcha0Index);
             Tau21[1]= CA15jetTau2[matcha0Index] / CA15jetTau1[matcha0Index];
             h_a0M->Fill(jetSDmass[matcha0Index]);
             h_a0pt->Fill(a0jet->Pt());
@@ -199,8 +208,10 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
             h_a0ECF_2_3_10->Fill(CA15jetECF_2_3_10[matcha0Index]);
             h_a0ECF_1_2_10->Fill(CA15jetECF_1_2_10[matcha0Index]);
             h_a0CISVV2->Fill(CA15jetCISVV2[matcha0Index]);
+            float a0N2 = CA15jetECF_2_3_10[matcha0Index]/pow(CA15jetECF_1_2_10[matcha0Index],2.00);
+            h_a0N2->Fill(a0N2);
         }
-        
+        if (matchHIndex>=0 && matcha0Index>=0) h_a0HDeltaR_match->Fill(a0jet->DeltaR(*hjet));
     } // end of loop over entries
 
     float nTotal = data.GetEntriesFast();
@@ -208,8 +219,10 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[6],nTotal);
     
-    h_a0M->Draw("hist");
+    h_nCA15jet->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf(");
+    h_a0M->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_hM->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_a0pt->Draw("hist");
@@ -224,7 +237,9 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_a0eta->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
-    h_a0HDeltaR->Draw("hist");
+    h_a0HDeltaR_gen->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
+    h_a0HDeltaR_match->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_hbbtag->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
@@ -237,6 +252,10 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     h_hECF_1_2_10->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_a0ECF_1_2_10->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
+    h_hN2->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
+    h_a0N2->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_hCISVV2->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
