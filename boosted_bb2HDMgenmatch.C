@@ -68,6 +68,8 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     TH1F* h_a0HDeltaR_gen = new TH1F("h_A0HDeltaR_gen", "h_A0andhiggsDeltaR_gen", 25,0,6);
     TH1F* h_a0HDeltaR_match = new TH1F("h_A0HDeltaR_match", "h_A0andhiggsDeltaR_match", 25,0,6);
     
+    TH1F* h_a0HDeltaEta_gen = new TH1F("h_A0HDeltaEta_gen", "h_A0andhiggsDeltaEta_gen", 25,0,6);
+    TH1F* h_a0HDeltaEta_match = new TH1F("h_A0HDeltaEta_match", "h_A0andhiggsDeltaEta_match", 25,0,6);
 
     //for(Long64_t jEntry=0; jEntry<1 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
@@ -146,6 +148,7 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
         TLorentzVector* genHJet = (TLorentzVector*)genParP4->At(Hindex);
         TLorentzVector* genA0Jet = (TLorentzVector*)genParP4->At(a0index);
         h_a0HDeltaR_gen->Fill(genHJet->DeltaR(*genA0Jet));
+        h_a0HDeltaEta_gen->Fill(abs(genHJet->Eta()-genA0Jet->Eta()));
         // take Leading and Trailing jet and observe HT
         float *jetSDmass = data.GetPtrFloat("CA15PuppijetSDmass");
         float *CA15jetTau1 = data.GetPtrFloat("CA15PuppijetTau1");
@@ -211,7 +214,10 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
             float a0N2 = CA15jetECF_2_3_10[matcha0Index]/pow(CA15jetECF_1_2_10[matcha0Index],2.00);
             h_a0N2->Fill(a0N2);
         }
-        if (matchHIndex>=0 && matcha0Index>=0) h_a0HDeltaR_match->Fill(a0jet->DeltaR(*hjet));
+        if (matchHIndex>=0 && matcha0Index>=0) {
+            h_a0HDeltaR_match->Fill(a0jet->DeltaR(*hjet));
+            h_a0HDeltaEta_match->Fill(abs(a0jet->Eta()-hjet->Eta()));
+        }
     } // end of loop over entries
 
     float nTotal = data.GetEntriesFast();
@@ -236,6 +242,10 @@ void boosted_bb2HDMgenmatch(int w, std::string inputFile){
     h_heta->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_a0eta->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
+    h_a0HDeltaEta_gen->Draw("hist");
+    c1->Print("bb2HDM_MZp1500_MA0300.pdf");
+    h_a0HDeltaEta_match->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
     h_a0HDeltaR_gen->Draw("hist");
     c1->Print("bb2HDM_MZp1500_MA0300.pdf");
