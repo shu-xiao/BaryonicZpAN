@@ -35,7 +35,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
-
+    
+    bool upeff = true;
     TString zpmass;
     zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_bb_MZp}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
 
@@ -95,12 +96,12 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         // reco higgs
         for(int ij=0, iList=0; ij < nGenJet; ij++) {
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
-            if(thisJet->Pt()<30)continue;
-            if(fabs(thisJet->Eta())>2.4)continue;
+            if(upeff && thisJet->Pt()<30)continue;
+            if(upeff && fabs(thisJet->Eta())>2.4)continue;
             for (int jj=0;jj<ij;jj++) {
                 TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
-                if(thatJet->Pt()<30)continue;
-                if(fabs(thatJet->Eta())>2.4)continue;
+                if(upeff && thatJet->Pt()<30)continue;
+                if(upeff && fabs(thatJet->Eta())>2.4)continue;
                 float diJetM = (*thisJet+*thatJet).M();
                 if (diJetM>145||diJetM<105) continue;
                 HindexList[iList][0] = ij;
@@ -116,7 +117,6 @@ void anbb2HDM_4jet(int w, std::string inputFile){
                 //}
             }
         } // end of outer loop jet
-        //if (Hindex[0]<0||Hindex[1]<0) continue;
         sort(HindexList.begin(),HindexList.end(),sortListbyPt);
         if (HindexList[0][0]<0) {h_hNcandi->Fill(0); continue;}
         nPass[1]++;
@@ -137,15 +137,13 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         
         // reco A0
         for(int ij=0, iList=0; ij < nGenJet; ij++) {
-            //if (ij==Hindex[0] || ij==Hindex[1]) continue;
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
-            if(thisJet->Pt()<30)continue;
-            if(fabs(thisJet->Eta())>2.4)continue;
+            if(upeff && thisJet->Pt()<30)continue;
+            if(upeff && fabs(thisJet->Eta())>2.4)continue;
             for (int jj=0;jj<ij;jj++) {
-                //if (jj==Hindex[0] || jj==Hindex[1]) continue;
                 TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
-                if(thatJet->Pt()<30) continue;
-                if(fabs(thatJet->Eta())>2.4) continue;
+                if(upeff && thatJet->Pt()<30) continue;
+                if(upeff && fabs(thatJet->Eta())>2.4) continue;
                 float diJetM = (*thisJet+*thatJet).M();
                 if (diJetM>350||diJetM<250) continue;
                 A0indexList[iList][0] = ij;
@@ -183,21 +181,21 @@ void anbb2HDM_4jet(int w, std::string inputFile){
 
         //float zpM = (*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M();
         float zpM = -999;
-        bool idCrash = false;
         for (int i=0, iList=0;i<HindexList.size();i++) {
             for (int j=0;j<A0indexList.size();j++) {
+                bool idCrash = false;
                 for (int m=0;m<2;m++) for (int n=0;n<2;n++) if (HindexList[i][m]==A0indexList[j][n]) idCrash = true;
                 if (idCrash) continue;
                 TLorentzVector* bJet0 = (TLorentzVector*)genjetP4->At(HindexList[i][0]);
                 TLorentzVector* bJet1 = (TLorentzVector*)genjetP4->At(HindexList[i][1]);
-                TLorentzVector* bJet2 = (TLorentzVector*)genjetP4->At(A0indexList[i][0]);
-                TLorentzVector* bJet3 = (TLorentzVector*)genjetP4->At(A0indexList[i][1]);
+                TLorentzVector* bJet2 = (TLorentzVector*)genjetP4->At(A0indexList[j][0]);
+                TLorentzVector* bJet3 = (TLorentzVector*)genjetP4->At(A0indexList[j][1]);
                 zpM = (*bJet0+*bJet1+*bJet2+*bJet3).M();
                 if (zpM>1600 || zpM<1400) continue;
                 ZpindexList[iList][0] = HindexList[i][0];
                 ZpindexList[iList][1] = HindexList[i][1];
-                ZpindexList[iList][2] = A0indexList[i][0];
-                ZpindexList[iList][3] = A0indexList[i][1];
+                ZpindexList[iList][2] = A0indexList[j][0];
+                ZpindexList[iList][3] = A0indexList[j][1];
                 ZpindexList[iList][5] = (*bJet0+*bJet1+*bJet2+*bJet3).Pt();
                 if (iList>=29) {
                     cout << "Zp index out of setting" << endl;
