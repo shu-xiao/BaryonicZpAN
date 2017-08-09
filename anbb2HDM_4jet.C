@@ -66,6 +66,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genJet", 50,100,150);
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,240,360);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,1380,1620);
+    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 50,0,1000);
+    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 40,0,800);
     
     TH1F* h_hDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_reco", 30,0,6);
     TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbdeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
@@ -219,9 +221,11 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
         TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
         h_hM->Fill((*HbJet0+*HbJet1).M());
+        h_hPt->Fill((*HbJet0+*HbJet1).Pt());
         TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
         TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
         h_a0M->Fill((*A0bJet0+*A0bJet1).M());
+        h_a0Pt->Fill((*A0bJet0+*A0bJet1).Pt());
         h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
@@ -233,6 +237,10 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     h_hM->Draw("hist");
     c1->Print("anGenJet_bb2HDM_MZp1500_MA0300.pdf");
     h_a0M->Draw("hist");
+    c1->Print("anGenJet_bb2HDM_MZp1500_MA0300.pdf");
+    h_hPt->Draw("hist");
+    c1->Print("anGenJet_bb2HDM_MZp1500_MA0300.pdf");
+    h_a0Pt->Draw("hist");
     c1->Print("anGenJet_bb2HDM_MZp1500_MA0300.pdf");
     h_hNcandi->Draw("hist");
     c1->Print("anGenJet_bb2HDM_MZp1500_MA0300.pdf");
