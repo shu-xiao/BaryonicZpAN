@@ -1,4 +1,3 @@
-
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -30,7 +29,16 @@ float caldePhi(float phi1, float phi2) {
 }
 bool sortListbyPt(vector<float> a, vector<float> b) {return a[2]>b[2];}
 bool sortListbyPtZp(vector<float> a, vector<float> b) {return a[4]>b[4];}
-
+float ptAssymetry(TLorentzVector* j1, TLorentzVector* j2) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    float deR = j1->DeltaR(*j2);
+    float mj = (*j1+*j2).M();
+    return pow(minPt*deR/mj,2);
+}
+float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float beta = 0) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
+}
 using namespace std;
 void anbb2HDM_4jet(int w, std::string inputFile){
     setNCUStyle(true);
@@ -38,27 +46,30 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TreeReader data(inputFile.data());
     
     
-    bool upeff = false;
+    bool upeff = true;
+    bool isBG = false;
     
     
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
     TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
+    // set default value
+    if (Zpmass.Atof()>2500||Zpmass.Atof()<800 || A0mass.Atof()>800 || A0mass.Atof()<300) {
+        Zpmass = "800";
+        A0mass = "300";
+        isBG = true;
+    }
+
     TCanvas* c1 = new TCanvas("c1","",600,600);
 
-    TH1F* h_passCISt = new TH1F("h_passCISt","h_nJetPassCISSV2_tight",11,-0.5,10.5);
-    TH1F* h_passCISm = new TH1F("h_passCISm","h_nJetPassCISSV2_medium",11,-0.5,10.5);
-    TH1F* h_passCISl = new TH1F("h_passCISl","h_nJetPassCISSV2_loose",11,-0.5,10.5);
-    TH1F* h_hpassCISt0 = new TH1F("h_htobb0_passCISt","h_htobb0_CISSV2_tight",3,-0.5,2.5);
-    TH1F* h_hpassCISm0 = new TH1F("h_htobb0_passCISm","h_htobb0_passCISSV2_medium",3,-0.5,2.5);
-    TH1F* h_hpassCISl0 = new TH1F("h_htobb0_passCISl","h_htobb0_passCISSV2_loose",3,-0.5,2.5);
-    TH1F* h_hpassCISt1 = new TH1F("h_htobb1_passCISt","h_htobb1_passCISSV2_tight",3,-0.5,2.5);
-    TH1F* h_hpassCISm1 = new TH1F("h_htobb1_passCISm","h_htobb1_passCISSV2_medium",3,-0.5,2.5);
-    TH1F* h_hpassCISl1 = new TH1F("h_htobb1_passCISl","h_htobb1_passCISSV2_loose",3,-0.5,2.5);
+    TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
     
+    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,0.8);
+    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,0.8);
+    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",40,0,0.8);
 
-    TH1F* h_oriCIS = new TH1F("h_oriCIS", "h_originCISVV2", 40,0,1);
-    TH1F* h_hCIS0 = new TH1F("h_higgsCIS0", "h_higgstobCISVV2_0", 40,0,1);
-    TH1F* h_hCIS1 = new TH1F("h_higgsCIS1", "h_higgstobCISVV2_1", 40,0,1);
+    TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
+    TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
+    TH1F* h_zpPtSD = new TH1F("h_zpPtSD","h_ZpPtSD",30,0,0.6);
     
     TH1F* h_hNcandi = new TH1F("h_hNcandi", "h_higgs_NcandidatePairJets", 10,-0.5,9.5);
     TH1F* h_a0Ncandi = new TH1F("h_a0Ncandi", "h_A0_NcandidatePairJets", 10,-0.5,9.5);
@@ -67,12 +78,19 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genJet", 50,100,150);
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
+    
     TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 50,0,1000);
     TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 40,0,800);
     
-    TH1F* h_hDeltaR = new TH1F("h_HiggstobbdeltaR", "h_HiggstobbDeltaR_reco", 30,0,6);
+    TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
+    TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
+    TH1F* h_zpDeltaR = new TH1F("h_zptobbDeltaR", "h_zptobbDeltaR_reco", 40,0,4);
+    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbdeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
+    TH1F* h_a0DeltaEta = new TH1F("h_A0tobbdeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
+    TH1F* h_zpDeltaEta = new TH1F("h_ZptobbdeltaEta", "h_ZptobbDeltaEta_reco", 40,0,4);
     TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbdeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbdeltaEta", "h_HiggstobbDeltaEta_reco", 30,0,6);
+    TH1F* h_a0DeltaPhi = new TH1F("h_A0tobbdeltaPhi", "h_A0obbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_zpDeltaPhi = new TH1F("h_ZptobbdeltaPhi", "h_ZptobbDeltaPhi_reco", 32,0,3.2);
     
     Int_t nPass[20]={0};
     
@@ -82,18 +100,17 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         // broken events
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
-        
+        h_allEvent->Fill(1);
         //0. has a good vertex
-        int nGenJet = data.GetInt("ak4nGenJet");
+        int nGenJet = (!isBG)? data.GetInt("ak4nGenJet"):data.GetInt("THINnJet");
         if(nGenJet<4) continue;
         nPass[0]++;
         
-        TClonesArray* genjetP4 = (TClonesArray*) data.GetPtrTObject("ak4GenJetP4");
-        int* genMomParId= data.GetPtrInt("genMomParId");
-        vector<vector<float>> HindexList, A0indexList, ZpindexList;
-        vector<float> row(5,-99);
+        TClonesArray* genjetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak4GenJetP4"):(TClonesArray*) data.GetPtrTObject("THINjetP4");
         
         const int nCandidates = 30;
+        vector<vector<float>> HindexList, A0indexList, ZpindexList;
+        vector<float> row(5,-99);
         HindexList.assign(nCandidates,row);
         A0indexList.assign(nCandidates,row);
         ZpindexList.assign(nCandidates,row);
@@ -168,6 +185,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         if (A0indexList[0][0]<0) {h_a0Ncandi->Fill(0); continue;}
         nPass[2]++;
         
+        
         for (int i=0;i<A0indexList.size();i++) {
             if (A0indexList[i][0]<0) {
                 h_a0Ncandi->Fill(i);
@@ -219,54 +237,101 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
         h_hM->Fill((*HbJet0+*HbJet1).M());
         h_hPt->Fill((*HbJet0+*HbJet1).Pt());
+        h_hPtAs->Fill(ptAssymetry(HbJet0,HbJet1));
+        h_hPtSD->Fill(softDropAs(HbJet0,HbJet1));
+        h_hDeltaR->Fill(HbJet0->DeltaR(*HbJet1));
+        h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
+        h_hDeltaEta->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
+        
         TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
         TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
         h_a0M->Fill((*A0bJet0+*A0bJet1).M());
         h_a0Pt->Fill((*A0bJet0+*A0bJet1).Pt());
+        h_a0PtAs->Fill(ptAssymetry(A0bJet0,A0bJet1));
+        h_a0PtSD->Fill(softDropAs(A0bJet0,A0bJet1));
+        h_a0DeltaR->Fill(A0bJet0->DeltaR(*A0bJet1));
+        h_a0DeltaPhi->Fill(caldePhi(A0bJet0->Phi(),A0bJet1->Phi()));
+        h_a0DeltaEta->Fill(abs(A0bJet0->Eta()-A0bJet1->Eta()));
+        
+        TLorentzVector* A0recoJet = new TLorentzVector(), *HrecoJet = new TLorentzVector();
+        *A0recoJet = *A0bJet0 + *A0bJet1;
+        *HrecoJet = *HbJet0 +*HbJet1;
         h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
+        h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0recoJet));
+        h_zpPtSD->Fill(softDropAs(HrecoJet,A0recoJet));
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[3],nTotal);
-    string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
-    string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
-    string pdfNameF = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
-    h_zpM->Draw("hist");
-    c1->Print(pdfNameI.data());
-    h_hM->Draw("hist");
-    c1->Print(pdfName.data());
-    h_a0M->Draw("hist");
-    c1->Print(pdfName.data());
-    h_hPt->Draw("hist");
-    c1->Print(pdfName.data());
-    h_a0Pt->Draw("hist");
-    c1->Print(pdfName.data());
-    h_hNcandi->Draw("hist");
-    c1->Print(pdfName.data());
-    h_a0Ncandi->Draw("hist");
-    c1->Print(pdfName.data());
-    h_zpNcandi->Draw("hist");
-    c1->Print(pdfNameF.data());
-    /* 
-    string fileName = Form("bb2HDM_%d.root",w);
-    //string fileName = Form("QCDbg2HDMbb_%d.root",w);
-    TFile* outputFile = new TFile(fileName.data(),"recreate");
-    h_hM->Write();
-    h_hDeltaR->Write();
-    h_hDeltaPhi->Write();
-    h_hDeltaEta->Write();
-    h_hpassCISt0->Write();
-    h_hpassCISm0->Write();
-    h_hpassCISl0->Write();
-    h_hpassCISt1->Write();
-    h_hpassCISm1->Write();
-    h_hpassCISl1->Write();
-    h_passCISt->Write();
-    h_passCISm->Write();
-    h_passCISl->Write();
-    outputFile->Close();
-*/
+    if (!isBG) 
+    {
+        string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
+        string pdfNameF = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
+        h_zpM->Draw("hist");
+        c1->Print(pdfNameI.data());
+        h_hM->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0M->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPt->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0Pt->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0PtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0PtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaR->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaR->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hNcandi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0Ncandi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpNcandi->Draw("hist");
+        c1->Print(pdfNameF.data());
+    }
+    else
+    { 
+        //string fileName = Form("bb2HDM_%d.root",w);
+        string fileName = Form("QCDbg2HDMbb_%d.root",w);
+        TFile* outputFile = new TFile(fileName.data(),"recreate");
+        h_allEvent->Write();
+        h_zpM->Write();
+        h_hM->Write();
+        h_a0M->Write();
+        h_hPt->Write();
+        h_a0Pt->Write();
+        h_hPtAs->Write();
+        h_a0PtAs->Write();
+        h_hPtSD->Write();
+        h_a0PtSD->Write();
+        h_hDeltaR->Write();
+        h_a0DeltaR->Write();
+        h_hDeltaEta->Write();
+        h_a0DeltaEta->Write();
+        h_hDeltaPhi->Write();
+        h_a0DeltaPhi->Write();
+        h_hNcandi->Write();
+        h_a0Ncandi->Write();
+        h_zpNcandi->Write();
+        outputFile->Close();
+    }
 
 
 }
