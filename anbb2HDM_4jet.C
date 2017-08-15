@@ -232,6 +232,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
             }
             //cout << "jet" << i << " [ " << ZpindexList[i][0] << " , " << ZpindexList[i][1] << " , " << ZpindexList[i][2] << " ]" << endl;
         }
+        if (ZpindexList.size()!=1) continue;
+        nPass[4]++;
         
         TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
         TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
@@ -263,8 +265,9 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
-    efferr(nPass[3],nTotal);
+    efferr(nPass[4],nTotal);
     if (!isBG) 
+    //if (false) 
     {
         string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
         string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());

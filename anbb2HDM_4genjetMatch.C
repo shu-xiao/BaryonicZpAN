@@ -54,6 +54,10 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 40,A0mass.Atof()-100,A0mass.Atof()+100);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 60,Zpmass.Atof()-300,Zpmass.Atof()+300);
     
+    TH1F* h_hPtAs = new TH1F("h_HiggsPtAs","h_HiggsPtAsymmetry",50,0,0.5);
+    TH1F* h_A0PtAs = new TH1F("h_A0PtAs","h_A0PtAsymmetry",50,0,0.5);
+    TH1F* h_hPtSDAs = new TH1F("h_HiggsSDAs","h_HiggsSoftDropConditionAsymmetry",50,0,0.5);
+    TH1F* h_a0PtSDAs = new TH1F("h_A0SDAs","h_A0SoftDropConditionAsymmetry",50,0,0.5);
     TH1F* h_hGamma = new TH1F("h_HiggsJetGamma", "h_HiggsJetGamma", 50,0,10);
     TH1F* h_a0Gamma = new TH1F("h_A0JetGamma", "h_A0JetGamma", 50,0,10);
     
@@ -208,7 +212,38 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
             }
             //cout << "jet" << i << " [ " << ZpindexList[i][0] << " , " << ZpindexList[i][1] << " , " << ZpindexList[i][2] << " ]" << endl;
         }
+        /*
+        if (ZpindexList.size()!=2) continue;   
+        vector <int> n;
+        for (int i=0;i<4;i++) {
+            if (ZpindexList[0][i]!=ZpindexList[1][i]) n.push_back(i);
+        }
+        if (n.size()<2) continue;
+        TLorentzVector* j1 = (TLorentzVector*)genjetP4->At(ZpindexList[1][n[0]]);
+        TLorentzVector* j2 = (TLorentzVector*)genjetP4->At(ZpindexList[1][n[1]]);
+        TLorentzVector* jj1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][n[0]]);
+        TLorentzVector* jj2 = (TLorentzVector*)genjetP4->At(ZpindexList[0][n[1]]);
+        float R1 = (j1->DeltaR(*jj1)>j1->DeltaR(*jj2))? j1->DeltaR(*jj2):j1->DeltaR(*jj1);
+        float R2 = (j2->DeltaR(*jj2)>j2->DeltaR(*jj1))? j2->DeltaR(*jj1):j2->DeltaR(*jj2);
+        cout << "Par dR: " << HbPar0->DeltaR(*HbPar1) << endl;;
+        cout << "beC:" << j1->DeltaR(*jj1) << "\t" << j2->DeltaR(*jj2) << endl;
+        cout << "R1: " << R1 << "\tR2: " << R2 << endl;
+        cout << endl;
         
+        for (int i=0;i<4;i++) {
+            if (ZpindexList[0][i]!=ZpindexList[1][i]&&ZpindexList[0][i+1]!=ZpindexList[1][i-1]) {
+                TLorentzVector* j1 = (TLorentzVector*)genjetP4->At(ZpindexList[1][i]);
+                TLorentzVector* j2 = (TLorentzVector*)genjetP4->At(ZpindexList[0][i]);
+                //float R1 = 
+                cout << "jEntry: " << jEntry << "\tindex: " << i << "\tdeltaR: " << j1->DeltaR(*j2) <<endl;
+                //j1->Print();
+                //j2->Print();
+                
+            }
+        }
+        */
+
+
         TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
         TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
         TLorentzVector* HJet = new TLorentzVector();
@@ -219,6 +254,8 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
         h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
         h_hM->Fill(HJet->M());
         h_hGamma->Fill(HJet->Gamma());
+        float minHbPt = (HbJet0->Pt()>HbJet1->Pt()) ? HbJet1->Pt() : HbJet0->Pt();
+        h_hPtAs->Fill(pow(minHbPt,2)/pow(HJet->M(),2)*pow(HbJet0->DeltaR(*HbJet1),2));
         
         TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
         TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
