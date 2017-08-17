@@ -69,6 +69,14 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
     TH1F* h_a0DeltaEta = new TH1F("h_A0tobbdeltaEta", "h_A0tobbDeltaEta_genmatch", 40,0,4);
     TH1F* h_zpDeltaR = new TH1F("h_ZptoA0HdeltaR", "h_ZptoA0HDeltaR_genmatch", 50,0,5);
      
+    TH1F* h_2candiHdePt = new TH1F("h_2candiHdePt", "h_2candiHdePt", 50,0,300);
+    TH1F* h_2candiHdeDeltaR = new TH1F("h_2candiHdeDeltaR", "h_2candiHdeDeltaR", 40,0,0.4);
+    TH1F* h_2candiA0dePt = new TH1F("h_2candiA0dePt", "h_2candiA0dePt", 50,0,300);
+    TH1F* h_2candiA0deDeltaR = new TH1F("h_2candiA0deDeltaR", "h_2candiA0deDeltaR", 40,0,0.4);
+    TH1F* h_2candiHmindePt = new TH1F("h_2candiHmindePt", "h_2candiHmindePt", 50,0,300);
+    TH1F* h_2candiHmindeDeltaR = new TH1F("h_2candiHmindeDeltaR", "h_2candiHmindeDeltaR", 40,0,0.4);
+    TH1F* h_2candiA0mindePt = new TH1F("h_2candiA0mindePt", "h_2candiA0mindePt", 50,0,300);
+    TH1F* h_2candiA0mindeDeltaR = new TH1F("h_2candiA0mindeDeltaR", "h_2candiA0mindeDeltaR", 40,0,0.4);
     Int_t nPass[20]={0};
     
     //for(Long64_t jEntry=0; jEntry<50 ;jEntry++){
@@ -270,11 +278,66 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
         
         h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
         h_zpDeltaR->Fill(A0Jet->DeltaR(*HJet));
+    
+        if (ZpindexList.size()==2) {
+            float mindeR[4]={9,9,9,9} , mindePt[4] = {999,999,999,999};
+            for (int i=0;i<2;i++) {
+                TLorentzVector* bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[i][0]);
+                TLorentzVector* bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[i][1]);
+                TLorentzVector* bJet2 = (TLorentzVector*)genjetP4->At(ZpindexList[i][2]);
+                TLorentzVector* bJet3 = (TLorentzVector*)genjetP4->At(ZpindexList[i][3]);
+                h_2candiHdePt->Fill(abs(bJet0->Pt()-HbPar0->Pt()));
+                h_2candiHdePt->Fill(abs(bJet1->Pt()-HbPar1->Pt()));
+                h_2candiA0dePt->Fill(abs(bJet2->Pt()-A0bPar0->Pt()));
+                h_2candiA0dePt->Fill(abs(bJet3->Pt()-A0bPar1->Pt()));
+                h_2candiHdeDeltaR->Fill(bJet0->DeltaR(*HbPar0));
+                h_2candiHdeDeltaR->Fill(bJet1->DeltaR(*HbPar1));
+                h_2candiA0deDeltaR->Fill(bJet2->DeltaR(*A0bPar0));
+                h_2candiA0deDeltaR->Fill(bJet3->DeltaR(*A0bPar1));
+                if (mindeR[0] > bJet0->DeltaR(*HbPar0)) mindeR[0]=bJet0->DeltaR(*HbPar0);
+                if (mindeR[1] > bJet1->DeltaR(*HbPar1)) mindeR[1]=bJet1->DeltaR(*HbPar1);
+                if (mindeR[2] > bJet2->DeltaR(*A0bPar0)) mindeR[2]=bJet2->DeltaR(*A0bPar0);
+                if (mindeR[3] > bJet3->DeltaR(*A0bPar1)) mindeR[3]=bJet3->DeltaR(*A0bPar1);
+                if (mindePt[0] > abs(bJet0->Pt()-HbPar0->Pt())) mindePt[0]=abs(bJet0->Pt()-HbPar0->Pt());
+                if (mindePt[1] > abs(bJet1->Pt()-HbPar1->Pt())) mindePt[1]=abs(bJet1->Pt()-HbPar1->Pt());
+                if (mindePt[2] > abs(bJet2->Pt()-A0bPar0->Pt())) mindePt[2]=abs(bJet2->Pt()-A0bPar0->Pt());
+                if (mindePt[3] > abs(bJet3->Pt()-A0bPar1->Pt())) mindePt[3]=abs(bJet3->Pt()-A0bPar1->Pt());
+            }
+            h_2candiHmindeDeltaR->Fill(mindeR[0]);
+            h_2candiHmindeDeltaR->Fill(mindeR[1]);
+            h_2candiHmindePt->Fill(mindePt[0]);
+            h_2candiHmindePt->Fill(mindePt[1]);
+            h_2candiA0mindeDeltaR->Fill(mindeR[2]);
+            h_2candiA0mindeDeltaR->Fill(mindeR[3]);
+            h_2candiA0mindePt->Fill(mindePt[2]);
+            h_2candiA0mindePt->Fill(mindePt[3]);
+        }
+        bool isH=false, isA0=false,isZp=false;
+        for (int i=0;i<ZpindexList.size();i++) {
+            TLorentzVector* bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[i][0]);
+            TLorentzVector* bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[i][1]);
+            TLorentzVector* bJet2 = (TLorentzVector*)genjetP4->At(ZpindexList[i][2]);
+            TLorentzVector* bJet3 = (TLorentzVector*)genjetP4->At(ZpindexList[i][3]);
+            float Hmass = (*bJet0+*bJet1).M();
+            float A0mass = (*bJet2+*bJet3).M();
+            float Zpmass = (*bJet0+*bJet1+*bJet2+*bJet3).M();
+            if (Hmass>110&&Hmass<140) isH=true;
+            if (A0mass<350&&A0mass>250) isA0=true;
+            if (Zpmass<900&&Zpmass>700) isZp=true;
+        }
+        if (!isH) continue;
+        nPass[4]++;
+        if (!isA0) continue;
+        nPass[5]++;
+        if (!isZp) continue;
+        nPass[6]++;
+        if (ZpindexList.size()!=1) continue;
+        nPass[7]++;
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
-    efferr(nPass[3],nTotal);
+    efferr(nPass[7],nTotal);
     string pdfName = Form("genMatch_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
     string pdfNameI = Form("genMatch_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
     string pdfNameF = Form("genMatch_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
@@ -309,6 +372,22 @@ void anbb2HDM_4genjetMatch(int w, std::string inputFile){
     h_a0Ncandi->Draw("hist");
     c1->Print(pdfName.data());
     h_zpNcandi->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiHdePt->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiA0dePt->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiHdeDeltaR->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiA0deDeltaR->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiHmindePt->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiA0mindePt->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiHmindeDeltaR->Draw("hist");
+    c1->Print(pdfName.data());
+    h_2candiA0mindeDeltaR->Draw("hist");
     c1->Print(pdfNameF.data());
     /* 
     string fileName = Form("bb2HDM_%d.root",w);
