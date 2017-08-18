@@ -309,32 +309,31 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         h_zpNcandi->Draw("hist");
         c1->Print(pdfNameF.data());
     }
-    else
-    { 
-        //string fileName = Form("bb2HDM_%d.root",w);
-        string fileName = Form("QCDbg2HDMbb_%d.root",w);
-        TFile* outputFile = new TFile(fileName.data(),"recreate");
-        h_allEvent->Write();
-        h_zpM->Write();
-        h_hM->Write();
-        h_a0M->Write();
-        h_hPt->Write();
-        h_a0Pt->Write();
-        h_hPtAs->Write();
-        h_a0PtAs->Write();
-        h_hPtSD->Write();
-        h_a0PtSD->Write();
-        h_hDeltaR->Write();
-        h_a0DeltaR->Write();
-        h_hDeltaEta->Write();
-        h_a0DeltaEta->Write();
-        h_hDeltaPhi->Write();
-        h_a0DeltaPhi->Write();
-        h_hNcandi->Write();
-        h_a0Ncandi->Write();
-        h_zpNcandi->Write();
-        outputFile->Close();
-    }
+    
+    string fileName;
+    if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
+    else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
+    TFile* outputFile = new TFile(fileName.data(),"recreate");
+    h_allEvent->Write();
+    h_zpM->Write();
+    h_hM->Write();
+    h_a0M->Write();
+    h_hPt->Write();
+    h_a0Pt->Write();
+    h_hPtAs->Write();
+    h_a0PtAs->Write();
+    h_hPtSD->Write();
+    h_a0PtSD->Write();
+    h_hDeltaR->Write();
+    h_a0DeltaR->Write();
+    h_hDeltaEta->Write();
+    h_a0DeltaEta->Write();
+    h_hDeltaPhi->Write();
+    h_a0DeltaPhi->Write();
+    h_hNcandi->Write();
+    h_a0Ncandi->Write();
+    h_zpNcandi->Write();
+    outputFile->Close();
 
 
 }
