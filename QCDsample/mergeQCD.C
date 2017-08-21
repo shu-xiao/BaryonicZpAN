@@ -4,15 +4,15 @@
 #include <TInterpreter.h>
 #include <TCanvas.h>
 #include <TString.h>
-
-#define L2016 35.9*1000 //35.9 fb^-1
+//#define L2016 35.9*1000 //35.9 fb^-1
+#define L2016 1
 using namespace std;
 float getL(int nEvent, float xs) {
     return nEvent/xs;
 }
 void mergeQCD() {
     
-    
+    bool drop = true; //drop out QCD_HT50to100    
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
     float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
@@ -27,7 +27,7 @@ void mergeQCD() {
     file[7] = TFile::Open("QCD_HT1500to2000.root");
     file[8] = TFile::Open("QCD_HT2000toInf.root");
     
-    const int nHist = 19; 
+    const int nHist = 20; 
     TH1F *hmerge[nHist];
     TH1F* th1f[9][nHist];
     vector <int> nTii, nEvent;
@@ -47,25 +47,47 @@ void mergeQCD() {
             j++;
         }
     }
-    for (int i=0;i<nHist;i++) {
-        for (int j=0;j<9;j++) {
-            if (j==0) {
-                hmerge[i] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
-                hmerge[i]->Sumw2(L2016/getL(nEvent[j],xsHTbeam[j]));
-            }
-            else hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
-        }
-    }
-    //for (int i=0;i<nTi.size();i++) cout << nTi[i] << " ";
+    
     c1->Print("QCDbg.pdf[");
     for (int i=0;i<nHist;i++) {
-        hmerge[i]->Draw("hist");
+        TH1F *h_tem[9];
+        c1->Clear();
+        bool init = true;
+        for (int j=0;j<9;j++) {
+            if (drop&&j==0) continue; 
+            if (init) {
+                hmerge[i] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
+                hmerge[i]->Sumw2();
+                hmerge[i]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
+                h_tem[j] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
+                h_tem[j]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
+                h_tem[j]->SetLineColor(99);
+                init = false;
+            }
+            else {
+                hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
+                h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
+                h_tem[j]->SetLineColor(-j*6+99);
+            }
+        }
+        int hnum = (drop)? 8:9; 
+        h_tem[8]->Draw("hist");
+        for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
         c1->Print("QCDbg.pdf");
     }
     c1->Print("QCDbg.pdf]");
+    //for (int i=0;i<nTi.size();i++) cout << nTi[i] << " ";
+    /*
+    for (int i=0;i<nHist;i++) {
+        hmerge[i]->Draw("hist");
+        th1f[0][i]->SetLineColor(4);
+        th1f[0][i]->Scale(L2016/getL(nEvent[0],xsHTbeam[0]));
+        th1f[0][i]->Draw("histsame");
+        c1->Print("QCDbg.pdf");
+    }
+    */
     TFile* output = new TFile("QCDbg.root","recreate");
     for (int i=0;i<nHist;i++) hmerge[i]->Write();
     //hmerge[0]->Write();
     output->Close();
-    cout << "finish !" << endl;
 }
