@@ -62,6 +62,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TCanvas* c1 = new TCanvas("c1","",600,600);
 
     TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
+    float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
+    TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
     
     TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,0.8);
     TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,0.8);
@@ -100,6 +102,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         // broken events
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
+        float HT = data.GetFloat("HT");
+        h_HT->Fill(HT);
         h_allEvent->Fill(1);
         //0. has a good vertex
         int nGenJet = (!isBG)? data.GetInt("ak4nGenJet"):data.GetInt("THINnJet");
@@ -261,19 +265,23 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
         h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0recoJet));
         h_zpPtSD->Fill(softDropAs(HrecoJet,A0recoJet));
+        h_zpDeltaR->Fill(abs(A0recoJet->DeltaR(*HrecoJet)));
+        h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HrecoJet->Phi()));
+        h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0recoJet->Eta()));
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
     if (!isBG) 
-    //if (false) 
     {
         string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
         string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
         string pdfNameF = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
-        h_zpM->Draw("hist");
+        h_HT->Draw("hist");
         c1->Print(pdfNameI.data());
+        h_zpM->Draw("hist");
+        c1->Print(pdfName.data());
         h_hM->Draw("hist");
         c1->Print(pdfName.data());
         h_a0M->Draw("hist");
@@ -286,21 +294,31 @@ void anbb2HDM_4jet(int w, std::string inputFile){
         c1->Print(pdfName.data());
         h_a0PtAs->Draw("hist");
         c1->Print(pdfName.data());
+        h_zpPtAs->Draw("hist");
+        c1->Print(pdfName.data());
         h_hPtSD->Draw("hist");
         c1->Print(pdfName.data());
         h_a0PtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpPtSD->Draw("hist");
         c1->Print(pdfName.data());
         h_hDeltaR->Draw("hist");
         c1->Print(pdfName.data());
         h_a0DeltaR->Draw("hist");
         c1->Print(pdfName.data());
+        h_zpDeltaR->Draw("hist");
+        c1->Print(pdfName.data());
         h_hDeltaEta->Draw("hist");
         c1->Print(pdfName.data());
         h_a0DeltaEta->Draw("hist");
         c1->Print(pdfName.data());
+        h_zpDeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
         h_hDeltaPhi->Draw("hist");
         c1->Print(pdfName.data());
         h_a0DeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpDeltaPhi->Draw("hist");
         c1->Print(pdfName.data());
         h_hNcandi->Draw("hist");
         c1->Print(pdfName.data());
@@ -315,6 +333,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
     TFile* outputFile = new TFile(fileName.data(),"recreate");
     h_allEvent->Write();
+    h_HT->Write();
     h_zpM->Write();
     h_hM->Write();
     h_a0M->Write();
@@ -322,14 +341,19 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     h_a0Pt->Write();
     h_hPtAs->Write();
     h_a0PtAs->Write();
+    h_zpPtAs->Write();
     h_hPtSD->Write();
     h_a0PtSD->Write();
+    h_zpPtSD->Write();
     h_hDeltaR->Write();
     h_a0DeltaR->Write();
+    h_zpDeltaR->Write();
     h_hDeltaEta->Write();
     h_a0DeltaEta->Write();
+    h_zpDeltaEta->Write();
     h_hDeltaPhi->Write();
     h_a0DeltaPhi->Write();
+    h_zpDeltaPhi->Write();
     h_hNcandi->Write();
     h_a0Ncandi->Write();
     h_zpNcandi->Write();
