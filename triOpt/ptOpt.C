@@ -5,16 +5,16 @@
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TAxis.h>
-//#define L2016 35.9*1000 //35.9 pb^-1
-#define L2016 1
+#define L2016 35.9*1000 //35.9 pb^-1
+//#define L2016 1
 using namespace std;
 double punzi(double sigeff, double bg) { 
-    return sigeff/(1+TMath::Power(bg,1/2));
+    return sigeff/(1+TMath::Power(bg,0.5));
 }
 double SoverB(double sig,double bg) {return sig/bg;}
 float normL(double xs=0.0004199,int nEvent=10000) {
     // xs unit: pb
-    return nEvent/xs;
+    return nEvent/xs/1000;
 }
 vector <vector<double>> getCut(TH1F* h_sig, TH1F* h_bg) {
     double nSigEvent = h_sig->Integral();
@@ -35,6 +35,7 @@ vector <vector<double>> getCut(TH1F* h_sig, TH1F* h_bg) {
         effiR.push_back(event[1][0]/nSigEvent);
         punziListF.push_back(punzi(event[0][0]/nSigEvent,event[0][1]));
         punziListR.push_back(punzi(event[1][0]/nSigEvent,event[1][1]));
+        //cout << effiF[i] << "\t" <<punziListF[i] << "\t" << event[0][1] << "\t" << TMath::Power(event[0][1],0.5)<< endl;
         //punziListF.push_back(SoverB(event[0][0],event[0][1]));
         //punziListR.push_back(SoverB(event[1][0],event[1][1]));
         //cout << "sig: " << event[1][0] << "\tbg: " << event[1][1] << "\tpz: " << punziListR[i] << endl;
@@ -97,11 +98,9 @@ void ptOpt() {
         
         
         c1->Clear();
-        //TH1F* h_ptsig = (TH1F*) f_signal->Get("h_higgsPt");    
-        //TH1F* h_ptbg = (TH1F*) f_bg->Get("h_higgsPt");
-        //h_ptsig->Scale(L2016/normL());
-        //h_ptsig->Scale(1/h_ptsig->Integral());
-        //h_ptbg->Scale(1/h_ptbg->Integral());
+        h_sig[i]->Scale(L2016/normL());
+        //h_sig[i]->Scale(1/h_sig[i]->Integral());
+        //h_bg[i]->Scale(1/h_bg[i]->Integral());
         float hMax = (h_sig[i]->GetMaximum()>h_bg[i]->GetMaximum()) ? h_sig[i]->GetMaximum() :h_bg[i]->GetMaximum() ;
         h_sig[i]->SetMaximum(hMax*1.1);
         h_sig[i]->SetLineColor(4);
@@ -135,6 +134,7 @@ void ptOpt() {
         TGraph *tg_punziR = new TGraph(nBin,&info[0][0],&info[4][0]);
         tg_ptsig->Draw("AB");
         */
+        c1->Update();
         Float_t rightmax = 1.1*h_effiF->GetMaximum();
         Float_t scale    = gPad->GetUymax()/rightmax;
         h_effiF->SetLineColor(kRed);
@@ -147,15 +147,18 @@ void ptOpt() {
         axis->SetLabelColor(kRed);
         axis->Draw();
         
-        int lineColor2 = 91;
+        c1->Update();
+        int lineColor2 = 51;
         Float_t rightmax2 = 1.1*h_punziF->GetMaximum();
+        cout << rightmax2 << endl;
         Float_t scale2    = gPad->GetUymax()/rightmax2;
         h_punziF->SetLineColor(lineColor2);
         h_punziF->SetLineWidth(1);
         h_punziF->Scale(scale2);
         h_punziF->Draw("histsame");
         //draw an axis on the right side
-        TGaxis* axis2 = new TGaxis(gPad->GetUxmax()*0.9,gPad->GetUymin(),gPad->GetUxmax()*0.9,gPad->GetUymax(),0,rightmax,510,"+L");
+        float xaxisPosition = (gPad->GetUxmax()-gPad->GetUxmin())*0.9+gPad->GetUxmin();
+        TGaxis* axis2 = new TGaxis(xaxisPosition,gPad->GetUymin(),xaxisPosition,gPad->GetUymax(),0,rightmax2,510,"+L");
         axis2->SetLineColor(lineColor2);
         axis2->SetLabelColor(lineColor2);
         axis2->Draw();

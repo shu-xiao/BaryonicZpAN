@@ -4,15 +4,15 @@
 #include <TInterpreter.h>
 #include <TCanvas.h>
 #include <TString.h>
-//#define L2016 35.9*1000 //35.9 fb^-1
-#define L2016 1
+#define L2016 35.9*1000 //35.9 fb^-1
+//#define L2016 1
 using namespace std;
 float getL(int nEvent, float xs) {
     return nEvent/xs;
 }
 void mergeQCD() {
     
-    bool drop = false; //drop out QCD_HT50to100    
+    bool drop = true; //drop out QCD_HT50to100    
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
     float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
@@ -28,10 +28,12 @@ void mergeQCD() {
     file[8] = TFile::Open("QCD_HT2000toInf.root");
     
     const int nHist = 20; 
-    TH1F *hmerge[nHist];
+    TH1F* hmerge[nHist];
     TH1F* th1f[9][nHist];
+    TH1F* h_HTmerge = new TH1F();
+    h_HTmerge->Sumw2();
     vector <int> nTii, nEvent;
-     
+    int HTindex = -1; 
     for (int i=0;i<9;i++) {
         TIter keyList(file[i]->GetListOfKeys()); 
         TKey *key;
@@ -44,10 +46,11 @@ void mergeQCD() {
             if ( hName.Contains("h_allEvent")) {
                 nEvent.push_back(th1f[i][j]->GetEntries());
             }
+            if (hName.Contains("h_HT")) HTindex = j;
             j++;
         }
     }
-    
+    cout << HTindex << endl;
     TString outputName = (drop)? "QCDbg":"QCDbg_whole";
     c1->Print((outputName+".pdf[").Data());
     for (int i=0;i<nHist;i++) {
@@ -70,12 +73,19 @@ void mergeQCD() {
                 h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
                 h_tem[j]->SetLineColor(-j*6+99);
             }
+            if (i==HTindex) {
+                //h_HTmerge->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
+            }
         }
         int hnum = (drop)? 8:9; 
         h_tem[8]->Draw("hist");
+        if (i==HTindex||i==0) c1->SetLogy();
+        else c1->SetLogy(0);
         for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
         c1->Print((outputName+".pdf").Data());
     }
+    //h_HTmerge->Draw("hist");
+    //c1->Print((outputName+".pdf").Data());
     c1->Print((outputName+".pdf]").Data());
     //for (int i=0;i<nTi.size();i++) cout << nTi[i] << " ";
     /*
