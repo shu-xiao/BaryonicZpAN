@@ -12,7 +12,7 @@ float getL(int nEvent, float xs) {
 }
 void mergeQCD() {
     
-    bool drop = true; //drop out QCD_HT50to100    
+    bool drop = false; //drop out QCD_HT50to100    
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
     float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
@@ -48,7 +48,8 @@ void mergeQCD() {
         }
     }
     
-    c1->Print("QCDbg.pdf[");
+    TString outputName = (drop)? "QCDbg":"QCDbg_whole";
+    c1->Print((outputName+".pdf[").Data());
     for (int i=0;i<nHist;i++) {
         TH1F *h_tem[9];
         c1->Clear();
@@ -73,9 +74,9 @@ void mergeQCD() {
         int hnum = (drop)? 8:9; 
         h_tem[8]->Draw("hist");
         for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
-        c1->Print("QCDbg.pdf");
+        c1->Print((outputName+".pdf").Data());
     }
-    c1->Print("QCDbg.pdf]");
+    c1->Print((outputName+".pdf]").Data());
     //for (int i=0;i<nTi.size();i++) cout << nTi[i] << " ";
     /*
     for (int i=0;i<nHist;i++) {
@@ -86,7 +87,8 @@ void mergeQCD() {
         c1->Print("QCDbg.pdf");
     }
     */
-    TFile* output = new TFile("QCDbg.root","recreate");
+    
+    TFile* output = new TFile((outputName+".root").Data(),"recreate");
     for (int i=0;i<nHist;i++) hmerge[i]->Write();
     //hmerge[0]->Write();
     output->Close();
