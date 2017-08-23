@@ -86,13 +86,13 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     
     TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
     TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
-    TH1F* h_zpDeltaR = new TH1F("h_zptobbDeltaR", "h_zptobbDeltaR_reco", 40,0,4);
-    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbdeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
-    TH1F* h_a0DeltaEta = new TH1F("h_A0tobbdeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
-    TH1F* h_zpDeltaEta = new TH1F("h_ZptobbdeltaEta", "h_ZptobbDeltaEta_reco", 40,0,4);
-    TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbdeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_a0DeltaPhi = new TH1F("h_A0tobbdeltaPhi", "h_A0obbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_zpDeltaPhi = new TH1F("h_ZptobbdeltaPhi", "h_ZptobbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_zpDeltaR = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 40,0,4);
+    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
+    TH1F* h_a0DeltaEta = new TH1F("h_A0tobbDeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
+    TH1F* h_zpDeltaEta = new TH1F("h_ZptoHA0DeltaEta", "h_ZptoHA0DeltaEta_reco", 40,0,4);
+    TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbDeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_a0DeltaPhi = new TH1F("h_A0tobbDeltaPhi", "h_A0obbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_zpDeltaPhi = new TH1F("h_ZptoHA0DeltaPhi", "h_ZptoHA0DeltaPhi_reco", 32,0,3.2);
     
     Int_t nPass[20]={0};
     

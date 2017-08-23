@@ -5,7 +5,7 @@
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TAxis.h>
-#define L2016 35.9*1000 //35.9 pb^-1
+#define L2016 35.9*1000 //35.9 fb^-1 = 35900 pb^-1
 //#define L2016 1
 using namespace std;
 double punzi(double sigeff, double bg) { 
@@ -14,7 +14,7 @@ double punzi(double sigeff, double bg) {
 double SoverB(double sig,double bg) {return sig/bg;}
 float normL(double xs=0.0004199,int nEvent=10000) {
     // xs unit: pb
-    return nEvent/xs/1000;
+    return nEvent/xs; // pb^-1
 }
 vector <vector<double>> getCut(TH1F* h_sig, TH1F* h_bg) {
     double nSigEvent = h_sig->Integral();
@@ -51,13 +51,6 @@ vector <vector<double>> getCut(TH1F* h_sig, TH1F* h_bg) {
         }
 
     }
-    /*
-    TGraph *tg = new TGraph(nBin,&binCentral[0],&punziListF[0]);
-    TCanvas* c2 = new TCanvas("c2","c2",800,600);
-    tg->Draw("AP*");
-    c2->SaveAs("pz.png");
-    */
-    //return {h_sig->GetBinCenter(maxIndex[0]),h_sig->GetBinCenter(maxIndex[1])};
     return {binCentral, effiF, effiR, punziListF, punziListR};
 }
 void ptOpt() {
@@ -72,7 +65,7 @@ void ptOpt() {
     
     // get histogram name list
 
-    const int nHist = 19; 
+    const int nHist = 25; 
     TH1F *h_sig[nHist], *h_bg[nHist];
     TString hname[nHist];
     TIter keyList(f_signal->GetListOfKeys()); 
@@ -82,11 +75,17 @@ void ptOpt() {
         TClass *cl = gROOT->GetClass(key->GetClassName());
         if (!cl->InheritsFrom("TH1")) continue;
         h_sig[j] = (TH1F*)key->ReadObj();
+        if (h_sig[j]==0) cout << hname[j] << "cannot be loaded from signal root file" << endl;
         hname[j] = h_sig[j]->GetName();
-        if (hname[j].Contains("h_HT")) {
-            continue;
-        }
+        if (hname[j].Contains("h_ZptoHA0DeltaR")) hname[j] = "h_zptobbDeltaR";
+        if (hname[j].Contains("h_HiggstobbDeltaEta")) hname[j] = "h_HiggstobbdeltaEta";
+        if (hname[j].Contains("h_HiggstobbDeltaPhi")) hname[j] = "h_HiggstobbdeltaPhi";
+        if (hname[j].Contains("h_A0tobbDeltaPhi")) hname[j] = "h_A0tobbdeltaPhi";
+        if (hname[j].Contains("h_A0tobbDeltaEta")) hname[j] = "h_A0tobbdeltaEta";
+        if (hname[j].Contains("h_ZptoHA0DeltaEta")) hname[j] = "h_ZptobbdeltaEta";
+        if (hname[j].Contains("h_ZptoHA0DeltaPhi")) hname[j] = "h_ZptobbdeltaPhi";
         h_bg[j] = (TH1F*)f_bg->Get(hname[j].Data());
+        if (h_bg[j] == 0) cout << hname[j] << " cannot find matching figure in background root file" << endl;
         j++;
     }
     
@@ -96,16 +95,12 @@ void ptOpt() {
     TH1F *h_effiF, *h_effiR, *h_punziF, *h_punziR;
     for (int i=0; i<nHist;i++) {
         
-        
         c1->Clear();
         h_sig[i]->Scale(L2016/normL());
         //h_sig[i]->Scale(1/h_sig[i]->Integral());
         //h_bg[i]->Scale(1/h_bg[i]->Integral());
-        float hMax = (h_sig[i]->GetMaximum()>h_bg[i]->GetMaximum()) ? h_sig[i]->GetMaximum() :h_bg[i]->GetMaximum() ;
-        h_sig[i]->SetMaximum(hMax*1.1);
         h_sig[i]->SetLineColor(4);
-        h_sig[i]->Draw("hist");
-        h_bg[i]->Draw("histsame");
+        h_bg[i]->Draw("hist");
         c1->Update();
 
         vector<vector<double>> info  = getCut(h_sig[i],h_bg[i]);
@@ -121,56 +116,46 @@ void ptOpt() {
             h_punziF->SetBinContent(i,info[3][i]);
             h_punziR->SetBinContent(i,info[4][i]);
         }
-        /*
-        c2->cd();
-        h_punziF->Draw("hist");
-        c1->cd();
-        //h_effiF->Draw("hist");
-        TGraph *tg_ptsig = new TGraph(h_sig[i]);
-        TGraph *tg_ptbg = new TGraph(h_bg[i]);
-        TGraph *tg_effiF = new TGraph(nBin,&info[0][0],&info[1][0]);
-        TGraph *tg_effiR = new TGraph(nBin,&info[0][0],&info[2][0]);
-        TGraph *tg_punziF = new TGraph(nBin,&info[0][0],&info[3][0]);
-        TGraph *tg_punziR = new TGraph(nBin,&info[0][0],&info[4][0]);
-        tg_ptsig->Draw("AB");
-        */
         c1->Update();
+        
+        Float_t rightmax3 = 1.1*h_punziF->GetMaximum();
+        Float_t scale3    = gPad->GetUymax()/rightmax3;
+        h_punziF->SetLineColor(51);
+        h_punziF->SetLineWidth(2);
+        h_punziF->Scale(scale3);
+        h_punziF->Draw("histsame");
+        c1->Update();
+        
         Float_t rightmax = 1.1*h_effiF->GetMaximum();
         Float_t scale    = gPad->GetUymax()/rightmax;
         h_effiF->SetLineColor(kRed);
-        h_effiF->SetLineWidth(3);
+        h_effiF->SetLineWidth(1);
         h_effiF->Scale(scale);
         h_effiF->Draw("histsame");
         //draw an axis on the right side
         TGaxis* axis = new TGaxis(gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(),gPad->GetUymax(),0,rightmax,510,"+L");
         axis->SetLineColor(kRed);
         axis->SetLabelColor(kRed);
-        axis->Draw();
         
-        c1->Update();
-        int lineColor2 = 51;
-        Float_t rightmax2 = 1.1*h_punziF->GetMaximum();
-        cout << rightmax2 << endl;
+        
+        h_bg[i]->Draw("histsame");
+
+        int lineColor2 = 4;
+        Float_t rightmax2 = 1.1*h_sig[i]->GetMaximum();
         Float_t scale2    = gPad->GetUymax()/rightmax2;
-        h_punziF->SetLineColor(lineColor2);
-        h_punziF->SetLineWidth(1);
-        h_punziF->Scale(scale2);
-        h_punziF->Draw("histsame");
+        h_sig[i]->SetLineColor(lineColor2);
+        h_sig[i]->SetLineWidth(3);
+        h_sig[i]->Scale(scale2);
+        h_sig[i]->Draw("histsame");
         //draw an axis on the right side
         float xaxisPosition = (gPad->GetUxmax()-gPad->GetUxmin())*0.9+gPad->GetUxmin();
         TGaxis* axis2 = new TGaxis(xaxisPosition,gPad->GetUymin(),xaxisPosition,gPad->GetUymax(),0,rightmax2,510,"+L");
         axis2->SetLineColor(lineColor2);
         axis2->SetLabelColor(lineColor2);
+        axis->Draw();
         axis2->Draw();
-        h_bg[i]->Draw("histsame");
-        h_sig[i]->Draw("histsame");
         cout << "i = " << i << "\thName = " << hname[i] << endl;
         c1->Print(pdfName.Data());
     }
     c1->Print((pdfName+"]").Data());
-    /*
-    vector <double> window = getCut(h_ptsig,h_ptbg);
-    cout << "integral:" << h_ptsig->Integral() << endl;
-    cout << "window range: " << window[0] << " ~ " << window[1] << endl;
-    */
 }

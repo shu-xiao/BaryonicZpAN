@@ -27,7 +27,7 @@ void mergeQCD() {
     file[7] = TFile::Open("QCD_HT1500to2000.root");
     file[8] = TFile::Open("QCD_HT2000toInf.root");
     
-    const int nHist = 20; 
+    const int nHist = 25; 
     TH1F* hmerge[nHist];
     TH1F* th1f[9][nHist];
     TH1F* h_HTmerge = new TH1F();
