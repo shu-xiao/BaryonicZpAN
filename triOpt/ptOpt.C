@@ -5,6 +5,7 @@
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TAxis.h>
+#include <TLegend.h>
 #define L2016 35.9*1000 //35.9 fb^-1 = 35900 pb^-1
 //#define L2016 1
 using namespace std;
@@ -155,6 +156,21 @@ void ptOpt() {
         axis->Draw();
         axis2->Draw();
         cout << "i = " << i << "\thName = " << hname[i] << endl;
+        
+        if (i==0) {
+            TCanvas* c2 = new TCanvas("c2","c2",800,600);
+            c2->cd();
+            TLegend *legend = new TLegend(0.2,0.3,0.8,0.7);
+            legend->SetHeader("The explanation for following figures","C");
+            legend->AddEntry(h_sig[i],"signal");
+            legend->AddEntry(h_bg[i],"QCD background");
+            legend->AddEntry(h_effiF,"efficiency vary with threshold");
+            legend->AddEntry(h_punziF,"punzi value vary with threshold without axis");
+            legend->Draw();
+            c2->Print(pdfName.Data());
+            delete c2;
+        }
+        
         c1->Print(pdfName.Data());
     }
     c1->Print((pdfName+"]").Data());
