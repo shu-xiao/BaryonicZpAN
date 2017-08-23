@@ -54,6 +54,7 @@ vector <vector<double>> getCut(TH1F* h_sig, TH1F* h_bg) {
     }
     return {binCentral, effiF, effiR, punziListF, punziListR};
 }
+void gpd() {cout << gPad->GetUymax() << "te"<< endl; }
 void ptOpt() {
     gStyle->SetStatY(0.9);
     gStyle->SetStatX(0.85);
@@ -94,12 +95,14 @@ void ptOpt() {
     TString pdfName = "optimize.pdf";
     c1->Print((pdfName+"[").Data());
     TH1F *h_effiF, *h_effiR, *h_punziF, *h_punziR;
+    vector<TString> hLogList = {"h_HT"};
     for (int i=0; i<nHist;i++) {
         
         c1->Clear();
+        bool setlog = false;
+        for (int ee=0;ee<hLogList.size();ee++) if (hname[i].Contains(hLogList[ee].Data())) setlog = true;
+        c1->SetLogy(setlog);
         h_sig[i]->Scale(L2016/normL());
-        //h_sig[i]->Scale(1/h_sig[i]->Integral());
-        //h_bg[i]->Scale(1/h_bg[i]->Integral());
         h_sig[i]->SetLineColor(4);
         h_bg[i]->Draw("hist");
         c1->Update();
@@ -148,6 +151,7 @@ void ptOpt() {
         h_sig[i]->SetLineWidth(3);
         h_sig[i]->Scale(scale2);
         h_sig[i]->Draw("histsame");
+        
         //draw an axis on the right side
         float xaxisPosition = (gPad->GetUxmax()-gPad->GetUxmin())*0.9+gPad->GetUxmin();
         TGaxis* axis2 = new TGaxis(xaxisPosition,gPad->GetUymin(),xaxisPosition,gPad->GetUymax(),0,rightmax2,510,"+L");
@@ -170,7 +174,7 @@ void ptOpt() {
             c2->Print(pdfName.Data());
             delete c2;
         }
-        
+        gpd();
         c1->Print(pdfName.Data());
     }
     c1->Print((pdfName+"]").Data());
