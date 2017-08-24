@@ -64,6 +64,7 @@ void mergeQCD() {
                 hmerge[i]->Sumw2();
                 hmerge[i]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
                 h_tem[j] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
+                h_tem[j]->Sumw2();
                 h_tem[j]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
                 h_tem[j]->SetLineColor(99);
                 init = false;
