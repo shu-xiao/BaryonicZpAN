@@ -62,8 +62,9 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TCanvas* c1 = new TCanvas("c1","",600,600);
 
     TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
-    float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
-    TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
+    //float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
+    //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
+    TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
     TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,0.8);
     TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,0.8);
