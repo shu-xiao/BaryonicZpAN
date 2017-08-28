@@ -134,9 +134,11 @@ void ptOpt() {
         
         cout << "i = " << i << "\thName = " << hname[i] << endl;
         vector<TH1F*> h_copy(2);
+        TString suffix[2] = {"_lower","_higher"};
         for (int ee=0;ee<2;ee++) h_copy[ee] = (TH1F*)h_sig[i]->Clone("h_copy");
         for (j=0;j<2;j++) {
             c1->Clear();
+            h_bg[i]->SetTitle((hname[i]+suffix[j]).Data());
             h_bg[i]->Draw("hist");
             c1->Update();
             setHist(h_punzi[j],51);
