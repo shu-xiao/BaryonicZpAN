@@ -104,13 +104,15 @@ void ptOpt() {
     }
     
     // draw for all figures
+    TH1D *h_allpunzi[2];
+    h_allpunzi[0] = new TH1D("h_allpunzi","h_allpunzi",nHist,0,nHist);
+    h_allpunzi[1] = new TH1D("h_allpunzi","h_allpunzi",nHist,0,nHist);
     TString pdfName = "optimize.pdf";
     vector <TH1F*> h_effi(2), h_punzi(2);
     TH1F *h_effiF, *h_effiR, *h_punziF, *h_punziR;
     vector<TString> hLogList = {"h_HT"};
     c1->Print((pdfName+"[").Data());
     for (int i=0; i<nHist;i++) {
-        
         bool setlog = false;
         for (int ee=0;ee<hLogList.size();ee++) if (hname[i].Contains(hLogList[ee].Data())) setlog = true;
         c1->SetLogy(setlog);
@@ -119,6 +121,8 @@ void ptOpt() {
         c1->Update();
 
         vector<vector<double>> info  = getCut(h_sig[i],h_bg[i]);
+        h_allpunzi[0]->Fill(hname[i].Data(),*max_element(info[3].begin(),info[3].end()));
+        h_allpunzi[1]->Fill(hname[i].Data(),*max_element(info[4].begin(),info[4].end()));
         int nBin = info[0].size();
         float binW = (info[0][1]-info[0][0]);
         h_effi[0] = new TH1F("h_effiLower","h_effiLower",nBin,info[0][0]-binW/2,info[0][nBin-1]+binW/2);
@@ -131,7 +135,7 @@ void ptOpt() {
             h_punzi[0]->SetBinContent(i,info[3][i]);
             h_punzi[1]->SetBinContent(i,info[4][i]);
         }
-        
+        // plot lower and higer
         cout << "i = " << i << "\thName = " << hname[i] << endl;
         vector<TH1F*> h_copy(2);
         TString suffix[2] = {"_lower","_higher"};
@@ -163,4 +167,23 @@ void ptOpt() {
         }
     }
     c1->Print((pdfName+"]").Data());
+
+    h_allpunzi[0]->SetLineWidth(2);
+    h_allpunzi[0]->SetMaximum(h_allpunzi[1]->GetMaximum()*1.1);
+    h_allpunzi[1]->SetLineWidth(2);
+    h_allpunzi[0]->LabelsOption("v");
+    h_allpunzi[0]->SetFillStyle(3004);
+    h_allpunzi[1]->SetFillStyle(3005);
+    h_allpunzi[0]->SetFillColor(4);
+    h_allpunzi[0]->SetLineColor(4);
+    h_allpunzi[1]->SetFillColor(2);
+    h_allpunzi[1]->SetLineColor(2);
+    c1->SetBottomMargin(0.25);
+    h_allpunzi[0]->Draw("hist");
+    h_allpunzi[1]->Draw("histsame");
+    TLegend *legend = new TLegend(0.7,0.8,0.9,0.9);
+    legend->AddEntry(h_allpunzi[0],"lower pass");
+    legend->AddEntry(h_allpunzi[1],"higher pass");
+    legend->Draw();
+    c1->Print("punziToAllVar.pdf");
 }
