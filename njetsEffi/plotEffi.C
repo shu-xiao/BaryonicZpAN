@@ -30,29 +30,29 @@ void plotEffi() {
         gr[i] = new TGraphAsymmErrors();
     }
     TMultiGraph *mg = new TMultiGraph();
-    int xbin[8] = {1,2,3,4,5,6,8,9};
+    int xbin[8] = {1,2,3,4,5,6,8,10};
     int nPass[8], nFail[8];
-    c1->Print("effi.pdf[");
     for (int j=0;j<3;j++) {
         for (int i=0;i<8;i++ ) { 
             if (j==1&&i==7) continue;
-            nPass[i] = (int)(strtof((effi[1][i]).c_str(),0)*10000);
+            nPass[i] = (int)(strtof((effi[j][i]).c_str(),0)*10000);
             nFail[i] = 10000 - nPass[i];
             h_pass[j]->SetBinContent(xbin[i],nPass[i]);
             h_all[j]->SetBinContent(xbin[i],10000);
         }
         gr[j]->BayesDivide(h_pass[j],h_all[j]);
         gr[j]->SetMarkerStyle(20);
+        gr[j]->SetLineWidth(1);
+        gr[j]->SetLineColor(j+2);
         gr[j]->SetMarkerColor(j+2);
+        gr[j]->SetTitle(Form("%d jets",j+2));
         gr[j]->Draw("ALP");
         mg->Add(gr[j]);
-        c1->Print("effi.pdf");
-        c1->Clear();
-        //delete h_pass[j];
-        //delete h_all[j];
     }
-    c1->Print("effi.pdf]");
     mg->Draw("ALP");
-    c1->Update();
-    //for (int i=0;i<8;i++){cout<<effi[1][i]<<endl;}
+    mg->SetTitle("efficiency with different analysis");
+    mg->GetXaxis()->SetTitle("MZp");
+    mg->GetYaxis()->SetTitle("Efficiency");
+    c1->BuildLegend(0.7,0.8,0.9,0.9,"","LP");
+    c1->Print("effi.pdf");
 }
