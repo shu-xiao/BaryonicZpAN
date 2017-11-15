@@ -268,15 +268,10 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         //if (ZpindexList.size()!=1) continue;
         nPass[4]++;
         if (h1a02) {
-            h_zpNcandi_h1a02->Fill(ZpindexList.size())
-            TLorentzVector* HbJet = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
-            h_hM->Fill(HbJet0->M();
-            h_hPt->Fill(HbJet0->Pt());
-            //h_hPtAs->Fill(ptAssymetry(HbJet0,HbJet1));
-            //h_hPtSD->Fill(softDropAs(HbJet0,HbJet1));
-            //h_hDeltaR->Fill(HbJet0->DeltaR(*HbJet1));
-            //h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
-            //h_hDeltaEta->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
+            h_zpNcandi_h1a02->Fill(ZpindexList.size());
+            TLorentzVector* HbJet = (TLorentzVector*)genak8jetP4->At(ZpindexList[0][0]);
+            h_hM->Fill(HbJet->M());
+            h_hPt->Fill(HbJet->Pt());
             
             TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
             TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
@@ -288,20 +283,19 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_a0DeltaPhi->Fill(caldePhi(A0bJet0->Phi(),A0bJet1->Phi()));
             h_a0DeltaEta->Fill(abs(A0bJet0->Eta()-A0bJet1->Eta()));
             
-            TLorentzVector* A0recoJet = new TLorentzVector(), *HrecoJet = new TLorentzVector();
+            TLorentzVector* A0recoJet = new TLorentzVector();
             *A0recoJet = *A0bJet0 + *A0bJet1;
-            *HrecoJet = *HbJet0 +*HbJet1;
-            h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
-            h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0recoJet));
-            h_zpPtSD->Fill(softDropAs(HrecoJet,A0recoJet));
-            h_zpDeltaR->Fill(abs(A0recoJet->DeltaR(*HrecoJet)));
-            h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HrecoJet->Phi()));
-            h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0recoJet->Eta()));
+            h_zpM->Fill((*HbJet+*A0bJet0+*A0bJet1).M());
+            h_zpPtAs->Fill(ptAssymetry(HbJet,A0recoJet));
+            h_zpPtSD->Fill(softDropAs(HbJet,A0recoJet));
+            h_zpDeltaR->Fill(abs(A0recoJet->DeltaR(*HbJet)));
+            h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HbJet->Phi()));
+            h_zpDeltaEta->Fill(abs(HbJet->Eta()-A0recoJet->Eta()));
         }
         if (h2a01) {
-            h_zpNcandi_h2a01->Fill(ZpindexList1.size())
-            TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
-            TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
+            h_zpNcandi_h2a01->Fill(ZpindexList2.size());
+            TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList2[0][0]);
+            TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList2[0][1]);
             h_hM->Fill((*HbJet0+*HbJet1).M());
             h_hPt->Fill((*HbJet0+*HbJet1).Pt());
             h_hPtAs->Fill(ptAssymetry(HbJet0,HbJet1));
@@ -310,25 +304,18 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
             h_hDeltaEta->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
             
-            TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
-            TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
-            h_a0M->Fill((*A0bJet0+*A0bJet1).M());
-            h_a0Pt->Fill((*A0bJet0+*A0bJet1).Pt());
-            h_a0PtAs->Fill(ptAssymetry(A0bJet0,A0bJet1));
-            h_a0PtSD->Fill(softDropAs(A0bJet0,A0bJet1));
-            h_a0DeltaR->Fill(A0bJet0->DeltaR(*A0bJet1));
-            h_a0DeltaPhi->Fill(caldePhi(A0bJet0->Phi(),A0bJet1->Phi()));
-            h_a0DeltaEta->Fill(abs(A0bJet0->Eta()-A0bJet1->Eta()));
+            TLorentzVector* A0bJet = (TLorentzVector*)genak8jetP4->At(ZpindexList2[0][2]);
+            h_a0M->Fill(A0bJet->M());
+            h_a0Pt->Fill(A0bJet->Pt());
             
-            TLorentzVector* A0recoJet = new TLorentzVector(), *HrecoJet = new TLorentzVector();
-            *A0recoJet = *A0bJet0 + *A0bJet1;
+            TLorentzVector* HrecoJet = new TLorentzVector();
             *HrecoJet = *HbJet0 +*HbJet1;
-            h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
-            h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0recoJet));
-            h_zpPtSD->Fill(softDropAs(HrecoJet,A0recoJet));
-            h_zpDeltaR->Fill(abs(A0recoJet->DeltaR(*HrecoJet)));
-            h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HrecoJet->Phi()));
-            h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0recoJet->Eta()));
+            h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet).M());
+            h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0bJet));
+            h_zpPtSD->Fill(softDropAs(HrecoJet,A0bJet));
+            h_zpDeltaR->Fill(abs(A0bJet->DeltaR(*HrecoJet)));
+            h_zpDeltaPhi->Fill(caldePhi(A0bJet->Phi(),HrecoJet->Phi()));
+            h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0bJet->Eta()));
         }
     } // end of loop over entries
     
