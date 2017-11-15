@@ -105,7 +105,9 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         
         // broken events
         data.GetEntry(jEntry);
-        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (jEntry %1000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (jEntry!=232) continue;
+        cout << "j=" << jEntry << endl; 
         //if (jEntry>5317) cout << jEntry << endl;
         //if (jEntry==5317) continue;
         int nGenJet = (!isBG)? data.GetInt("ak4nGenJet"):data.GetInt("THINnJet");
@@ -130,7 +132,6 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         const int nCandidates = 200;
         vector<vector<float>> HindexList, A0indexList, ZpindexList;
         vector<vector<float>> HindexList2, A0indexList2, ZpindexList2;
-        cout << HindexList.size() << endl;
         /*
         vector<float> row(5,-99);
         HindexList.assign(nCandidates,row);
@@ -142,41 +143,43 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         */
         // reco higgs
         bool h1a02 = false, h2a01 = false;
+        for(int j=0; j < nGenak8Jet; j++) {
+            TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
+            if(upeff && thisak8Jet->Pt()<30)continue;
+            if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
+            if (ak8GenJetMSD[j]<140 && ak8GenJetMSD[j]>110) {
+                h1a02=true;
+                HindexList2.push_back({(float)j,-1,(float)thisak8Jet->Pt()});
+                //HindexList2[jList][0] = j;
+                //HindexList2[jList][2] = thisak8Jet->Pt();
+                //jList++;
+            }
+        }
         for(int ij=0, iList=0, jList=0; ij < nGenJet; ij++) {
-            for(int j=0; j < nGenak8Jet; j++) {
-                TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
-                TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
-                if(upeff && thisJet->Pt()<30)continue;
-                if(upeff && fabs(thisJet->Eta())>2.4)continue;
-                if (ak8GenJetMSD[ij]<140 && ak8GenJetMSD[ij]>110) {
-                    h1a02=true;
-                    HindexList2.push_back({(float)j,-1,(float)thisak8Jet->Pt()});
-                    //HindexList2[jList][0] = j;
-                    //HindexList2[jList][2] = thisak8Jet->Pt();
-                    //jList++;
-                }
-                for (int jj=0;jj<j;jj++) {
-                    TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
-                    if(upeff && thatJet->Pt()<30)continue;
-                    if(upeff && fabs(thatJet->Eta())>2.4)continue;
-                    float diJetM = (*thisJet+*thatJet).M();
-                    if (diJetM>140||diJetM<110) continue;
-                    HindexList.push_back({(float)j,(float)jj,(float)(*thisJet+*thatJet).Pt()});
-                    cout << HindexList.size() << endl;
-                    /*
-                    HindexList[iList][0] = j;
-                    HindexList[iList][1] = jj;
-                    HindexList[iList][2] = (*thisJet+*thatJet).Pt();
-                    
-                    iList++;
-                    */
-                    h2a01=true;
-                    //if (abs(thisJet->Eta()-thatJet->Eta())>1.0) continue;
-                    //if ((*thisJet+*thatJet).Pt()>HptMax) {
-                    //}
-                }
+            TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+            if(upeff && thisJet->Pt()<30)continue;
+            if(upeff && fabs(thisJet->Eta())>2.4)continue;
+            for (int jj=0;jj<ij;jj++) {
+                TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
+                if(upeff && thatJet->Pt()<30)continue;
+                if(upeff && fabs(thatJet->Eta())>2.4)continue;
+                float diJetM = (*thisJet+*thatJet).M();
+                if (diJetM>140||diJetM<110) continue;
+                HindexList.push_back({(float)ij,(float)jj,(float)(*thisJet+*thatJet).Pt()});
+                /*
+                HindexList[iList][0] = j;
+                HindexList[iList][1] = jj;
+                HindexList[iList][2] = (*thisJet+*thatJet).Pt();
+                
+                iList++;
+                */
+                h2a01=true;
+                //if (abs(thisJet->Eta()-thatJet->Eta())>1.0) continue;
+                //if ((*thisJet+*thatJet).Pt()>HptMax) {
+                //}
             }
         } // end of outer loop jet
+        cout << "HHH" << endl;
         if (HindexList.size()>0) sort(HindexList.begin(),HindexList.end(),sortListbyPt);
         if (HindexList2.size()>0) sort(HindexList2.begin(),HindexList2.end(),sortListbyPt);
         h_hNcandi1->Fill(HindexList2.size());
@@ -185,26 +188,31 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         nPass[1]++;
         
         // reco A0
-        for(int ij=0, iList=0,jList=0; ij < nGenJet; ij++) {
-            for(int j=0; j < nGenak8Jet; j++) {
-                TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+        if (h2a01) {
+            for(int j=0; j < nGenak8Jet; j++) {                 // ak8 jet
                 TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
-                if(upeff && thisJet->Pt()<30)continue;
-                if(upeff && fabs(thisJet->Eta())>2.4)continue;
-                if (h2a01&&ak8GenJetMSD[ij]<(A0mass.Atof()+50)&&ak8GenJetMSD[ij]>(A0mass.Atof()-50)) {
+                if(upeff && thisak8Jet->Pt()<30)continue;
+                if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
+                if (ak8GenJetMSD[j]<(A0mass.Atof()+50)&&ak8GenJetMSD[j]>(A0mass.Atof()-50)) {
                     //A0indexList2[jList][0] = ij;
                     //A0indexList2[jList][2] = thisak8Jet->Pt();
                     //jList++;
-                    A0indexList2.push_back({(float)ij,-1,(float)thisak8Jet->Pt()});
+                    A0indexList2.push_back({(float)j,-1,(float)thisak8Jet->Pt()});
                 }
-                if (!h1a02) continue;
-                for (int jj=0;jj<j;jj++) {
+            }
+        }
+        if (h1a02) {
+            for(int ij=0, iList=0,jList=0; ij < nGenJet; ij++) {    // ak4 jet
+                TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+                if(upeff && thisJet->Pt()<30)continue;
+                if(upeff && fabs(thisJet->Eta())>2.4)continue;
+                for (int jj=0;jj<ij;jj++) {
                     TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
                     if(upeff && thatJet->Pt()<30) continue;
                     if(upeff && fabs(thatJet->Eta())>2.4) continue;
                     float diJetM = (*thisJet+*thatJet).M();
                     if (diJetM>(A0mass.Atof()+50)||diJetM<(A0mass.Atof()-50)) continue;
-                    A0indexList.push_back({(float)j,(float)jj,(float)(*thisJet+*thisJet).Pt()});
+                    A0indexList.push_back({(float)ij,(float)jj,(float)(*thisJet+*thisJet).Pt()});
                     
                     //A0indexList[iList][0] = j;
                     //A0indexList[iList][1] = jj;
@@ -215,9 +223,11 @@ void anbb2HDM_3jet(int w, std::string inputFile){
                 }
             }
         } // end of outer loop jet
-        
+        cout << "a0" << endl; 
         if (A0indexList.size()>0) sort(A0indexList.begin(),A0indexList.end(),sortListbyPt);
+        else h1a02=false;
         if (A0indexList2.size()>0) sort(A0indexList2.begin(),A0indexList2.end(),sortListbyPt);
+        else h2a01=false;
         h_a0Ncandi1->Fill(A0indexList2.size());
         h_a0Ncandi2->Fill(A0indexList.size());
         if (A0indexList.size()==0&&A0indexList2.size()==0) {continue;}
@@ -226,6 +236,8 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         //reco Z'
         float zpM = -999;
         if (!(h1a02||h2a01)) continue;
+        cout << "zptest" << endl;
+        cout << h1a02 << h2a01 << endl;
         //if (h1a02&&h2a01) continue;
         if (h1a02) {
             for (int i=0, iList=0;i<A0indexList.size();i++) {
@@ -247,26 +259,32 @@ void anbb2HDM_3jet(int w, std::string inputFile){
                 }
             }
         }
+
+        cout << "ttttttttt" << endl;
         if (h2a01) {
-        
+            cout << "size: h" << HindexList.size() << " a0" << A0indexList2.size() << endl; 
             for (int i=0, iList=0;i<A0indexList2.size();i++) {
-                for (int j=0;i<HindexList.size();i++) {
-                    TLorentzVector *fatjet = (TLorentzVector*) genak8jetP4->At(A0indexList2[j][0]);
-                    TLorentzVector *diJet0 = (TLorentzVector*)genjetP4->At(HindexList[i][0]);
-                    TLorentzVector *diJet1 = (TLorentzVector*)genjetP4->At(HindexList[i][1]);
-                    
+                for (int j=0;i<HindexList.size();j++) {
+                    cout << "index: a0" << A0indexList2[i][0] << " h" << HindexList[j][0] << " " << HindexList[j][1] << endl;
+                    TLorentzVector *fatjet = (TLorentzVector*) genak8jetP4->At(A0indexList2[i][0]);
+                    TLorentzVector *diJet0 = (TLorentzVector*)genjetP4->At(HindexList[j][0]);
+                    TLorentzVector *diJet1 = (TLorentzVector*)genjetP4->At(HindexList[j][1]);
                     zpM = (*fatjet+*diJet0+*diJet1).M();
                     if (zpM>(Zpmass.Atof()+100) || zpM<(Zpmass.Atof()-100)) continue;
                     ZpindexList2.push_back({(float)HindexList[j][0],(float)HindexList[j][1],(float)A0indexList2[i][0],-1,(float)(*fatjet+*diJet0+*diJet1).Pt()});
                 }
             }
         }
+        cout << "Zp"<< endl;
         if (ZpindexList.size()>0) sort(ZpindexList.begin(),ZpindexList.end(),sortListbyPtZp);
+        else h1a02=false;
         if (ZpindexList2.size()>0) sort(ZpindexList2.begin(),ZpindexList2.end(),sortListbyPtZp);
+        else h2a01=false;
         if (ZpindexList.size()==0&&ZpindexList2.size()==0) { continue;}
         nPass[3]++;
         //if (ZpindexList.size()!=1) continue;
         nPass[4]++;
+        cout << "fill" << endl;
         if (h1a02) {
             h_zpNcandi_h1a02->Fill(ZpindexList.size());
             TLorentzVector* HbJet = (TLorentzVector*)genak8jetP4->At(ZpindexList[0][0]);
@@ -292,6 +310,8 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HbJet->Phi()));
             h_zpDeltaEta->Fill(abs(HbJet->Eta()-A0recoJet->Eta()));
         }
+        cout << "p1" << endl;
+        cout << "list size: " << ZpindexList2.size() << endl;
         if (h2a01) {
             h_zpNcandi_h2a01->Fill(ZpindexList2.size());
             TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList2[0][0]);
@@ -318,11 +338,12 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0bJet->Eta()));
         }
     } // end of loop over entries
-    
+    cout << "ending" << endl;    
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
+    return;
     if (iseffi) {
         string effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_3jets.txt",Zpmass.Data(),A0mass.Data());
         fstream fp;
