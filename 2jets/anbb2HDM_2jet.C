@@ -46,6 +46,7 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TreeReader data(inputFile.data());
     
     
+    bool iseffi = true;
     bool upeff = true;
     bool isBG = false;
     
@@ -53,7 +54,7 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
     TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
     // set default value
-    if (Zpmass.Atof()>2500||Zpmass.Atof()<800 || A0mass.Atof()>800 || A0mass.Atof()<300) {
+    if (Zpmass.Atof()>2500||Zpmass.Atof()<500 || A0mass.Atof()>800 || A0mass.Atof()<300) {
         Zpmass = "800";
         A0mass = "300";
         isBG = true;
@@ -66,7 +67,7 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     
     TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,0.8);
     TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,0.8);
-    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",40,0,0.8);
+    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",40,0.2,1);
 
     TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
     TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
@@ -327,7 +328,7 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
-    if (!isBG) 
+    if (!isBG&&!iseffi) 
     {
         string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
         string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
@@ -390,6 +391,14 @@ void anbb2HDM_2jet(int w, std::string inputFile){
         c1->Print(pdfName.data());
         h_zpNcandi->Draw("hist");
         c1->Print(pdfNameF.data());
+    }
+    if (iseffi) {
+        string effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_2jets.txt",Zpmass.Data(),A0mass.Data());
+        fstream fp;
+        fp.open(effifilename.data(), ios::out);
+        fp << (float)nPass[4]/nTotal << endl;
+        fp.close();
+        
     }
 /*    
     string fileName;

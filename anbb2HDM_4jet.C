@@ -45,7 +45,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     //get TTree from file ...
     TreeReader data(inputFile.data());
     
-    
+    bool iseffi = true;
     bool upeff = true;
     bool isBG = false;
     
@@ -53,7 +53,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
     TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
     // set default value
-    if (Zpmass.Atof()>2500||Zpmass.Atof()<800 || A0mass.Atof()>800 || A0mass.Atof()<300) {
+    if (Zpmass.Atof()>2500||Zpmass.Atof()<500 || A0mass.Atof()>800 || A0mass.Atof()<300) {
         Zpmass = "800";
         A0mass = "300";
         isBG = true;
@@ -274,7 +274,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
-    if (!isBG) 
+    if (!isBG&&!iseffi) 
     {
         string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
         string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
@@ -332,33 +332,42 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     string fileName;
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    TFile* outputFile = new TFile(fileName.data(),"recreate");
-    h_allEvent->Write();
-    h_HT->Write();
-    h_zpM->Write();
-    h_hM->Write();
-    h_a0M->Write();
-    h_hPt->Write();
-    h_a0Pt->Write();
-    h_hPtAs->Write();
-    h_a0PtAs->Write();
-    h_zpPtAs->Write();
-    h_hPtSD->Write();
-    h_a0PtSD->Write();
-    h_zpPtSD->Write();
-    h_hDeltaR->Write();
-    h_a0DeltaR->Write();
-    h_zpDeltaR->Write();
-    h_hDeltaEta->Write();
-    h_a0DeltaEta->Write();
-    h_zpDeltaEta->Write();
-    h_hDeltaPhi->Write();
-    h_a0DeltaPhi->Write();
-    h_zpDeltaPhi->Write();
-    h_hNcandi->Write();
-    h_a0Ncandi->Write();
-    h_zpNcandi->Write();
-    outputFile->Close();
-
+    if (isBG&&!iseffi) {
+        TFile* outputFile = new TFile(fileName.data(),"recreate");
+        h_allEvent->Write();
+        h_HT->Write();
+        h_zpM->Write();
+        h_hM->Write();
+        h_a0M->Write();
+        h_hPt->Write();
+        h_a0Pt->Write();
+        h_hPtAs->Write();
+        h_a0PtAs->Write();
+        h_zpPtAs->Write();
+        h_hPtSD->Write();
+        h_a0PtSD->Write();
+        h_zpPtSD->Write();
+        h_hDeltaR->Write();
+        h_a0DeltaR->Write();
+        h_zpDeltaR->Write();
+        h_hDeltaEta->Write();
+        h_a0DeltaEta->Write();
+        h_zpDeltaEta->Write();
+        h_hDeltaPhi->Write();
+        h_a0DeltaPhi->Write();
+        h_zpDeltaPhi->Write();
+        h_hNcandi->Write();
+        h_a0Ncandi->Write();
+        h_zpNcandi->Write();
+        outputFile->Close();
+    }
+    if (iseffi) {
+        string effifilename = Form("njetsEffi/effi_Zpmass%s_A0mass%s_4jets.txt",Zpmass.Data(),A0mass.Data());
+        fstream fp;
+        fp.open(effifilename.data(), ios::out);
+        fp << (float)nPass[4]/nTotal << endl;
+        fp.close();
+        
+    }
 
 }
