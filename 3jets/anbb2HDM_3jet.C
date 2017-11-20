@@ -66,10 +66,10 @@ void anbb2HDM_3jet(int w, std::string inputFile){
     //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
     TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
-    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",40,0,0.8);
-    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",40,0,0.8);
-    TH1F* h_zpPtAs_h1a02 = new TH1F("h_zpPtAs_h1a02","h_ZpPtAssymetry_h1a02",40,0,0.8);
-    TH1F* h_zpPtAs_h2a01 = new TH1F("h_zpPtAs_h2a01","h_ZpPtAssymetry_h2a01",40,0,0.8);
+    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",40,0,1);
+    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",40,0,1);
+    TH1F* h_zpPtAs_h1a02 = new TH1F("h_zpPtAs_h1a02","h_ZpPtAssymetry_h1a02",50,0,2.5);
+    TH1F* h_zpPtAs_h2a01 = new TH1F("h_zpPtAs_h2a01","h_ZpPtAssymetry_h2a01",50,0,2.5);
 
     TH1F* h_hPtSD_h2a01 = new TH1F("h_hPtSD_h2a01","h_higgsPtSD_h2a01",30,0,0.6);
     TH1F* h_a0PtSD_h1a02 = new TH1F("h_a0PtSD_h1a02","h_A0PtSD_h1a02",30,0,0.6);
