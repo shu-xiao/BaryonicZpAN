@@ -70,7 +70,7 @@ void anbb2HDM_3jet(int w, std::string inputFile){
     TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",40,0,1);
     TH1F* h_zpPtAs_h1a02 = new TH1F("h_zpPtAs_h1a02","h_ZpPtAssymetry_h1a02",50,0,2.5);
     TH1F* h_zpPtAs_h2a01 = new TH1F("h_zpPtAs_h2a01","h_ZpPtAssymetry_h2a01",50,0,2.5);
-
+    
     TH1F* h_hPtSD_h2a01 = new TH1F("h_hPtSD_h2a01","h_higgsPtSD_h2a01",30,0,0.6);
     TH1F* h_a0PtSD_h1a02 = new TH1F("h_a0PtSD_h1a02","h_A0PtSD_h1a02",30,0,0.6);
     TH1F* h_zpPtSD_h1a02 = new TH1F("h_zpPtSD_h1a02","h_ZpPtSD_h1a02",30,0,0.6);
@@ -109,6 +109,21 @@ void anbb2HDM_3jet(int w, std::string inputFile){
     TH1F* h_a0DeltaPhi_h1a02 = new TH1F("h_A0tobbDeltaPhi_h1a02", "h_A0obbDeltaPhi_reco_h1a02", 32,0,3.2);
     TH1F* h_zpDeltaPhi_h1a02 = new TH1F("h_ZptoHA0DeltaPhi_h1a02", "h_ZptoHA0DeltaPhi_reco_h1a02", 32,0,3.2);
     TH1F* h_zpDeltaPhi_h2a01 = new TH1F("h_ZptoHA0DeltaPhi_h2a01", "h_ZptoHA0DeltaPhi_reco_h2a01", 32,0,3.2);
+    
+    
+    TH1F* h_hMD = new TH1F("h_hMD","h_hMD",20,0,1);
+    TH1F* h_a0MD = new TH1F("h_a0MD","h_a0MD",20,0,1);
+    TH1F* h_htau1_h1a02 = new TH1F("h_htau1_h1a02","h_htau1_h1a02",20,0,1);
+    TH1F* h_a0tau1_h2a01 = new TH1F("h_a0tau1_h2a01","h_a0tau1_h2a01",20,0,1);
+    TH1F* h_htau2_h1a02 = new TH1F("h_htau2_h1a02","h_htau2_h1a02",20,0,1);
+    TH1F* h_a0tau2_h2a01 = new TH1F("h_a0tau2_h2a01","h_a0tau2_h2a01",20,0,1);
+    TH1F* h_htau3_h1a02 = new TH1F("h_htau3_h1a02","h_htau3_h1a02",20,0,1);
+    TH1F* h_a0tau3_h2a01 = new TH1F("h_a0tau3_h2a01","h_a0tau3_h2a01",20,0,1);
+    TH1F* h_htau21_h1a02 = new TH1F("h_htau21_h1a02","h_htau21_h1a02",20,0,1);
+    TH1F* h_htau32_h1a02 = new TH1F("h_htau32_h1a02","h_htau32_h1a02",20,0,1);
+    TH1F* h_a0tau21_h2a01 = new TH1F("h_a0tau21_h2a01","h_a0tau21_h2a01",20,0,1);
+    TH1F* h_a0tau32_h2a01 = new TH1F("h_a0tau32_h2a01","h_a0tau32_h2a01",20,0,1);
+    
     
     Int_t nPass_h1a02[20]={0};
     Int_t nPass_h2a01[20]={0};
@@ -287,6 +302,12 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_zpDeltaR_h1a02->Fill(abs(A0recoJet->DeltaR(*HbJet)));
             h_zpDeltaPhi_h1a02->Fill(caldePhi(A0recoJet->Phi(),HbJet->Phi()));
             h_zpDeltaEta_h1a02->Fill(abs(HbJet->Eta()-A0recoJet->Eta()));
+        
+            h_htau1_h1a02->Fill(ak8GenJettau1[int(ZpindexList_h1a02[0][0])]);
+            h_htau2_h1a02->Fill(ak8GenJettau2[int(ZpindexList_h1a02[0][0])]);
+            h_htau3_h1a02->Fill(ak8GenJettau3[int(ZpindexList_h1a02[0][0])]);
+            h_htau21_h1a02->Fill(ak8GenJettau2[int(ZpindexList_h1a02[0][0])]/ak8GenJettau1[int(ZpindexList_h1a02[0][0])]);
+            h_htau32_h1a02->Fill(ak8GenJettau3[int(ZpindexList_h1a02[0][0])]/ak8GenJettau2[int(ZpindexList_h1a02[0][0])]);
         }
         if (h2a01) {
             TLorentzVector* HbJet0 = (TLorentzVector*)genak4jetP4->At(ZpindexList_h2a01[0][0]);
@@ -311,6 +332,12 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_zpDeltaR_h2a01->Fill(abs(A0bJet->DeltaR(*HrecoJet)));
             h_zpDeltaPhi_h2a01->Fill(caldePhi(A0bJet->Phi(),HrecoJet->Phi()));
             h_zpDeltaEta_h2a01->Fill(abs(HrecoJet->Eta()-A0bJet->Eta()));
+            
+            h_a0tau1_h2a01->Fill(ak8GenJettau1[int(ZpindexList_h2a01[0][2])]);
+            h_a0tau2_h2a01->Fill(ak8GenJettau2[int(ZpindexList_h2a01[0][2])]);
+            h_a0tau3_h2a01->Fill(ak8GenJettau3[int(ZpindexList_h2a01[0][2])]);
+            h_a0tau21_h2a01->Fill(ak8GenJettau2[int(ZpindexList_h2a01[0][2])]/ak8GenJettau1[int(ZpindexList_h2a01[0][2])]);
+            h_a0tau32_h2a01->Fill(ak8GenJettau3[int(ZpindexList_h2a01[0][2])]/ak8GenJettau2[int(ZpindexList_h2a01[0][2])]);
         }
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
@@ -370,6 +397,26 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         h_zpPtSD_h1a02->Draw("hist");
         c1->Print(pdfName.data());
         h_zpPtSD_h2a01->Draw("hist");
+        c1->Print(pdfName.data());
+        h_htau1_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_htau2_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_htau3_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_htau21_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_htau32_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0tau1_h2a01->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0tau2_h2a01->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0tau3_h2a01->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0tau21_h2a01->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0tau32_h2a01->Draw("hist");
         c1->Print(pdfName.data());
         h_hDeltaR_h2a01->Draw("hist");
         c1->Print(pdfName.data());

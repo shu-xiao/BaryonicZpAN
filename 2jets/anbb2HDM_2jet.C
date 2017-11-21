@@ -65,9 +65,9 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
     TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
-    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,0.8);
-    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,0.8);
-    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",40,0.2,1);
+    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
+    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
+    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",50,0,2.5);
 
     TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
     TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
@@ -81,8 +81,8 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 70,0,1400);
-    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 70,0,1400);
+    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 70,200,1600);
+    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 70,200,1600);
     
     TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
     TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
@@ -328,7 +328,7 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
-    if (!isBG&&!iseffi) 
+    if (!isBG) 
     {
         string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
         string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
@@ -350,6 +350,8 @@ void anbb2HDM_2jet(int w, std::string inputFile){
         h_a0PtAs->Draw("hist");
         c1->Print(pdfName.data());
         h_zpPtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpPtSD->Draw("hist");
         c1->Print(pdfName.data());
         h_hDeltaR->Draw("hist");
         c1->Print(pdfName.data());
