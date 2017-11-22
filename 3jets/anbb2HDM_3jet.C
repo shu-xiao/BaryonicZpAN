@@ -90,10 +90,10 @@ void anbb2HDM_3jet(int w, std::string inputFile){
     TH1F* h_a0M_h2a01 = new TH1F("h_a0M_h2a01", "h_A0M_genJet_h2a01", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM_h2a01 = new TH1F("h_ZpM_h2a01", "h_ZpM_genJet_h2a01", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 50,0,1000);
-    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 50,0,1000);
-    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 40,0,800);
-    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 40,0,800);
+    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 60,0,1200);
+    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 60,0,1200);
+    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 60,0,1200);
+    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 60,0,1200);
     
     TH1F* h_hDeltaR_h2a01 = new TH1F("h_HiggstobbDeltaR_h2a01", "h_HiggstobbDeltaR_reco_h2a01", 40,0,4);
     TH1F* h_a0DeltaR_h1a02 = new TH1F("h_A0tobbDeltaR_h1a02", "h_A0tobbDeltaR_reco_h1a02", 40,0,4);

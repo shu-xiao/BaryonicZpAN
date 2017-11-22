@@ -82,8 +82,8 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 50,0,1000);
-    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 40,0,800);
+    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 60,0,1200);
+    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 60,0,1200);
     
     TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
     TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
