@@ -68,7 +68,7 @@ void anbb2HDM_4jet(int w, std::string inputFile){
     
     TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
     TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
-    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",40,0,2);
+    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",50,0,2.5);
 
     TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
     TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
