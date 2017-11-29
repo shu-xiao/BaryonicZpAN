@@ -10,20 +10,20 @@ vector<vector<int>> genMatch_base(string inputFile) {
     vector<vector<int>> genParIndexList;
     bool upeff=false;
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
-        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        //if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
         
         //0. has enough jet
         bool match = false;
         int exter_H = 0, exter_A0 = 0;
         
-        TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+        //TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
         int* genMomParId= data.GetPtrInt("genMomParId");
         int* genParId= data.GetPtrInt("genParId");
         int Hindex[2]={-1,-1}, A0index[2]={-1,-1};
         // match higgs
         for(int ij=0; ij < 30; ij++) {
-            TLorentzVector* thisParP4 = (TLorentzVector*)genParP4->At(ij);
+            //TLorentzVector* thisParP4 = (TLorentzVector*)genParP4->At(ij);
             if (abs(genParId[ij])!=5) continue;
             if(upeff && thisParP4->Pt()<30) continue;
             if(upeff && fabs(thisParP4->Eta())>2.4) continue;
