@@ -25,8 +25,8 @@ vector<vector<int>> genMatch_base(string inputFile) {
         for(int ij=0; ij < 30; ij++) {
             //TLorentzVector* thisParP4 = (TLorentzVector*)genParP4->At(ij);
             if (abs(genParId[ij])!=5) continue;
-            if(upeff && thisParP4->Pt()<30) continue;
-            if(upeff && fabs(thisParP4->Eta())>2.4) continue;
+            //if(upeff && thisParP4->Pt()<30) continue;
+            //if(upeff && fabs(thisParP4->Eta())>2.4) continue;
             
             if (genMomParId[ij]==25 && Hindex[0]<0) Hindex[0] = ij;
             else if (genMomParId[ij]==25 && Hindex[1]<0) Hindex[1] = ij;

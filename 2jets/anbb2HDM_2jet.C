@@ -11,6 +11,7 @@
 #include <TCanvas.h>
 #include "string"
 #include "setNCUStyle.C"
+#include "../gen2HDMsample/genMatch.C"
 void efferr(float nsig,float ntotal,float factor=1)
 {
     float eff = nsig/ntotal;
