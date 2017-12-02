@@ -41,11 +41,87 @@ vector<vector<int>> genMatch_base(string inputFile) {
     }
     return genParIndexList;
 }
+//vector <int> matchJet(TreeReader Data) {
+vector <int> matchJet(string inputFile) {
+    TreeReader data(inputFile.data());
+    vector<vector<int>> genPar = genMatch_base(inputFile.data());
+    vector<vector<int>> matchJets = {};
+    for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
+        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (genPar[jEntry][4]!=1) continue;
+        data.GetEntry(jEntry);
+        TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+        vector<TLorentzVector*> genHA0Par;
+        for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
+    
+    }
+    return {0};
+}
+vector<vector<vector<TLorentzVector*>>> matchJet_4Vector(string inputFile,int coneSize=4) {
+    vector<vector<vector<TLorentzVector*>>> list = {};
+    vector<vector<TLorentzVector*>> jet4Vect = {{}};
+    TreeReader data(inputFile.data());
+    vector<vector<int>> genPar = genMatch_base(inputFile.data());
+    for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
+        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (genPar[jEntry][4]!=1) {
+            list.push_back({{}});
+            continue;
+        }
+        data.GetEntry(jEntry);
+        vector<TLorentzVector*> genHA0Par;
+        for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
+        TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+        int nGenJet = 0; 
+        TClonesArray* genJetP4;
+
+
+        if (coneSize==4) {
+            nGenJet=data.GetInt("ak4nGenJet");
+            genJetP4 = (TClonesArray*) data.GetPtrTObject("ak4GenJetP4");
+            vector<vector<int>> matchIndex;
+        
+            for(int ij=0; ij < nGenJet; ij++) {
+                TLorentzVector* thisJet = (TLorentzVector*)genak4jetP4->At(ij);
+                if (thisJet->DeltaR(*genHA0Par[0])>0.4) continue;
+                else {
+                    for (int jj=0;jj<nGenJet;jj++) {
+                        if (ij==jj) continue;
+                        // find the repeat match
+                        bool repeat = false;
+                        for (int nnn=0;nnn<matchIndex.size();nnn++) {
+                            if (matchIndex[nnn][0]==jj&&matchIndex[nnn][1]==ij) repeat = true
+                        }
+                        if (repeat) continue;
+                        // search for second jet
+                        TLorentzVector* thatJet = (TLorentzVector*)genak4jetP4->At(jj);
+                        if (thatJet->DeltaR(*genHA0Par[1])>0.4) continue;
+                        matchIndex.push_back({ij,jj});
+                        jet4Vect.push_back({thisJet,thatJet});
+                    }
+                }
+            } // end of for loop
+
+        list.push_back(jet4Vect);
+        }
+        else if (coneSize==8) {
+            nGenJet=data.GetInt("ak8nGenJet");
+            genJetP4 = (TClonesArray*) data.GetPtrTObject("ak8GenJetP4");
+        }
+        else {
+            cout << "coneSize = 4 or 8." << endl;
+            return {{}};
+        }
+        
+    }
+}
 void genMatch() {
     TreeReader data("gen2HDMbb_MZp1700_MA0300.root");
+    data.GetEntry(0);
+    vector<int> cc = matchJet(data);
     //TreeReader data(inputFile.data());
     //genMatch_base(data);
-    vector<vector<int>> genPar = genMatch_base("gen2HDMbb_MZp1700_MA0300.root");
+    //vector<vector<int>> genPar = genMatch_base("gen2HDMbb_MZp1700_MA0300.root");
     /*
     cout << a.size() << endl;
     for (int i=0;i<10000;i++) {
