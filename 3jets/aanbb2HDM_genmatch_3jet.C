@@ -41,7 +41,7 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 using namespace std;
-void aanbb2HDM_genmatch_3jet(int w, std::string inputFile){
+void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp1700_MA0300.root"){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
