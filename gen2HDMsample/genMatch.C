@@ -73,7 +73,7 @@ vector<vector<vector<int>>> matchJet_4Vector(string inputFile,int mode=0,int con
     string matchMode_Par[2] = {"Higgs","A0"};
     cout << "matching " << matchMode_Par[mode] << Form(" particle for AK%d jet",coneSize) << endl;
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
-        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        //if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         if (genPar[jEntry][4]!=1) {
             list.push_back({{}});
             continue;
@@ -98,11 +98,13 @@ vector<vector<vector<int>>> matchJet_4Vector(string inputFile,int mode=0,int con
                     for (int jj=0;jj<nGenJet;jj++) {
                         if (ij==jj) continue;
                         // find the repeat match
+                        /*
                         bool repeat = false;
                         for (int nnn=0;nnn<matchIndex.size();nnn++) {
                             if (matchIndex[nnn][0]==jj&&matchIndex[nnn][1]==ij) repeat = true;
                         }
                         if (repeat) continue;
+                        */
                         // search for second jet
                         TLorentzVector* thatJet = (TLorentzVector*)genJetP4->At(jj);
                         if (thatJet->DeltaR(*genHA0Par[1])>0.4) continue;
@@ -113,12 +115,56 @@ vector<vector<vector<int>>> matchJet_4Vector(string inputFile,int mode=0,int con
             } // end of for loop
 
         } // end of matching higgs AK4 jet
+        
+        
+        // match higgs ak8 dijet
         else if (coneSize==8&&mode==0) {
             nGenJet=data.GetInt("ak8nGenJet");
             genJetP4 = (TClonesArray*) data.GetPtrTObject("ak8GenJetP4");
             for (int ij=0;ij<nGenJet;ij++) {
                 TLorentzVector* thisJet = (TLorentzVector*)genJetP4->At(ij);
-                if (thisJet->DeltaR(*genHA0Par[0])>0.4||thisJet->DeltaR(*genHA0Par[1])>0.4) continue;
+                if (thisJet->DeltaR(*genHA0Par[0])>0.8||thisJet->DeltaR(*genHA0Par[1])>0.8) continue;
+                matchIndex.push_back({ij,ij});
+            }
+        }
+        
+        // match A0 ak4 dijet
+        else if (coneSize==4&&mode==1) {
+            nGenJet=data.GetInt("ak4nGenJet");
+            genJetP4 = (TClonesArray*) data.GetPtrTObject("ak4GenJetP4");
+        
+            for(int ij=0; ij < nGenJet; ij++) {
+                TLorentzVector* thisJet = (TLorentzVector*)genJetP4->At(ij);
+                if (thisJet->DeltaR(*genHA0Par[2])>0.4) continue;
+                else {
+                    for (int jj=0;jj<nGenJet;jj++) {
+                        if (ij==jj) continue;
+                        // find the repeat match
+                        /*
+                        bool repeat = false;
+                        for (int nnn=0;nnn<matchIndex.size();nnn++) {
+                            if (matchIndex[nnn][0]==jj&&matchIndex[nnn][1]==ij) repeat = true;
+                        }
+                        if (repeat) continue;
+                        */
+                        // search for second jet
+                        TLorentzVector* thatJet = (TLorentzVector*)genJetP4->At(jj);
+                        if (thatJet->DeltaR(*genHA0Par[3])>0.4) continue;
+                        matchIndex.push_back({ij,jj});
+                        //jet4Vect.push_back({thisJet,thatJet});
+                    }
+                }
+            } // end of for loop
+
+        } // end of matching higgs AK4 jet
+        
+        // match A0 ak8 dijet
+        else if (coneSize==8&&mode==1) {
+            nGenJet=data.GetInt("ak8nGenJet");
+            genJetP4 = (TClonesArray*) data.GetPtrTObject("ak8GenJetP4");
+            for (int ij=0;ij<nGenJet;ij++) {
+                TLorentzVector* thisJet = (TLorentzVector*)genJetP4->At(ij);
+                if (thisJet->DeltaR(*genHA0Par[2])>0.8||thisJet->DeltaR(*genHA0Par[3])>0.8) continue;
                 matchIndex.push_back({ij,ij});
             }
         }
