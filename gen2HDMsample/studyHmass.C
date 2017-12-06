@@ -47,8 +47,10 @@ void studyHmass(string inputFile="gen2HDMbb_MZp1700_MA0300.root") {
     test(matchAk8A0JetList);
     TCanvas* c1 = new TCanvas("c1","c1",600,600);
     TH1F* h_hM[2][4];
+    int nPass[2][4];
     for (int j=0;j<2;j++) {
         for (int i=0;i<4;i++) {
+            nPass[j][i] = 0;
             h_hM[j][i] = new TH1F(Form("h_AK%d_higgsM_cut%d",4+4*j,i), Form("h_AK%d_higgsM_cut%d",4+4*j,i), 50,100,150);
         }
     }
@@ -62,8 +64,10 @@ void studyHmass(string inputFile="gen2HDMbb_MZp1700_MA0300.root") {
             TLorentzVector* thatJet = (TLorentzVector*)genak4jetP4->At(matchAk4HJetList[jEntry][i][1]);
             float diJetM = (*thisJet+*thatJet).M();
             h_hM[0][0]->Fill(diJetM);
+            nPass[0][0]++;
             if (diJetM>140||diJetM<110) continue;
             h_hM[0][1]->Fill(diJetM);
+            nPass[0][1]++;
         }
     }
     
@@ -76,8 +80,10 @@ void studyHmass(string inputFile="gen2HDMbb_MZp1700_MA0300.root") {
         for (int i=0;i<matchAk8HJetList[jEntry].size();i++) {
             TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(matchAk8HJetList[jEntry][i][0]);
             h_hM[1][0]->Fill(ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]);
+            nPass[1][0]++;
             if (ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]>140 || ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]<110) continue;
             h_hM[1][1]->Fill(ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]);
+            nPass[1][1]++;
             // cut A0
             for (int j=0;j<matchAk4A0JetList[jEntry].size();j++) {
                 TLorentzVector* thisJet = (TLorentzVector*)genak4jetP4->At(matchAk4A0JetList[jEntry][j][0]);
@@ -85,9 +91,11 @@ void studyHmass(string inputFile="gen2HDMbb_MZp1700_MA0300.root") {
                 float diJetM = (*thisJet+*thatJet).M();
                 if (diJetM>350||diJetM<250) continue;
                 h_hM[1][2]->Fill(ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]);
+                nPass[1][2]++;
                 float triJetM = (*thisak8Jet+*thisJet+*thatJet).M();
                 if(triJetM>1800||triJetM<1600) continue;
                 h_hM[1][3]->Fill(ak8GenJetMSD[matchAk8HJetList[jEntry][i][0]]);
+                nPass[1][3]++;
             }
 
         }
@@ -102,5 +110,9 @@ void studyHmass(string inputFile="gen2HDMbb_MZp1700_MA0300.root") {
         }
     }
     c1->Print((pdfName+"]").data());
-
+    for (int j=0;j<2;j++) {
+        for (int i=0;i<4;i++) {
+            cout << Form("nPass[%d][%d] = ",j,i) << nPass[j][i] << "\tRatio = " << (float)nPass[j][i]/matchAk8HJetList.size() << endl;
+        }
+    }
 }

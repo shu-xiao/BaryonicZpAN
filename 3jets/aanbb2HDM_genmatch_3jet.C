@@ -126,10 +126,11 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
     TH1F* h_a0tau21_h2a01 = new TH1F("h_a0tau21_h2a01","h_a0tau21_h2a01",20,0,1);
     TH1F* h_a0tau32_h2a01 = new TH1F("h_a0tau32_h2a01","h_a0tau32_h2a01",20,0,1);
     
+    TH1F* h_matchStatus_H = new TH1F("h_matchStatus_H","h_matchStatus_H",6,-0.5,5.5);
+    TH1F* h_matchStatus_A0 = new TH1F("h_matchStatus_A0","h_matchStatus_A0",6,-0.5,5.5);
     
     Int_t nPass_h1a02[20]={0};
     Int_t nPass_h2a01[20]={0};
-    
     //for(Long64_t jEntry=0; jEntry<100 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
@@ -168,12 +169,15 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
         
         // reco higgs
         bool h1a02 = false, h2a01 = false;
+        int matchH = 0, matchA0 = 0;        // H: 1, A0:2 
         for(int j=0; j < nGenak8Jet; j++) {
             TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
-            if (genHA0Par[0]->DeltaR(*thisak8Jet)>0.8||genHA0Par[1]->DeltaR(*thisak8Jet)>0.8) continue;
             if(upeff && thisak8Jet->Pt()<30)continue;
             if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
             if (ak8GenJetMSD[j]<140 && ak8GenJetMSD[j]>110) {
+                if (genHA0Par[2]->DeltaR(*thisak8Jet)<0.8&&genHA0Par[3]->DeltaR(*thisak8Jet)<0.8) matchH+=2;
+                if (genHA0Par[0]->DeltaR(*thisak8Jet)>0.8||genHA0Par[1]->DeltaR(*thisak8Jet)>0.8) continue;
+                matchH += 1;
                 h1a02=true;
                 HindexList_h1a02.push_back({(float)j,-1,(float)thisak8Jet->Pt()});
             }
@@ -300,6 +304,7 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
         else nPass_h2a01[5]++;
         // fill figures
         if (h1a02) {
+            h_matchStatus_H->Fill(matchH);
             TLorentzVector* HbJet = (TLorentzVector*)genak8jetP4->At(ZpindexList_h1a02[0][0]);
             h_hM_h1a02->Fill(HbJet->M());
             h_hPt_h1a02->Fill(HbJet->Pt());
@@ -377,9 +382,9 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
     }
     if (!isBG) 
     {
-        string pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
-        string pdfNameI = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
-        string pdfNameF = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
+        string pdfName = Form("aaanGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        string pdfNameI = Form("aaanGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
+        string pdfNameF = Form("aaanGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
         h_HT->Draw("hist");
         c1->Print(pdfNameI.data());
         h_zpM_h1a02->Draw("hist");
@@ -387,6 +392,8 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
         h_zpM_h2a01->Draw("hist");
         c1->Print(pdfName.data());
         h_hM_h1a02->Draw("hist");
+        c1->Print(pdfName.data());
+        h_matchStatus_H->Draw("hist text0");
         c1->Print(pdfName.data());
         h_hM_h2a01->Draw("hist");
         c1->Print(pdfName.data());
