@@ -40,7 +40,7 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 using namespace std;
-void anbb2HDM_3jet(int w, std::string inputFile){
+void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp1700_MA0300.root"){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
@@ -281,7 +281,8 @@ void anbb2HDM_3jet(int w, std::string inputFile){
         // fill figures
         if (h1a02) {
             TLorentzVector* HbJet = (TLorentzVector*)genak8jetP4->At(ZpindexList_h1a02[0][0]);
-            h_hM_h1a02->Fill(HbJet->M());
+            //h_hM_h1a02->Fill(HbJet->M());
+            h_hM_h1a02->Fill(ak8GenJetMSD[(int)ZpindexList_h1a02[0][0]]);
             h_hPt_h1a02->Fill(HbJet->Pt());
             
             TLorentzVector* A0bJet0 = (TLorentzVector*)genak4jetP4->At(ZpindexList_h1a02[0][2]);
@@ -321,7 +322,8 @@ void anbb2HDM_3jet(int w, std::string inputFile){
             h_hDeltaEta_h2a01->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
             
             TLorentzVector* A0bJet = (TLorentzVector*)genak8jetP4->At(ZpindexList_h2a01[0][2]);
-            h_a0M_h2a01->Fill(A0bJet->M());
+            //h_a0M_h2a01->Fill(A0bJet->M());
+            h_a0M_h2a01->Fill(ak8GenJetMSD[(int)ZpindexList_h2a01[0][2]]);
             h_a0Pt_h2a01->Fill(A0bJet->Pt());
             
             TLorentzVector* HrecoJet = new TLorentzVector();
