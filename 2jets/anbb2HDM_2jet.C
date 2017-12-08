@@ -66,8 +66,8 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
     TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
-    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
-    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
+    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",50,0,2.5);
+    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",50,0,2.5);
     TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",50,0,2.5);
 
     TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
@@ -82,13 +82,13 @@ void anbb2HDM_2jet(int w, std::string inputFile){
     TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 70,200,1600);
-    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 70,200,1600);
+    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 80,0,1600);
+    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 80,0,1600);
     
-    TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
-    TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
-    TH1F* h_zpDeltaR = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 40,0,4);
-    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
+    TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 50,0,5);
+    TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 50,0,5);
+    TH1F* h_zpDeltaR = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 50,0,5);
+    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta_reco", 50,0,5);
     TH1F* h_a0DeltaEta = new TH1F("h_A0tobbDeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
     TH1F* h_zpDeltaEta = new TH1F("h_ZptoHA0DeltaEta", "h_ZptoHA0DeltaEta_reco", 40,0,4);
     TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbDeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
@@ -403,27 +403,40 @@ void anbb2HDM_2jet(int w, std::string inputFile){
         fp.close();
         
     }
-/*    
     string fileName;
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    TFile* outputFile = new TFile(fileName.data(),"recreate");
-    h_allEvent->Write();
-    h_HT->Write();
-    h_zpM->Write();
-    h_hM->Write();
-    h_a0M->Write();
-    h_hPt->Write();
-    h_a0Pt->Write();
-    h_hPtAs->Write();
-    h_zpPtAs->Write();
-    h_zpDeltaR->Write();
-    h_zpDeltaEta->Write();
-    h_zpDeltaPhi->Write();
-    h_hNcandi->Write();
-    h_a0Ncandi->Write();
-    h_zpNcandi->Write();
-    outputFile->Close();
-*/
-
+    if (isBG) {
+        TFile* outputFile = new TFile(fileName.data(),"recreate");
+        h_HT->Write();
+        h_zpM->Write();
+        h_hM->Write();
+        h_a0M->Write();
+        h_hPt->Write();
+        h_a0Pt->Write();
+        h_hPtAs->Write();
+        h_a0PtAs->Write();
+        h_zpPtAs->Write();
+        h_zpPtSD->Write();
+        h_hDeltaR->Write();
+        h_a0DeltaR->Write();
+        h_zpDeltaR->Write();
+        h_zpDeltaEta->Write();
+        h_zpDeltaPhi->Write();
+        h_hMD->Write();
+        h_a0MD->Write();
+        h_htau1->Write();
+        h_a0tau1->Write();
+        h_htau2->Write();
+        h_a0tau2->Write();
+        h_htau3->Write();
+        h_a0tau3->Write();
+        h_htau21->Write();
+        h_a0tau21->Write();
+        h_htau32->Write();
+        h_a0tau32->Write();
+        h_hNcandi->Write();
+        h_a0Ncandi->Write();
+        h_zpNcandi->Write();
+    }
 }

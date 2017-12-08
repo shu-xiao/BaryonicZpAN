@@ -40,7 +40,7 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 using namespace std;
-void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp1700_MA0300.root"){
+void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp2500_MA0300.root"){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
@@ -66,8 +66,8 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
     TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
-    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",40,0,1);
-    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",40,0,1);
+    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",50,0,2.5);
+    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",50,0,2.5);
     TH1F* h_zpPtAs_h1a02 = new TH1F("h_zpPtAs_h1a02","h_ZpPtAssymetry_h1a02",50,0,2.5);
     TH1F* h_zpPtAs_h2a01 = new TH1F("h_zpPtAs_h2a01","h_ZpPtAssymetry_h2a01",50,0,2.5);
     
@@ -90,15 +90,15 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     TH1F* h_a0M_h2a01 = new TH1F("h_a0M_h2a01", "h_A0M_genJet_h2a01", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM_h2a01 = new TH1F("h_ZpM_h2a01", "h_ZpM_genJet_h2a01", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 60,0,1200);
-    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 60,0,1200);
-    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 60,0,1200);
-    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 60,0,1200);
+    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 80,0,1600);
+    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 80,0,1600);
+    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 80,0,1600);
+    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 80,0,1600);
     
-    TH1F* h_hDeltaR_h2a01 = new TH1F("h_HiggstobbDeltaR_h2a01", "h_HiggstobbDeltaR_reco_h2a01", 40,0,4);
-    TH1F* h_a0DeltaR_h1a02 = new TH1F("h_A0tobbDeltaR_h1a02", "h_A0tobbDeltaR_reco_h1a02", 40,0,4);
-    TH1F* h_zpDeltaR_h1a02 = new TH1F("h_ZptoHA0DeltaR_h1a02", "h_ZptoHA0DeltaR_reco_h1a02", 40,0,4);
-    TH1F* h_zpDeltaR_h2a01 = new TH1F("h_ZptoHA0DeltaR_h2a01", "h_ZptoHA0DeltaR_reco_h2a01", 40,0,4);
+    TH1F* h_hDeltaR_h2a01 = new TH1F("h_HiggstobbDeltaR_h2a01", "h_HiggstobbDeltaR_reco_h2a01", 50,0,5);
+    TH1F* h_a0DeltaR_h1a02 = new TH1F("h_A0tobbDeltaR_h1a02", "h_A0tobbDeltaR_reco_h1a02", 50,0,5);
+    TH1F* h_zpDeltaR_h1a02 = new TH1F("h_ZptoHA0DeltaR_h1a02", "h_ZptoHA0DeltaR_reco_h1a02", 50,0,5);
+    TH1F* h_zpDeltaR_h2a01 = new TH1F("h_ZptoHA0DeltaR_h2a01", "h_ZptoHA0DeltaR_reco_h2a01", 50,0,5);
     
     TH1F* h_hDeltaEta_h2a01 = new TH1F("h_HiggstobbDeltaEta_h2a01", "h_HiggstobbDeltaEta_reco_h2a01", 40,0,4);
     TH1F* h_a0DeltaEta_h1a02 = new TH1F("h_A0tobbDeltaEta_h1a02", "h_A0tobbDeltaEta_reco_h1a02", 40,0,4);
@@ -457,39 +457,58 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         h_zpNcandi_h2a01->Draw("hist");
         c1->Print(pdfNameF.data());
     }
-    /* 
     string fileName;
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    TFile* outputFile = new TFile(fileName.data(),"recreate");
-    h_allEvent->Write();
-    h_HT->Write();
-    h_zpM->Write();
-    h_hM->Write();
-    h_a0M->Write();
-    h_hPt->Write();
-    h_a0Pt->Write();
-    h_hPtAs_h2a01->Write();
-    h_a0PtAs_h1a02->Write();
-    h_zpPtAs->Write();
-    h_hPtSD_h2a01->Write();
-    h_a0PtSD_h1a02->Write();
-    h_zpPtSD->Write();
-    h_hDeltaR_h2a01->Write();
-    h_a0DeltaR_h1a02->Write();
-    h_zpDeltaR->Write();
-    h_hDeltaEta_h2a01->Write();
-    h_a0DeltaEta_h1a02->Write();
-    h_zpDeltaEta->Write();
-    h_hDeltaPhi_h2a01->Write();
-    h_a0DeltaPhi_h1a02->Write();
-    h_zpDeltaPhi->Write();
-    h_hNcandi_h1a02->Write();
-    h_hNcandi_h2a01->Write();
-    h_a0Ncandi_h2a01->Write();
-    h_a0Ncandi_h1a02->Write();
-    h_zpNcandi_h1a02->Write();
-    h_zpNcandi_h2a01->Write();
-    outputFile->Close();
-    */
+    if (isBG) {
+        TFile* outputFile = new TFile(fileName.data(),"recreate");
+        h_HT->Write();
+        h_zpM_h1a02->Write();
+        h_zpM_h2a01->Write();
+        h_hM_h1a02->Write();
+        h_hM_h2a01->Write();
+        h_a0M_h1a02->Write();
+        h_a0M_h2a01->Write();
+        h_hPt_h1a02->Write();
+        h_hPt_h2a01->Write();
+        h_a0Pt_h1a02->Write();
+        h_a0Pt_h2a01->Write();
+        h_hPtAs_h2a01->Write();
+        h_a0PtAs_h1a02->Write();
+        h_zpPtAs_h1a02->Write();
+        h_zpPtAs_h2a01->Write();
+        h_hPtSD_h2a01->Write();
+        h_a0PtSD_h1a02->Write();
+        h_zpPtSD_h1a02->Write();
+        h_zpPtSD_h2a01->Write();
+        h_htau1_h1a02->Write();
+        h_htau2_h1a02->Write();
+        h_htau3_h1a02->Write();
+        h_htau21_h1a02->Write();
+        h_htau32_h1a02->Write();
+        h_a0tau1_h2a01->Write();
+        h_a0tau2_h2a01->Write();
+        h_a0tau3_h2a01->Write();
+        h_a0tau21_h2a01->Write();
+        h_a0tau32_h2a01->Write();
+        h_hDeltaR_h2a01->Write();
+        h_a0DeltaR_h1a02->Write();
+        h_zpDeltaR_h1a02->Write();
+        h_zpDeltaR_h2a01->Write();
+        h_hDeltaEta_h2a01->Write();
+        h_a0DeltaEta_h1a02->Write();
+        h_zpDeltaEta_h1a02->Write();
+        h_zpDeltaEta_h2a01->Write();
+        h_hDeltaPhi_h2a01->Write();
+        h_a0DeltaPhi_h1a02->Write();
+        h_zpDeltaPhi_h1a02->Write();
+        h_zpDeltaPhi_h2a01->Write();
+        h_hNcandi_h1a02->Write();
+        h_hNcandi_h2a01->Write();
+        h_a0Ncandi_h2a01->Write();
+        h_a0Ncandi_h1a02->Write();
+        h_zpNcandi_h1a02->Write();
+        h_zpNcandi_h2a01->Write();
+        outputFile->Close();
+    }
 }
