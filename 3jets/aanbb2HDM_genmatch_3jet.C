@@ -176,7 +176,7 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
             if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
             if (ak8GenJetMSD[j]<140 && ak8GenJetMSD[j]>110) {
                 if (genHA0Par[2]->DeltaR(*thisak8Jet)<0.8&&genHA0Par[3]->DeltaR(*thisak8Jet)<0.8) matchH+=2;
-                if (genHA0Par[0]->DeltaR(*thisak8Jet)>0.8||genHA0Par[1]->DeltaR(*thisak8Jet)>0.8) continue;
+                if (!isBG&&(genHA0Par[0]->DeltaR(*thisak8Jet)>0.8||genHA0Par[1]->DeltaR(*thisak8Jet)>0.8)) continue;
                 matchH += 1;
                 h1a02=true;
                 HindexList_h1a02.push_back({(float)j,-1,(float)thisak8Jet->Pt()});
@@ -191,7 +191,7 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
                 TLorentzVector* thatJet = (TLorentzVector*)genak4jetP4->At(jj);
                 if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&genHA0Par[1]->DeltaR(*thatJet)<0.4) genParA=true; 
                 if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&genHA0Par[0]->DeltaR(*thatJet)<0.4) genParB=true; 
-                if (!(genParA||genParB)) continue;
+                if (!isBG&&!(genParA||genParB)) continue;
                 if(upeff && thatJet->Pt()<30)continue;
                 if(upeff && fabs(thatJet->Eta())>2.4)continue;
                 float diJetM = (*thisJet+*thatJet).M();
@@ -212,7 +212,7 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
         if (h2a01) {
             for(int j=0; j < nGenak8Jet; j++) {                 // ak8 jet
                 TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
-                if (genHA0Par[2]->DeltaR(*thisak8Jet)>0.8||genHA0Par[3]->DeltaR(*thisak8Jet)>0.8) continue;
+                if (!isBG&&(genHA0Par[2]->DeltaR(*thisak8Jet)>0.8||genHA0Par[3]->DeltaR(*thisak8Jet)>0.8)) continue;
                 if(upeff && thisak8Jet->Pt()<30)continue;
                 if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
                 if (ak8GenJetMSD[j]<(A0mass.Atof()+50)&&ak8GenJetMSD[j]>(A0mass.Atof()-50)) {
@@ -230,7 +230,7 @@ void aanbb2HDM_genmatch_3jet(int w=0, std::string inputFile="../gen2HDMsample/ge
                     bool genParA=false, genParB=false;
                     if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&genHA0Par[3]->DeltaR(*thatJet)<0.4) genParA=true; 
                     if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&genHA0Par[2]->DeltaR(*thatJet)<0.4) genParB=true; 
-                    if (!(genParA||genParB)) continue;
+                    if (!isBG&&!(genParA||genParB)) continue;
                     if(upeff && thatJet->Pt()<30) continue;
                     if(upeff && fabs(thatJet->Eta())>2.4) continue;
                     float diJetM = (*thisJet+*thatJet).M();

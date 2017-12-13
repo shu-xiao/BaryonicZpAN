@@ -11,6 +11,7 @@
 #include <TCanvas.h>
 #include "string"
 #include "setNCUStyle.C"
+#include "../gen2HDMsample/genMatch.C"
 void efferr(float nsig,float ntotal,float factor=1)
 {
     float eff = nsig/ntotal;
@@ -40,13 +41,14 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 using namespace std;
-void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp2500_MA0300.root"){
+void anbb2HDM_genmatch_3jet(int w, std::string inputFile){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
+    vector<vector<int>> genPar = genMatch_base(inputFile.data());
     
     
-    bool upeff = true;
+    bool upeff = false;
     bool isBG = false;
     bool iseffi = false; 
     
@@ -62,10 +64,12 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     TCanvas* c1 = new TCanvas("c1","c1",600,600);
 
     TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
+    //float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
+    //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
     TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
     
-    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",50,0,2.5);
-    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",50,0,2.5);
+    TH1F* h_hPtAs_h2a01 = new TH1F("h_hPtAs_h2a01","h_higgsPtAssymetry_h2a01",40,0,1);
+    TH1F* h_a0PtAs_h1a02 = new TH1F("h_a0PtAs_h1a02","h_A0PtAssymetry_h1a02",40,0,1);
     TH1F* h_zpPtAs_h1a02 = new TH1F("h_zpPtAs_h1a02","h_ZpPtAssymetry_h1a02",50,0,2.5);
     TH1F* h_zpPtAs_h2a01 = new TH1F("h_zpPtAs_h2a01","h_ZpPtAssymetry_h2a01",50,0,2.5);
     
@@ -88,15 +92,15 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     TH1F* h_a0M_h2a01 = new TH1F("h_a0M_h2a01", "h_A0M_genJet_h2a01", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_zpM_h2a01 = new TH1F("h_ZpM_h2a01", "h_ZpM_genJet_h2a01", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
-    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 80,0,1600);
-    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 80,0,1600);
-    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 80,0,1600);
-    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 80,0,1600);
+    TH1F* h_hPt_h1a02 = new TH1F("h_higgsPt_h1a02", "h_higgsPt_genJet_h1a02", 60,0,1200);
+    TH1F* h_hPt_h2a01 = new TH1F("h_higgsPt_h2a01", "h_higgsPt_genJet_h2a01", 60,0,1200);
+    TH1F* h_a0Pt_h1a02 = new TH1F("h_a0Pt_h1a02", "h_A0Pt_genJet_h1a02", 60,0,1200);
+    TH1F* h_a0Pt_h2a01 = new TH1F("h_a0Pt_h2a01", "h_A0Pt_genJet_h2a01", 60,0,1200);
     
-    TH1F* h_hDeltaR_h2a01 = new TH1F("h_HiggstobbDeltaR_h2a01", "h_HiggstobbDeltaR_reco_h2a01", 50,0,5);
-    TH1F* h_a0DeltaR_h1a02 = new TH1F("h_A0tobbDeltaR_h1a02", "h_A0tobbDeltaR_reco_h1a02", 50,0,5);
-    TH1F* h_zpDeltaR_h1a02 = new TH1F("h_ZptoHA0DeltaR_h1a02", "h_ZptoHA0DeltaR_reco_h1a02", 50,0,5);
-    TH1F* h_zpDeltaR_h2a01 = new TH1F("h_ZptoHA0DeltaR_h2a01", "h_ZptoHA0DeltaR_reco_h2a01", 50,0,5);
+    TH1F* h_hDeltaR_h2a01 = new TH1F("h_HiggstobbDeltaR_h2a01", "h_HiggstobbDeltaR_reco_h2a01", 40,0,4);
+    TH1F* h_a0DeltaR_h1a02 = new TH1F("h_A0tobbDeltaR_h1a02", "h_A0tobbDeltaR_reco_h1a02", 40,0,4);
+    TH1F* h_zpDeltaR_h1a02 = new TH1F("h_ZptoHA0DeltaR_h1a02", "h_ZptoHA0DeltaR_reco_h1a02", 40,0,4);
+    TH1F* h_zpDeltaR_h2a01 = new TH1F("h_ZptoHA0DeltaR_h2a01", "h_ZptoHA0DeltaR_reco_h2a01", 40,0,4);
     
     TH1F* h_hDeltaEta_h2a01 = new TH1F("h_HiggstobbDeltaEta_h2a01", "h_HiggstobbDeltaEta_reco_h2a01", 40,0,4);
     TH1F* h_a0DeltaEta_h1a02 = new TH1F("h_A0tobbDeltaEta_h1a02", "h_A0tobbDeltaEta_reco_h1a02", 40,0,4);
@@ -130,8 +134,11 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
         // broken events
-        data.GetEntry(jEntry);
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (genPar[jEntry][4]!=1) continue;
+        nPass_h1a02[0]++;
+        nPass_h2a01[0]++;
+        data.GetEntry(jEntry);
         int nGenak4Jet = (!isBG)? data.GetInt("ak4nGenJet"):data.GetInt("THINnJet");
         int nGenak8Jet = (!isBG)? data.GetInt("ak8nGenJet"):data.GetInt("FATnJet");
         float HT = data.GetFloat("HT");
@@ -139,35 +146,31 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         h_allEvent->Fill(1);
         //0. has a good vertex
         if(nGenak4Jet<2||nGenak8Jet<1) continue;
-        nPass_h1a02[0]++;
-        nPass_h2a01[0]++;
-        
-        float *ak8GenJetMSD, *ak8GenJetSDSJdR, *ak8GenJetSDSJSymm, *ak8GenJetSDMassDrop, *ak8GenJettau1, *ak8GenJettau2, *ak8GenJettau3;
-        if (isBG) {
-            ak8GenJetMSD = data.GetPtrFloat("FATjetSDmass");
-            ak8GenJettau1 = data.GetPtrFloat("FATjetTau1");
-            ak8GenJettau2 = data.GetPtrFloat("FATjetTau2");
-            ak8GenJettau3 = data.GetPtrFloat("FATjetTau3");
-        }
-        else {
-            ak8GenJetMSD = data.GetPtrFloat("ak8GenJetMSD");
-            ak8GenJetSDSJdR = data.GetPtrFloat("ak8GenJetSDSJdR");
-            ak8GenJetSDSJSymm = data.GetPtrFloat("ak8GenJetSDSJSymm");
-            ak8GenJetSDMassDrop = data.GetPtrFloat("ak8GenJetSDMassDrop");
-            ak8GenJettau1 = data.GetPtrFloat("ak8GenJettau1");
-            ak8GenJettau2 = data.GetPtrFloat("ak8GenJettau2");
-            ak8GenJettau3 = data.GetPtrFloat("ak8GenJettau3");
-        }
+        nPass_h1a02[1]++;
+        nPass_h2a01[1]++;
+        float *ak8GenJetMSD = data.GetPtrFloat("ak8GenJetMSD");
+        float *ak8GenJetSDSJdR = data.GetPtrFloat("ak8GenJetSDSJdR");
+        float *ak8GenJetSDSJSymm = data.GetPtrFloat("ak8GenJetSDSJSymm");
+        float *ak8GenJetSDMassDrop = data.GetPtrFloat("ak8GenJetSDMassDrop");
+        float *ak8GenJettau1 = data.GetPtrFloat("ak8GenJettau1");
+        float *ak8GenJettau2 = data.GetPtrFloat("ak8GenJettau2");
+        float *ak8GenJettau3 = data.GetPtrFloat("ak8GenJettau3");
         
         TClonesArray* genak4jetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak4GenJetP4"):(TClonesArray*) data.GetPtrTObject("THINjetP4");
-        TClonesArray* genak8jetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak8GenJetP4"):(TClonesArray*) data.GetPtrTObject("FATjetP4");
+        TClonesArray* genak8jetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak8GenJetP4"):(TClonesArray*) data.GetPtrTObject("THINjetP4");
         
         vector<vector<float>> HindexList_h2a01, A0indexList_h1a02, ZpindexList_h1a02;
         vector<vector<float>> HindexList_h1a02, A0indexList_h2a01, ZpindexList_h2a01;
+        
+        TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+        vector<TLorentzVector*> genHA0Par;
+        for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
+        
         // reco higgs
         bool h1a02 = false, h2a01 = false;
         for(int j=0; j < nGenak8Jet; j++) {
             TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
+            if (genHA0Par[0]->DeltaR(*thisak8Jet)>0.8||genHA0Par[1]->DeltaR(*thisak8Jet)>0.8) continue;
             if(upeff && thisak8Jet->Pt()<30)continue;
             if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
             if (ak8GenJetMSD[j]<140 && ak8GenJetMSD[j]>110) {
@@ -177,10 +180,17 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         }
         for(int ij=0; ij < nGenak4Jet; ij++) {
             TLorentzVector* thisJet = (TLorentzVector*)genak4jetP4->At(ij);
+            bool genParA=false, genParB=false;
+            if (genHA0Par[0]->DeltaR(*thisJet)<0.4) genParA=true;
+            if (genHA0Par[1]->DeltaR(*thisJet)<0.4) genParB=true;
+            if (!(genParA||genParB)) continue;
             if(upeff && thisJet->Pt()<30)continue;
             if(upeff && fabs(thisJet->Eta())>2.4)continue;
             for (int jj=0;jj<ij;jj++) {
                 TLorentzVector* thatJet = (TLorentzVector*)genak4jetP4->At(jj);
+                if ((!genParA)||genHA0Par[1]->DeltaR(*thatJet)>0.4) genParA=false; 
+                if ((!genParB)||genHA0Par[0]->DeltaR(*thatJet)>0.4) genParB=false; 
+                if (!(genParA||genParB)) continue;
                 if(upeff && thatJet->Pt()<30)continue;
                 if(upeff && fabs(thatJet->Eta())>2.4)continue;
                 float diJetM = (*thisJet+*thatJet).M();
@@ -193,14 +203,15 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         if (HindexList_h1a02.size()>0) sort(HindexList_h1a02.begin(),HindexList_h1a02.end(),sortListbyPt);
         h_hNcandi_h1a02->Fill(HindexList_h1a02.size());
         h_hNcandi_h2a01->Fill(HindexList_h2a01.size());
-        if (h1a02) nPass_h1a02[1]++;
-        if (h2a01) nPass_h2a01[1]++;
+        if (h1a02) nPass_h1a02[2]++;
+        if (h2a01) nPass_h2a01[2]++;
         if (HindexList_h2a01.size()==0&&HindexList_h1a02.size()==0)  continue;
         
         // reco A0
         if (h2a01) {
             for(int j=0; j < nGenak8Jet; j++) {                 // ak8 jet
                 TLorentzVector* thisak8Jet = (TLorentzVector*)genak8jetP4->At(j);
+                if (genHA0Par[2]->DeltaR(*thisak8Jet)>0.8||genHA0Par[3]->DeltaR(*thisak8Jet)>0.8) continue;
                 if(upeff && thisak8Jet->Pt()<30)continue;
                 if(upeff && fabs(thisak8Jet->Eta())>2.4)continue;
                 if (ak8GenJetMSD[j]<(A0mass.Atof()+50)&&ak8GenJetMSD[j]>(A0mass.Atof()-50)) {
@@ -211,10 +222,17 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         if (h1a02) {
             for(int ij=0; ij < nGenak4Jet; ij++) {    // ak4 jet
                 TLorentzVector* thisJet = (TLorentzVector*)genak4jetP4->At(ij);
+                bool genParA=false, genParB=false;
+                if (genHA0Par[2]->DeltaR(*thisJet)<0.4) genParA=true;
+                if (genHA0Par[3]->DeltaR(*thisJet)<0.4) genParB=true;
+                if (!(genParA||genParB)) continue;
                 if(upeff && thisJet->Pt()<30)continue;
                 if(upeff && fabs(thisJet->Eta())>2.4)continue;
                 for (int jj=0;jj<ij;jj++) {
                     TLorentzVector* thatJet = (TLorentzVector*)genak4jetP4->At(jj);
+                    if ((!genParA)||genHA0Par[3]->DeltaR(*thatJet)>0.4) genParA=false; 
+                    if ((!genParB)||genHA0Par[2]->DeltaR(*thatJet)>0.4) genParB=false; 
+                    if (!(genParA||genParB)) continue;
                     if(upeff && thatJet->Pt()<30) continue;
                     if(upeff && fabs(thatJet->Eta())>2.4) continue;
                     float diJetM = (*thisJet+*thatJet).M();
@@ -227,12 +245,12 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
 
         if (A0indexList_h1a02.size()>0) {
             sort(A0indexList_h1a02.begin(),A0indexList_h1a02.end(),sortListbyPt);
-            nPass_h1a02[2]++;
+            nPass_h1a02[3]++;
         }
         else h1a02=false;
         if (A0indexList_h2a01.size()>0) {
             sort(A0indexList_h2a01.begin(),A0indexList_h2a01.end(),sortListbyPt);
-            nPass_h2a01[2]++;
+            nPass_h2a01[3]++;
         }
         else h2a01=false;
         h_a0Ncandi_h2a01->Fill(A0indexList_h2a01.size());
@@ -273,24 +291,23 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         h_zpNcandi_h2a01->Fill(ZpindexList_h2a01.size());
         if (ZpindexList_h1a02.size()>0) {
             sort(ZpindexList_h1a02.begin(),ZpindexList_h1a02.end(),sortListbyPtZp);
-            nPass_h1a02[3]++;
+            nPass_h1a02[4]++;
         }
         else h1a02=false;
         if (ZpindexList_h2a01.size()>0) {
             sort(ZpindexList_h2a01.begin(),ZpindexList_h2a01.end(),sortListbyPtZp);
-            nPass_h2a01[3]++;
+            nPass_h2a01[4]++;
         }
         else h2a01=false;
         if (ZpindexList_h1a02.size()==0&&ZpindexList_h2a01.size()==0)  continue;
         if (ZpindexList_h1a02.size()!=1) h1a02=false;
-        else nPass_h1a02[4]++;
+        else nPass_h1a02[5]++;
         if (ZpindexList_h2a01.size()!=1) h2a01=false;
-        else nPass_h2a01[4]++;
+        else nPass_h2a01[5]++;
         // fill figures
         if (h1a02) {
             TLorentzVector* HbJet = (TLorentzVector*)genak8jetP4->At(ZpindexList_h1a02[0][0]);
-            //h_hM_h1a02->Fill(HbJet->M());
-            h_hM_h1a02->Fill(ak8GenJetMSD[(int)ZpindexList_h1a02[0][0]]);
+            h_hM_h1a02->Fill(HbJet->M());
             h_hPt_h1a02->Fill(HbJet->Pt());
             
             TLorentzVector* A0bJet0 = (TLorentzVector*)genak4jetP4->At(ZpindexList_h1a02[0][2]);
@@ -330,8 +347,7 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
             h_hDeltaEta_h2a01->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
             
             TLorentzVector* A0bJet = (TLorentzVector*)genak8jetP4->At(ZpindexList_h2a01[0][2]);
-            //h_a0M_h2a01->Fill(A0bJet->M());
-            h_a0M_h2a01->Fill(ak8GenJetMSD[(int)ZpindexList_h2a01[0][2]]);
+            h_a0M_h2a01->Fill(A0bJet->M());
             h_a0Pt_h2a01->Fill(A0bJet->Pt());
             
             TLorentzVector* HrecoJet = new TLorentzVector();
@@ -353,9 +369,9 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass_h1a02[i]>0) std::cout << "h1a02\tnPass[" << i << "] = " << nPass_h1a02[i] << std::endl;
-    efferr(nPass_h1a02[4],nTotal);
+    efferr(nPass_h1a02[5],nTotal);
     for(int i=0;i<20;i++) if(nPass_h1a02[i]>0) std::cout << "h2a01\tnPass[" << i << "] = " << nPass_h2a01[i] << std::endl;
-    efferr(nPass_h2a01[4],nTotal);
+    efferr(nPass_h2a01[5],nTotal);
     if (iseffi) {
         string effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_3jets.txt",Zpmass.Data(),A0mass.Data());
         fstream fp;
@@ -365,11 +381,11 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         fp.close();
         
     }
-    if (!isBG) 
+    if (!isBG&&false) 
     {
-        string pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
-        string pdfNameI = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
-        string pdfNameF = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
+        string pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        string pdfNameI = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf(",Zpmass.Data(),A0mass.Data());
+        string pdfNameF = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf)",Zpmass.Data(),A0mass.Data());
         h_HT->Draw("hist");
         c1->Print(pdfNameI.data());
         h_zpM_h1a02->Draw("hist");
@@ -465,58 +481,39 @@ void anbb2HDM_3jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         h_zpNcandi_h2a01->Draw("hist");
         c1->Print(pdfNameF.data());
     }
+    /* 
     string fileName;
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else fileName = Form("signal/bb2HDM_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    if (isBG) {
-        TFile* outputFile = new TFile(fileName.data(),"recreate");
-        h_HT->Write();
-        h_zpM_h1a02->Write();
-        h_zpM_h2a01->Write();
-        h_hM_h1a02->Write();
-        h_hM_h2a01->Write();
-        h_a0M_h1a02->Write();
-        h_a0M_h2a01->Write();
-        h_hPt_h1a02->Write();
-        h_hPt_h2a01->Write();
-        h_a0Pt_h1a02->Write();
-        h_a0Pt_h2a01->Write();
-        h_hPtAs_h2a01->Write();
-        h_a0PtAs_h1a02->Write();
-        h_zpPtAs_h1a02->Write();
-        h_zpPtAs_h2a01->Write();
-        h_hPtSD_h2a01->Write();
-        h_a0PtSD_h1a02->Write();
-        h_zpPtSD_h1a02->Write();
-        h_zpPtSD_h2a01->Write();
-        h_htau1_h1a02->Write();
-        h_htau2_h1a02->Write();
-        h_htau3_h1a02->Write();
-        h_htau21_h1a02->Write();
-        h_htau32_h1a02->Write();
-        h_a0tau1_h2a01->Write();
-        h_a0tau2_h2a01->Write();
-        h_a0tau3_h2a01->Write();
-        h_a0tau21_h2a01->Write();
-        h_a0tau32_h2a01->Write();
-        h_hDeltaR_h2a01->Write();
-        h_a0DeltaR_h1a02->Write();
-        h_zpDeltaR_h1a02->Write();
-        h_zpDeltaR_h2a01->Write();
-        h_hDeltaEta_h2a01->Write();
-        h_a0DeltaEta_h1a02->Write();
-        h_zpDeltaEta_h1a02->Write();
-        h_zpDeltaEta_h2a01->Write();
-        h_hDeltaPhi_h2a01->Write();
-        h_a0DeltaPhi_h1a02->Write();
-        h_zpDeltaPhi_h1a02->Write();
-        h_zpDeltaPhi_h2a01->Write();
-        h_hNcandi_h1a02->Write();
-        h_hNcandi_h2a01->Write();
-        h_a0Ncandi_h2a01->Write();
-        h_a0Ncandi_h1a02->Write();
-        h_zpNcandi_h1a02->Write();
-        h_zpNcandi_h2a01->Write();
-        outputFile->Close();
-    }
+    TFile* outputFile = new TFile(fileName.data(),"recreate");
+    h_allEvent->Write();
+    h_HT->Write();
+    h_zpM->Write();
+    h_hM->Write();
+    h_a0M->Write();
+    h_hPt->Write();
+    h_a0Pt->Write();
+    h_hPtAs_h2a01->Write();
+    h_a0PtAs_h1a02->Write();
+    h_zpPtAs->Write();
+    h_hPtSD_h2a01->Write();
+    h_a0PtSD_h1a02->Write();
+    h_zpPtSD->Write();
+    h_hDeltaR_h2a01->Write();
+    h_a0DeltaR_h1a02->Write();
+    h_zpDeltaR->Write();
+    h_hDeltaEta_h2a01->Write();
+    h_a0DeltaEta_h1a02->Write();
+    h_zpDeltaEta->Write();
+    h_hDeltaPhi_h2a01->Write();
+    h_a0DeltaPhi_h1a02->Write();
+    h_zpDeltaPhi->Write();
+    h_hNcandi_h1a02->Write();
+    h_hNcandi_h2a01->Write();
+    h_a0Ncandi_h2a01->Write();
+    h_a0Ncandi_h1a02->Write();
+    h_zpNcandi_h1a02->Write();
+    h_zpNcandi_h2a01->Write();
+    outputFile->Close();
+    */
 }

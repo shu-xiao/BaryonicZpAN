@@ -41,7 +41,7 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 using namespace std;
-void anbb2HDM_genmatch_4jet(int w, std::string inputFile){
+void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp1700_MA0300.root"){
     setNCUStyle(true);
     //get TTree from file ...
     TreeReader data(inputFile.data());
@@ -136,7 +136,7 @@ void anbb2HDM_genmatch_4jet(int w, std::string inputFile){
                 bool genParA=false, genParB=false;
                 if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&genHA0Par[1]->DeltaR(*thatJet)<0.4) genParA=true;
                 if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&genHA0Par[0]->DeltaR(*thatJet)<0.4) genParB=true; 
-                if (!(genParA||genParB)) continue;
+                if (!isBG && !(genParA||genParB)) continue;
                 if(upeff && thatJet->Pt()<30)continue;
                 if(upeff && fabs(thatJet->Eta())>2.4)continue;
                 float diJetM = (*thisJet+*thatJet).M();
@@ -182,6 +182,7 @@ void anbb2HDM_genmatch_4jet(int w, std::string inputFile){
                 bool genParA=false, genParB=false;
                 if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&genHA0Par[3]->DeltaR(*thatJet)<0.4) genParA=true;
                 if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&genHA0Par[2]->DeltaR(*thatJet)<0.4) genParB=true; 
+                if (!isBG && !(genParA||genParB)) continue;
                 if(upeff && thatJet->Pt()<30) continue;
                 if(upeff && fabs(thatJet->Eta())>2.4) continue;
                 float diJetM = (*thisJet+*thatJet).M();
