@@ -48,7 +48,7 @@ void anbb2HDM_2jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     vector<vector<int>> genPar = genMatch_base(inputFile.data());
     
     
-    bool iseffi = true;
+    bool iseffi = false;
     bool upeff = true;
     bool isBG = false;
     
@@ -112,10 +112,8 @@ void anbb2HDM_2jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     
     Int_t nPass[20]={0};
     
-    //for(Long64_t jEntry=0; jEntry<100 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
-        // broken events
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
         float HT = data.GetFloat("HT");
@@ -128,16 +126,21 @@ void anbb2HDM_2jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         
         TClonesArray* genjetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak8GenJetP4"):(TClonesArray*) data.GetPtrTObject("FATjetP4");
         
-        const int nCandidates = 30;
+        const int nCandidates = 5000;
         vector<vector<float>> HindexList, A0indexList, ZpindexList;
         vector<float> row(5,-99);
         HindexList.assign(nCandidates,row);
         A0indexList.assign(nCandidates,row);
         ZpindexList.assign(nCandidates,row);
-        TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
         vector<TLorentzVector*> genHA0Par;
-        for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
-
+        TLorentzVector v1;
+        if (!isBG) {
+            TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+            for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
+        }
+        else {
+            for (int i=0;i<4;i++) genHA0Par.push_back(&v1);
+        }
         float *ak8GenJetMSD, *ak8GenJetSDSJdR, *ak8GenJetSDSJSymm, *ak8GenJetSDMassDrop, *ak8GenJettau1, *ak8GenJettau2, *ak8GenJettau3;
         if (isBG) {
             ak8GenJetMSD = data.GetPtrFloat("FATjetSDmass");
@@ -159,7 +162,9 @@ void anbb2HDM_2jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
             if(upeff && thisJet->Pt()<30)continue;
             if(upeff && fabs(thisJet->Eta())>2.4)continue;
-            if (isBG||genHA0Par[0]->DeltaR(*thisJet)>0.8||genHA0Par[1]->DeltaR(*thisJet)>0.8) continue;
+            if (isBG) {
+                if(genHA0Par[0]->DeltaR(*thisJet)>0.8||genHA0Par[1]->DeltaR(*thisJet)>0.8) continue;
+            }
             if (ak8GenJetMSD[ij]>140 || ak8GenJetMSD[ij]<110) continue;
             HindexList[iList][0] = ij;
             HindexList[iList][1] = ij;
@@ -181,13 +186,14 @@ void anbb2HDM_2jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
                 break;
             }
         }
-        
         // reco A0
         for(int ij=0, iList=0; ij < nGenJet; ij++) {
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
             if(upeff && thisJet->Pt()<30)continue;
             if(upeff && fabs(thisJet->Eta())>2.4)continue;
-            if (isBG||genHA0Par[2]->DeltaR(*thisJet)>0.8||genHA0Par[3]->DeltaR(*thisJet)>0.8) continue;
+            if (isBG) {
+                if (genHA0Par[2]->DeltaR(*thisJet)>0.8||genHA0Par[3]->DeltaR(*thisJet)>0.8) continue;
+            }
             if (ak8GenJetMSD[ij]>(A0mass.Atof()+50)||ak8GenJetMSD[ij]<(A0mass.Atof()-50)) continue;
             A0indexList[iList][0] = ij;
             A0indexList[iList][1] = ij;

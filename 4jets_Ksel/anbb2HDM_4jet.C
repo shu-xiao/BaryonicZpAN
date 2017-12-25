@@ -96,6 +96,7 @@ void anbb2HDM_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
     TH1F* h_zpDeltaPhi = new TH1F("h_ZptoHA0DeltaPhi", "h_ZptoHA0DeltaPhi_reco", 32,0,3.2);
     
     Int_t nPass[20]={0};
+    int maxIndexNum = 0;
     
     //for(Long64_t jEntry=0; jEntry<100 ;jEntry++){
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
@@ -113,7 +114,7 @@ void anbb2HDM_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         
         TClonesArray* genjetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak4GenJetP4"):(TClonesArray*) data.GetPtrTObject("THINjetP4");
         
-        const int nCandidates = 30;
+        const int nCandidates = 100;
         vector<vector<float>> HindexList, A0indexList, ZpindexList;
         vector<float> row(5,-99);
         HindexList.assign(nCandidates,row);
@@ -135,13 +136,14 @@ void anbb2HDM_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
                 HindexList[iList][2] = (*thisJet+*thatJet).Pt();
                 iList++;
                 if (iList>=nCandidates) {
-                    cout << "Higgs index out of setting" << endl;
+                    cout << Form("Higgs index out of setting, jEntry = %lld", jEntry) << endl;
                     return;
                 }
                 //if (abs(thisJet->Eta()-thatJet->Eta())>1.0) continue;
                 //if ((*thisJet+*thatJet).Pt()>HptMax) {
                 //}
             }
+            if (iList>maxIndexNum) maxIndexNum=iList;
         } // end of outer loop jet
         sort(HindexList.begin(),HindexList.end(),sortListbyPt);
         if (HindexList[0][0]<0) {h_hNcandi->Fill(0); continue;}
@@ -271,6 +273,7 @@ void anbb2HDM_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZ
         h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0recoJet->Eta()));
     } // end of loop over entries
     float nTotal = data.GetEntriesFast();
+    cout << Form("maximum number of matching higgs jet = %d", maxIndexNum) << endl;
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[4],nTotal);
