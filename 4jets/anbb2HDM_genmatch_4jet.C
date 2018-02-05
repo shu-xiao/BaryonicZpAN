@@ -1,0 +1,377 @@
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <TH1D.h>
+#include <TFile.h>
+#include "untuplizer.h"
+#include <TClonesArray.h>
+#include <TLorentzVector.h>
+#include <fstream>
+#include <TCanvas.h>
+#include "string"
+#include "setNCUStyle.C"
+#include "../gen2HDMsample/genMatch.C"
+    
+#define iseffi          false
+#define basePtEtaCut    true
+#define doGenMatch      true
+
+void efferr(float nsig,float ntotal,float factor=1)
+{
+    float eff = nsig/ntotal;
+    float err = sqrt( (1-eff)*eff/ntotal);
+    cout << "efficiency = " << eff*factor << " +- " << err*factor << endl;
+    //ofstream myfile;
+    //myfile.open();
+    //myfile << eff*factor << endl;
+    //myfile << err*factor;
+}
+float caldePhi(float phi1, float phi2) {
+    float dePhi = 0;
+    if (abs(phi1-phi2)>TMath::Pi()) dePhi = 2*TMath::Pi() - abs(phi1-phi2);
+    else dePhi = abs(phi1-phi2);
+    return dePhi;
+}
+bool sortListbyPt(vector<float> a, vector<float> b) {return a[2]>b[2];}
+bool sortListbyPtZp(vector<float> a, vector<float> b) {return a[4]>b[4];}
+float ptAssymetry(TLorentzVector* j1, TLorentzVector* j2) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    float deR = j1->DeltaR(*j2);
+    float mj = (*j1+*j2).M();
+    return pow(minPt*deR/mj,2);
+}
+float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float beta = 0) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
+}
+void savenPass(int nPass[],string fileName) {
+    fstream fp;
+    fp.open(fileName.data(), ios::out);
+    for (int i=0;i<20;i++) {
+        if (nPass[i]==0) break;
+        fp << (float)nPass[i] << endl;
+    }
+    fp.close();
+
+}
+using namespace std;
+void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="../gen2HDMsample/gen2HDMbb_MZp1700_MA0300.root"){
+    setNCUStyle(true);
+    //get TTree from file ...
+    TreeReader data(inputFile.data());
+    vector<vector<int>> genPar = genMatch_base(inputFile.data());
+    
+    /*
+    bool iseffi = false;
+    bool basePtEtaCut = true;
+    bool doGenMatch = false;
+    */
+    bool isBG = false;
+    
+    TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
+    TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
+    // set default value
+    if (Zpmass.Atof()>2500||Zpmass.Atof()<500 || A0mass.Atof()>800 || A0mass.Atof()<300) {
+        Zpmass = "800";
+        A0mass = "300";
+        isBG = true;
+    }
+
+    TCanvas* c1 = new TCanvas("c1","",600,600);
+
+    TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
+    //float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
+    //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
+    TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
+    
+    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
+    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
+    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",50,0,2.5);
+
+    TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",30,0,0.6);
+    TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
+    TH1F* h_zpPtSD = new TH1F("h_zpPtSD","h_ZpPtSD",30,0,0.6);
+    
+    TH1F* h_hNcandi = new TH1F("h_hNcandi", "h_higgs_NcandidatePairJets", 10,-0.5,9.5);
+    TH1F* h_a0Ncandi = new TH1F("h_a0Ncandi", "h_A0_NcandidatePairJets", 10,-0.5,9.5);
+    TH1F* h_zpNcandi = new TH1F("h_zpNcandi", "h_Zp_NcandidatePairJets", 10,-0.5,9.5);
+
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genJet", 50,100,150);
+    TH1F* h_hM_ori = new TH1F("h_higgsM_ori", "h_higgsM_genmatchJet", 100,50,150);
+    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genJet", 24,A0mass.Atof()-60,A0mass.Atof()+60);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genJet", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
+    
+    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_genJet", 60,0,1200);
+    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_genJet", 60,0,1200);
+    
+    TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
+    TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
+    TH1F* h_zpDeltaR = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 40,0,4);
+    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
+    TH1F* h_a0DeltaEta = new TH1F("h_A0tobbDeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
+    TH1F* h_zpDeltaEta = new TH1F("h_ZptoHA0DeltaEta", "h_ZptoHA0DeltaEta_reco", 40,0,4);
+    TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbDeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_a0DeltaPhi = new TH1F("h_A0tobbDeltaPhi", "h_A0obbDeltaPhi_reco", 32,0,3.2);
+    TH1F* h_zpDeltaPhi = new TH1F("h_ZptoHA0DeltaPhi", "h_ZptoHA0DeltaPhi_reco", 32,0,3.2);
+    
+    Int_t nPass[20]={0};
+    int maxHIndexNum = 0, maxZpIndexNum = 0;
+    
+    for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
+        
+        // broken events
+        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        data.GetEntry(jEntry);
+        nPass[0]++;
+        float HT = data.GetFloat("HT");
+        h_HT->Fill(HT);
+        h_allEvent->Fill(1);
+        //0. has a good vertex
+        int nGenJet = (!isBG)? data.GetInt("ak4nGenJet"):data.GetInt("THINnJet");
+        if(nGenJet<4) continue;
+        nPass[1]++;
+        TClonesArray* genjetP4 = (!isBG)? (TClonesArray*) data.GetPtrTObject("ak4GenJetP4"):(TClonesArray*) data.GetPtrTObject("THINjetP4");
+        
+        const int nCandidates = 100;
+        //const int nCandidates = 5000;
+        vector<vector<float>> HindexList, A0indexList, ZpindexList;
+        vector<TLorentzVector*> genHA0Par;
+        //TLorentzVector v1;
+        if (!isBG||doGenMatch) {
+            TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+            for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
+        }
+        
+        // reco higgs
+        float genMatchHiggs[3]={0};
+        for(int ij=0, iList=0; ij < nGenJet; ij++) {
+            TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+            if(basePtEtaCut && thisJet->Pt()<30)continue;
+            if(basePtEtaCut && fabs(thisJet->Eta())>2.4)continue;
+            for (int jj=0;jj<ij;jj++) {
+                TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
+                if (!isBG||doGenMatch) {
+                    bool genParA=false, genParB=false;
+                    if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&genHA0Par[1]->DeltaR(*thatJet)<0.4) genParA=true;
+                    if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&genHA0Par[0]->DeltaR(*thatJet)<0.4) genParB=true; 
+                    if (!(genParA||genParB)) continue;
+                }
+
+                float diJetPt = (*thisJet+*thatJet).Pt();
+                if (genMatchHiggs[2]<diJetPt) {
+                    genMatchHiggs[0] = ij;
+                    genMatchHiggs[1] = jj;
+                    genMatchHiggs[2] = diJetPt;
+
+                }
+                if(basePtEtaCut && thatJet->Pt()<30)continue;
+                if(basePtEtaCut && fabs(thatJet->Eta())>2.4)continue;
+                float diJetM = (*thisJet+*thatJet).M();
+                if (diJetM>140||diJetM<110) continue;
+                HindexList.push_back({(float)ij,(float)jj,(float)(*thisJet+*thatJet).Pt()});
+            }
+            //if (iList>maxHIndexNum) maxHIndexNum=iList;
+        } // end of outer loop jet
+        if (true) {
+            TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At((int)genMatchHiggs[0]);
+            TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At((int)genMatchHiggs[1]);
+            float diJetM = (*thisJet+*thatJet).M();
+            h_hM_ori->Fill(diJetM); 
+        }
+        sort(HindexList.begin(),HindexList.end(),sortListbyPt);
+        h_hNcandi->Fill(HindexList.size());
+        if (HindexList.size()==0) continue;
+        nPass[2]++;
+        
+        
+        // reco A0
+        for(int ij=0, iList=0; ij < nGenJet; ij++) {
+            TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+            if(basePtEtaCut && thisJet->Pt()<30)continue;
+            if(basePtEtaCut && fabs(thisJet->Eta())>2.4)continue;
+            for (int jj=0;jj<ij;jj++) {
+                TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
+                if (!isBG||doGenMatch) {
+                    bool genParA=false, genParB=false;
+                    if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&genHA0Par[3]->DeltaR(*thatJet)<0.4) genParA=true;
+                    if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&genHA0Par[2]->DeltaR(*thatJet)<0.4) genParB=true; 
+                    if (!isBG && !(genParA||genParB)) continue;
+                }
+                if(basePtEtaCut && thatJet->Pt()<30) continue;
+                if(basePtEtaCut && fabs(thatJet->Eta())>2.4) continue;
+                float diJetM = (*thisJet+*thatJet).M();
+                if (diJetM>(A0mass.Atof()+50)||diJetM<(A0mass.Atof()-50)) continue;
+                A0indexList.push_back({(float)ij,(float)jj,(float)(*thisJet+*thisJet).Pt()});
+            }
+        } // end of outer loop jet
+        
+        sort(A0indexList.begin(),A0indexList.end(),sortListbyPt);
+        //if (A0indexList[0][0]<0) {h_a0Ncandi->Fill(0); continue;}
+        h_a0Ncandi->Fill(A0indexList.size());
+        if (A0indexList.size()==0) continue;
+        nPass[3]++;
+        
+        
+        //reco Z'
+        float zpM = -999;
+        for (int i=0, iList=0;i<HindexList.size();i++) {
+            for (int j=0;j<A0indexList.size();j++) {
+                bool idCrash = false;
+                for (int m=0;m<2;m++) for (int n=0;n<2;n++) if (HindexList[i][m]==A0indexList[j][n]) idCrash = true;
+                if (idCrash) continue;
+                TLorentzVector* bJet0 = (TLorentzVector*)genjetP4->At(HindexList[i][0]);
+                TLorentzVector* bJet1 = (TLorentzVector*)genjetP4->At(HindexList[i][1]);
+                TLorentzVector* bJet2 = (TLorentzVector*)genjetP4->At(A0indexList[j][0]);
+                TLorentzVector* bJet3 = (TLorentzVector*)genjetP4->At(A0indexList[j][1]);
+                zpM = (*bJet0+*bJet1+*bJet2+*bJet3).M();
+                if (zpM>(Zpmass.Atof()+100) || zpM<(Zpmass.Atof()-100)) continue;
+                ZpindexList.push_back({(float)HindexList[i][0],(float)HindexList[i][1],(float)A0indexList[j][0],(float)A0indexList[j][1],(float)(*bJet0+*bJet1+*bJet2+*bJet3).Pt()});
+            }
+        }
+        //if (ZpindexList[0][0]<0) {h_zpNcandi->Fill(0); continue;}
+        h_zpNcandi->Fill(ZpindexList.size());
+        
+        if (ZpindexList.size()==0) continue;
+        nPass[4]++;
+        sort(ZpindexList.begin(),ZpindexList.end(),sortListbyPtZp);
+        
+        if (ZpindexList.size()!=1) continue;
+        nPass[5]++;
+        
+        TLorentzVector* HbJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][0]);
+        TLorentzVector* HbJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][1]);
+        h_hM->Fill((*HbJet0+*HbJet1).M());
+        h_hPt->Fill((*HbJet0+*HbJet1).Pt());
+        h_hPtAs->Fill(ptAssymetry(HbJet0,HbJet1));
+        h_hPtSD->Fill(softDropAs(HbJet0,HbJet1));
+        h_hDeltaR->Fill(HbJet0->DeltaR(*HbJet1));
+        h_hDeltaPhi->Fill(caldePhi(HbJet0->Phi(),HbJet1->Phi()));
+        h_hDeltaEta->Fill(abs(HbJet0->Eta()-HbJet1->Eta()));
+        
+        TLorentzVector* A0bJet0 = (TLorentzVector*)genjetP4->At(ZpindexList[0][2]);
+        TLorentzVector* A0bJet1 = (TLorentzVector*)genjetP4->At(ZpindexList[0][3]);
+        h_a0M->Fill((*A0bJet0+*A0bJet1).M());
+        h_a0Pt->Fill((*A0bJet0+*A0bJet1).Pt());
+        h_a0PtAs->Fill(ptAssymetry(A0bJet0,A0bJet1));
+        h_a0PtSD->Fill(softDropAs(A0bJet0,A0bJet1));
+        h_a0DeltaR->Fill(A0bJet0->DeltaR(*A0bJet1));
+        h_a0DeltaPhi->Fill(caldePhi(A0bJet0->Phi(),A0bJet1->Phi()));
+        h_a0DeltaEta->Fill(abs(A0bJet0->Eta()-A0bJet1->Eta()));
+        
+        TLorentzVector* A0recoJet = new TLorentzVector(), *HrecoJet = new TLorentzVector();
+        *A0recoJet = *A0bJet0 + *A0bJet1;
+        *HrecoJet = *HbJet0 +*HbJet1;
+        h_zpM->Fill((*HbJet0+*HbJet1+*A0bJet0+*A0bJet1).M());
+        h_zpPtAs->Fill(ptAssymetry(HrecoJet,A0recoJet));
+        h_zpPtSD->Fill(softDropAs(HrecoJet,A0recoJet));
+        h_zpDeltaR->Fill(abs(A0recoJet->DeltaR(*HrecoJet)));
+        h_zpDeltaPhi->Fill(caldePhi(A0recoJet->Phi(),HrecoJet->Phi()));
+        h_zpDeltaEta->Fill(abs(HrecoJet->Eta()-A0recoJet->Eta()));
+    } // end of loop over entries
+    float nTotal = data.GetEntriesFast();
+    std::cout << "nTotal    = " << nTotal << std::endl;
+    
+    for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
+    efferr(nPass[5],nTotal);
+    if (!isBG) 
+    {
+        string pdfName;
+        if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        else pdfName = Form("anGenJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        c1->Print((pdfName+"[").data());
+        h_HT->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpM->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hM->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0M->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPt->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0Pt->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0PtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpPtAs->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hPtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0PtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpPtSD->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaR->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaR->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpDeltaR->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpDeltaEta->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hDeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_a0DeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_zpDeltaPhi->Draw("hist");
+        c1->Print(pdfName.data());
+        h_hNcandi->Draw("hist text0");
+        c1->Print(pdfName.data());
+        h_a0Ncandi->Draw("hist text0");
+        c1->Print(pdfName.data());
+        h_zpNcandi->Draw("hist text0");
+        c1->Print(pdfName.data());
+        c1->Print((pdfName+"]").data());
+    }
+    string fileName; 
+    if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
+    else fileName = Form("sigRootFile/bb2HDM_genMatch_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
+    if (!iseffi) {
+        TFile* outputFile = new TFile(fileName.data(),"recreate");
+        h_HT->Write();
+        h_zpM->Write();
+        h_hM->Write();
+        h_a0M->Write();
+        h_hPt->Write();
+        h_a0Pt->Write();
+        h_hPtAs->Write();
+        h_a0PtAs->Write();
+        h_zpPtAs->Write();
+        h_hPtSD->Write();
+        h_a0PtSD->Write();
+        h_zpPtSD->Write();
+        h_hDeltaR->Write();
+        h_a0DeltaR->Write();
+        h_zpDeltaR->Write();
+        h_hDeltaEta->Write();
+        h_a0DeltaEta->Write();
+        h_zpDeltaEta->Write();
+        h_hDeltaPhi->Write();
+        h_a0DeltaPhi->Write();
+        h_zpDeltaPhi->Write();
+        h_hNcandi->Write();
+        h_a0Ncandi->Write();
+        h_zpNcandi->Write();
+        
+        outputFile->Close();
+    }
+    string fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_4jets.txt",Zpmass.Data(),A0mass.Data());
+    savenPass(nPass,fileNPassName);
+    if (iseffi) {
+        string effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_4jets.txt",Zpmass.Data(),A0mass.Data());
+        //string nPassfilename = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_4jets.txt",Zpmass.Data(),A0mass.Data());
+        fstream fp;
+        fp.open(effifilename.data(), ios::out);
+        fp << (float)nPass[5]/nTotal << endl;
+        fp.close();
+        
+    }
+
+}
