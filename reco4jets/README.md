@@ -11,7 +11,8 @@ The description for other analysis directories is still working. :construction_w
 |[anbb2HDM\_genmatch\_4jet.C](https://github.com/shu-xiao/BaryonicZpAN/blob/genmatch/reco4jets/anbb2HDM_genmatch_4jet.C "anbb2HDM_genmatch_4jet.C")|macro to analysis|
 |[pdfFile](https://github.com/shu-xiao/BaryonicZpAN/tree/genmatch/reco4jets/pdfFile "pdfFile")|the directory place the analysis result|
 |anRecoJet_*.pdf | the distribution of signal applied selections without btag|
-| anRecoBTagJet_*.pdf|the distribution of signal applied selections with btag|
-Parameters of ananlysis: 
+| anRecoBTagJet_*.pdf | the distribution of signal applied selections with btag|
+
+## Parameters of ananlysis: 
 Mass, Pt, PtAssymetry, PtSDAssymetry, DeltaR, DeltaEta, DeltaPhi, CISVV2, Ncombination
 
