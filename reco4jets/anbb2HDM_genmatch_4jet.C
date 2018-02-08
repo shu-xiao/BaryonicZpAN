@@ -13,10 +13,10 @@
 #include "setNCUStyle.C"
 #include "../gen2HDMsample/genMatch.C"
     
-#define iseffi          true
+#define saveEffi          true
 #define basePtEtaCut    true
 #define doGenMatch      false
-#define doBTagCut       false
+#define doBTagCut       true
 #define CISVV2Cut       0.5426
 
 void efferr(float nsig,float ntotal,float factor=1)
@@ -59,7 +59,11 @@ void savenPass(int nPass[],string fileName) {
 }
 using namespace std;
 void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDMfullSimFile/2HDM_MZp1000_MA0300.root"){
+    
     setNCUStyle(true);
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(0001111101.);
+    
     //get TTree from file ...
     TreeReader data(inputFile.data());
     vector<vector<int>> genPar = genMatch_base(inputFile.data());
@@ -355,7 +359,7 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDMfullSimFile/2HDM
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else if (doBTagCut) fileName = Form("sigRootFile/bb2HDM_recoBTag_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
     else fileName = Form("sigRootFile/bb2HDM_reco_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    if (!iseffi||true) {
+    if (!saveEffi||true) {
         TFile* outputFile = new TFile(fileName.data(),"recreate");
         h_HT->Write();
         h_zpM->Write();
@@ -392,7 +396,7 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDMfullSimFile/2HDM
     if (doBTagCut) fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_recoBTag4jets.txt",Zpmass.Data(),A0mass.Data());
     else fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_reco4jets.txt",Zpmass.Data(),A0mass.Data());
     savenPass(nPass,fileNPassName);
-    if (iseffi) {
+    if (saveEffi) {
         string effifilename;
         if (doBTagCut) effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_recoBTag4jets.txt",Zpmass.Data(),A0mass.Data());
         else effifilename = Form("../njetsEffi/effi_Zpmass%s_A0mass%s_reco4jets.txt",Zpmass.Data(),A0mass.Data());
