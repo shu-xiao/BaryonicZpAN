@@ -17,9 +17,22 @@
 #define savePDFfile false
 
 using namespace std;
-struct diJetInfo {
-    vector <float> vMass;
-    vector <float> vPt;
+float ptAssymetry(TLorentzVector* j1, TLorentzVector* j2) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    float deR = j1->DeltaR(*j2);
+    float mj = (*j1+*j2).M();
+    return pow(minPt*deR/mj,2);
+}
+float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float beta = 0) {
+    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
+    return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
+}
+
+struct diJetInfo(TLorentzVector *v1, TLorentzVector *v2) {
+    float M = (*v1+*v2).M();
+    float Pt = (*v1+*v2).Pt();
+    float Assym_pt = ptAssymetry(v1,v2);
+    float Assym_sd = softDropAs(v1,v2);
 };
 void push_vdiJetInfo(struct diJetInfo &st,TLorentzVector *V1, TLorentzVector *V2) {
     st.vMass.push_back((*V1+*V2).M());
@@ -47,6 +60,7 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
     typedef vector<pair<float,float>> diJet;
     //struct diJetInfo Ssb_H_L ,Ssb_H_M, Ssb_H_T;
     //struct diJetInfo Ssb_A0_L ,Ssb_A0_M, Ssb_A0_T;
+    string suffix[3] = ["L","M","T"];
     diJet Ssb_H_L  ,Ssb_H_M,  Ssb_H_T;
     diJet Ssb_A0_L ,Ssb_A0_M, Ssb_A0_T;
     vector <float> vsb_Hmass_L,  vsb_Hmass_M,  vsb_Hmass_T;
@@ -74,6 +88,7 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
     TH1F* h_sbA0mass_M = new TH1F("h_sbA0mass_M","h_sbA0mass_M", 100,0,1000);
     TH1F* h_sbA0mass_T = new TH1F("h_sbA0mass_T","h_sbA0mass_T", 100,0,1000);
     
+
     const int   nComBinMax_L = 30;
     const int   nComBinMax_MT = 50;
     const float nComMax_L  = nComBinMax_L*10 - 0.5;
@@ -93,7 +108,6 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         
-        if (jEntry==5000) break;
         data.GetEntry(jEntry);
         h_allEvent->Fill(1);
    
