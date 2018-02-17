@@ -14,7 +14,7 @@
 
 // 10K events TTree --> ~ 600MB space
 #define saveTree    false
-#define savePDFfile false
+#define savePDFfile true
 
 using namespace std;
 float ptAssymetry(TLorentzVector* j1, TLorentzVector* j2) {
@@ -28,25 +28,40 @@ float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float b
     return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
 }
 
-struct diJetInfo(TLorentzVector *v1, TLorentzVector *v2) {
-    float M = (*v1+*v2).M();
-    float Pt = (*v1+*v2).Pt();
-    float Assym_pt = ptAssymetry(v1,v2);
-    float Assym_sd = softDropAs(v1,v2);
+struct diJetInfo {
+    
+    float M;
+    float Pt;
+    float Assym_pt;
+    float Assym_sd;
+    diJetInfo(TLorentzVector *v1, TLorentzVector *v2) {
+        M = (*v1+*v2).M();
+        Pt = (*v1+*v2).Pt();
+        Assym_pt = ptAssymetry(v1,v2);
+        Assym_sd = softDropAs(v1,v2);
+    }
 };
-void push_vdiJetInfo(struct diJetInfo &st,TLorentzVector *V1, TLorentzVector *V2) {
-    st.vMass.push_back((*V1+*V2).M());
-    st.vPt.push_back((*V1+*V2).Pt());
+struct histList {
+    TH1F* h_M;
+    TH1F* h_Pt;
+    TH1F* h_nComb;
+    TH1F* h_ptAs;
+    TH1F* h_sdAs;
+    TH1F* h_b1Pt;
+    TH1F* h_b2Pt;
+};
+void push_vdiJetInfo(struct histList &sh,vector<struct diJetInfo> &vsdiJet,TLorentzVector *v1,TLorentzVector *v2){
+    sh.h_M->Fill((*v1+*v2).M());
+    sh.h_Pt->Fill((*v1+*v2).Pt());
+    sh.h_ptAs->Fill(ptAssymetry(v1,v2));
+    sh.h_sdAs->Fill(softDropAs(v1,v2));
+    sh.h_b1Pt->Fill(v1->Pt());
+    sh.h_b2Pt->Fill(v2->Pt());
+    vsdiJet.push_back(diJetInfo(v1,v2));
 }
-void push_vdiJetInfo(vector<pair<float,float>> &vp,TLorentzVector *V1, TLorentzVector *V2) {
-    vp.push_back(make_pair((*V1+*V2).M(),(*V1+*V2).Pt()));
-}
-void push_vdiJetInfo(vector<pair<float,float>> &vp, TH1F* h_M, TLorentzVector *V1, TLorentzVector *V2) {
-    vp.push_back(make_pair((*V1+*V2).M(),(*V1+*V2).Pt()));
-    h_M->Fill((*V1+*V2).M());
-}
-bool sortbyPt(pair <float,float> p1, pair <float,float> p2) {return p1.second>p2.second;}
-void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_243.root") {
+bool sortByPt(struct diJetInfo s1, struct diJetInfo s2) {return s1.Pt>s2.Pt;}
+void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root") {
+//void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_243.root") {
     
 
     const float CISVV2CUT_L = 0.5426;
@@ -57,17 +72,16 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
     //gStyle->SetOptTitle(0);
     gStyle->SetOptStat(0001111101.);
    
-    typedef vector<pair<float,float>> diJet;
-    //struct diJetInfo Ssb_H_L ,Ssb_H_M, Ssb_H_T;
-    //struct diJetInfo Ssb_A0_L ,Ssb_A0_M, Ssb_A0_T;
-    string suffix[3] = ["L","M","T"];
-    diJet Ssb_H_L  ,Ssb_H_M,  Ssb_H_T;
-    diJet Ssb_A0_L ,Ssb_A0_M, Ssb_A0_T;
-    vector <float> vsb_Hmass_L,  vsb_Hmass_M,  vsb_Hmass_T;
-    vector <float> vsb_A0mass_L, vsb_A0mass_M, vsb_A0mass_T;
-    
+    vector<struct histList> Ssb_H(3);
+    vector<struct histList> Ssb_A0(3);
+    vector<vector<struct diJetInfo>> H_diJet(3), A0_diJet(3);  
+    //string suffix[3] = {"L","M","T"};
+    char *suffix[] = {(char*)"L",(char*)"M",(char*)"T"};
+
     TFile *f = TFile::Open(Form("Tsideband_%d.root",w),"RECREATE");
     TTree* t = new TTree("tree","tree");
+    vector <float> vsb_Hmass_L,  vsb_Hmass_M,  vsb_Hmass_T;
+    vector <float> vsb_A0mass_L, vsb_A0mass_M, vsb_A0mass_T;
     if (saveTree) {
         t->Branch("vsb_Hmass_L",  &vsb_Hmass_L);
         t->Branch("vsb_Hmass_M",  &vsb_Hmass_M);
@@ -77,28 +91,34 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
         t->Branch("vsb_A0mass_T", &vsb_A0mass_T);
     }
     
-    TCanvas* c1 = new TCanvas("c1","c1",500,500);
-    
-    TH1F* h_allEvent   = new TH1F("h_allEvent"  ,"h_allEvent"  , 10, -0.5,9.5);
-    
-    TH1F* h_sbHmass_L  = new TH1F("h_sbHmass_L" ,"h_sbHmass_L" , 100,0,1000);
-    TH1F* h_sbHmass_M  = new TH1F("h_sbHmass_M" ,"h_sbHmass_M" , 100,0,1000);
-    TH1F* h_sbHmass_T  = new TH1F("h_sbHmass_T" ,"h_sbHmass_T" , 100,0,1000);
-    TH1F* h_sbA0mass_L = new TH1F("h_sbA0mass_L","h_sbA0mass_L", 100,0,1000);
-    TH1F* h_sbA0mass_M = new TH1F("h_sbA0mass_M","h_sbA0mass_M", 100,0,1000);
-    TH1F* h_sbA0mass_T = new TH1F("h_sbA0mass_T","h_sbA0mass_T", 100,0,1000);
-    
-
     const int   nComBinMax_L = 30;
     const int   nComBinMax_MT = 50;
     const float nComMax_L  = nComBinMax_L*10 - 0.5;
     const float nComMax_MT = nComBinMax_MT - 0.5;
-    TH1F* h_nHCom_L    = new TH1F("h_nHCom_L"   ,"h_nHCom_L"   , nComBinMax_L ,-0.5,nComMax_L);
-    TH1F* h_nHCom_M    = new TH1F("h_nHCom_M"   ,"h_nHCom_M"   , nComBinMax_MT,-0.5,nComMax_MT);
-    TH1F* h_nHCom_T    = new TH1F("h_nHCom_T"   ,"h_nHCom_T"   , nComBinMax_MT,-0.5,nComMax_MT);
-    TH1F* h_nA0Com_L    = new TH1F("h_nA0Com_L" ,"h_nA0Com_L"  , nComBinMax_L ,-0.5,nComMax_L);
-    TH1F* h_nA0Com_M    = new TH1F("h_nA0Com_M" ,"h_nA0Com_M"  , nComBinMax_MT,-0.5,nComMax_MT);
-    TH1F* h_nA0Com_T    = new TH1F("h_nA0Com_T" ,"h_nA0Com_T"  , nComBinMax_MT,-0.5,nComMax_MT);
+    
+    TCanvas* c1 = new TCanvas("c1","c1",500,500);
+    
+    TH1F* h_allEvent   = new TH1F("h_allEvent"  ,"h_allEvent"  , 10, -0.5,9.5);
+    for (int i=0;i<3;i++) {
+        int nBin = (i==0)?  nComBinMax_L : nComBinMax_MT;
+        float max = (i==0)? nComBinMax_L*10-0.5 : nComBinMax_MT-0.5;
+        
+        Ssb_H[i].h_M        = new TH1F(Form("h_sbHmass_%s",suffix[i]),Form("h_sbHmass_%s",suffix[i]), 100,0,1000); 
+        Ssb_A0[i].h_M       = new TH1F(Form("h_sbA0mass_%s",suffix[i]),Form("h_sbA0mass_%s",suffix[i]), 100,0,1000); 
+        Ssb_H[i].h_Pt       = new TH1F(Form("h_sbHPt_%s",suffix[i]),Form("h_sbHPt_%s",suffix[i]),100,0,1000);
+        Ssb_A0[i].h_Pt      = new TH1F(Form("h_sbA0Pt_%s",suffix[i]),Form("h_sbA0Pt_%s",suffix[i]),100,0,1000);
+        Ssb_H[i].h_nComb    = new TH1F(Form("h_nHCom_%s",suffix[i]),Form("h_nHCom_%s",suffix[i]),nBin,-0.5,max); 
+        Ssb_A0[i].h_nComb   = new TH1F(Form("h_nA0Com_%s",suffix[i]),Form("h_nA0Com_%s",suffix[i]),nBin,-0.5,max); 
+        Ssb_H[i].h_ptAs     = new TH1F(Form("h_H_ptAssymetry_%s",suffix[i]),Form("h_H_ptAssymetry_%s",suffix[i]),100,0,2.5); 
+        Ssb_A0[i].h_ptAs    = new TH1F(Form("h_A0_ptAssymetry_%s",suffix[i]),Form("h_A0_ptAssymetry_%s",suffix[i]),100,0,2.5); 
+        Ssb_H[i].h_sdAs     = new TH1F(Form("h_H_sdAssymetry_%s",suffix[i]),Form("h_H_sdAssymetry_%s",suffix[i]),60,0,0.6); 
+        Ssb_A0[i].h_sdAs    = new TH1F(Form("h_A0_sdAssymetry_%s",suffix[i]),Form("h_A0_sdAssymetry_%s",suffix[i]),60,0,0.6); 
+        Ssb_H[i].h_b1Pt     = new TH1F(Form("h_Hb1Pt_%s",suffix[i]),Form("h_Hb1Pt_%s",suffix[i]),100,0,1000);
+        Ssb_H[i].h_b2Pt     = new TH1F(Form("h_Hb2Pt_%s",suffix[i]),Form("h_Hb2Pt_%s",suffix[i]),100,0,1000);
+        Ssb_A0[i].h_b1Pt    = new TH1F(Form("h_A0b1Pt_%s",suffix[i]),Form("h_A0b1Pt_%s",suffix[i]),100,0,1000);
+        Ssb_A0[i].h_b2Pt    = new TH1F(Form("h_A0b2Pt_%s",suffix[i]),Form("h_A0b2Pt_%s",suffix[i]),100,0,1000);
+    }
+    
 
     Int_t nPass[20]={0};
     
@@ -113,7 +133,10 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
    
         int nGenJet =  data.GetInt("THINnJet");
         if (nGenJet<4) continue;
-        
+        for (i=0;i<3;i++) {
+            H_diJet[i].clear();
+            A0_diJet[i].clear();
+        }
         float *vCISVV2 = data.GetPtrFloat("THINjetCISVV2");
         TClonesArray* genjetP4 =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
         vector<bool>& vPassID_L = *(vector<bool>*) data.GetPtr("THINjetPassIDLoose");
@@ -146,47 +169,32 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
                 if (diJetM<=250 || diJetM>=350) match_A0 = true;
                 
                 // cut on CISVV2 and save into TH1F and pair
-                if (match_H  && vCISVV2[ij]>CISVV2CUT_L && vCISVV2[jj]>CISVV2CUT_L) push_vdiJetInfo(Ssb_H_L,  h_sbHmass_L,  thisJet, thatJet); 
-                if (match_H  && vCISVV2[ij]>CISVV2CUT_M && vCISVV2[jj]>CISVV2CUT_M) push_vdiJetInfo(Ssb_H_M,  h_sbHmass_M,  thisJet, thatJet); 
-                if (match_H  && vCISVV2[ij]>CISVV2CUT_T && vCISVV2[jj]>CISVV2CUT_T) push_vdiJetInfo(Ssb_H_T,  h_sbHmass_T,  thisJet, thatJet);
-                if (match_A0 && vCISVV2[ij]>CISVV2CUT_L && vCISVV2[jj]>CISVV2CUT_L) push_vdiJetInfo(Ssb_A0_L, h_sbA0mass_L, thisJet, thatJet); 
-                if (match_A0 && vCISVV2[ij]>CISVV2CUT_M && vCISVV2[jj]>CISVV2CUT_M) push_vdiJetInfo(Ssb_A0_M, h_sbA0mass_M, thisJet, thatJet); 
-                if (match_A0 && vCISVV2[ij]>CISVV2CUT_T && vCISVV2[jj]>CISVV2CUT_T) push_vdiJetInfo(Ssb_A0_T, h_sbA0mass_T ,thisJet, thatJet);
+                if (match_H  && vCISVV2[ij]>CISVV2CUT_L && vCISVV2[jj]>CISVV2CUT_L) push_vdiJetInfo(Ssb_H[0],  H_diJet[0],  thisJet, thatJet); 
+                if (match_H  && vCISVV2[ij]>CISVV2CUT_M && vCISVV2[jj]>CISVV2CUT_M) push_vdiJetInfo(Ssb_H[1],  H_diJet[1],  thisJet, thatJet); 
+                if (match_H  && vCISVV2[ij]>CISVV2CUT_T && vCISVV2[jj]>CISVV2CUT_T) push_vdiJetInfo(Ssb_H[2],  H_diJet[2],  thisJet, thatJet);
+                if (match_A0 && vCISVV2[ij]>CISVV2CUT_L && vCISVV2[jj]>CISVV2CUT_L) push_vdiJetInfo(Ssb_A0[0], A0_diJet[0], thisJet, thatJet); 
+                if (match_A0 && vCISVV2[ij]>CISVV2CUT_M && vCISVV2[jj]>CISVV2CUT_M) push_vdiJetInfo(Ssb_A0[1], A0_diJet[1], thisJet, thatJet); 
+                if (match_A0 && vCISVV2[ij]>CISVV2CUT_T && vCISVV2[jj]>CISVV2CUT_T) push_vdiJetInfo(Ssb_A0[2], A0_diJet[2], thisJet, thatJet);
             
             }
     
         }  // end of dijet loop
         
-        // sort dijet mass vector by pt
-        sort(Ssb_H_L.begin(),  Ssb_H_L.end(),  sortbyPt);
-        sort(Ssb_H_M.begin(),  Ssb_H_M.end(),  sortbyPt);
-        sort(Ssb_H_T.begin(),  Ssb_H_T.end(),  sortbyPt);
-        sort(Ssb_A0_L.begin(), Ssb_A0_L.end(), sortbyPt);
-        sort(Ssb_A0_M.begin(), Ssb_A0_M.end(), sortbyPt);
-        sort(Ssb_A0_T.begin(), Ssb_A0_T.end(), sortbyPt);
-        
-        // fill in nCombination TH1F
-        h_nHCom_L ->Fill(Ssb_H_L.size());
-        h_nHCom_M ->Fill(Ssb_H_M.size());
-        h_nHCom_T ->Fill(Ssb_H_T.size());
-        h_nA0Com_L->Fill(Ssb_A0_L.size());
-        h_nA0Com_M->Fill(Ssb_A0_M.size());
-        h_nA0Com_T->Fill(Ssb_A0_T.size());
-
-        for (i=0;i<Ssb_H_L.size();i++) vsb_Hmass_L.push_back(Ssb_H_L[i].first);
-        for (i=0;i<Ssb_H_M.size();i++) vsb_Hmass_M.push_back(Ssb_H_M[i].first);
-        for (i=0;i<Ssb_H_T.size();i++) vsb_Hmass_T.push_back(Ssb_H_T[i].first);
-        for (i=0;i<Ssb_A0_L.size();i++) vsb_A0mass_L.push_back(Ssb_A0_L[i].first);
-        for (i=0;i<Ssb_A0_M.size();i++) vsb_A0mass_M.push_back(Ssb_A0_M[i].first);
-        for (i=0;i<Ssb_A0_T.size();i++) vsb_A0mass_T.push_back(Ssb_A0_T[i].first);
-        if (vsb_Hmass_L.size()==0)  vsb_Hmass_L.push_back(-99.);
-        if (vsb_Hmass_M.size()==0)  vsb_Hmass_M.push_back(-99.);
-        if (vsb_Hmass_T.size()==0)  vsb_Hmass_T.push_back(-99.);
-        if (vsb_A0mass_L.size()==0) vsb_A0mass_L.push_back(-99.);
-        if (vsb_A0mass_M.size()==0) vsb_A0mass_M.push_back(-99.);
-        if (vsb_A0mass_T.size()==0) vsb_A0mass_T.push_back(-99.);
+        // fill in nCombination TH1F and sort by Pt
+        for (i=0;i<3;i++) {
+            if (H_diJet.size()>0)  sort(H_diJet[i].begin()  ,H_diJet[i].end(),  sortByPt);
+            if (A0_diJet.size()>0) sort(A0_diJet[i].begin() ,A0_diJet[i].end(), sortByPt);
+            Ssb_H[i].h_nComb->Fill(H_diJet[i].size());
+            Ssb_A0[i].h_nComb->Fill(A0_diJet[i].size());
+        }
+        for (i=0;i<H_diJet[0].size();i++)  vsb_Hmass_L.push_back(  (H_diJet[0].size())  ? -99.: H_diJet[0][i].M);
+        for (i=0;i<H_diJet[1].size();i++)  vsb_Hmass_M.push_back(  (H_diJet[1].size())  ? -99.: H_diJet[1][i].M);
+        for (i=0;i<H_diJet[2].size();i++)  vsb_Hmass_T.push_back(  (H_diJet[2].size())  ? -99.: H_diJet[2][i].M);
+        for (i=0;i<A0_diJet[0].size();i++) vsb_A0mass_L.push_back( (A0_diJet[0].size()) ? -99.: A0_diJet[0][i].M);
+        for (i=0;i<A0_diJet[1].size();i++) vsb_A0mass_M.push_back( (A0_diJet[1].size()) ? -99.: A0_diJet[1][i].M);
+        for (i=0;i<A0_diJet[2].size();i++) vsb_A0mass_T.push_back( (A0_diJet[2].size()) ? -99.: A0_diJet[2][i].M);
         if (saveTree) t->Fill();
-        
+         
         // save to root file
     } // end of event loop
     f->Write();
@@ -195,32 +203,25 @@ void sideband(int w=0, std::string inputFile="../../QCDtestBGrootfile/NCUGlobalT
     if (savePDFfile) {
         string pdfFileName = Form("Tsideband_QCDbg_%d.pdf",w);
         c1->Print((pdfFileName+"[").data());
-        
-        h_sbHmass_L->Draw("hist");
+        h_allEvent->Draw("hist");
         c1->Print(pdfFileName.data());
-        h_nHCom_L->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_sbHmass_M->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_nHCom_M->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_sbHmass_T->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_nHCom_T->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_sbA0mass_L->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_nA0Com_L->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_sbA0mass_M->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_nA0Com_M->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_sbA0mass_T->Draw("hist");
-        c1->Print(pdfFileName.data());
-        h_nA0Com_T->Draw("hist");
-        c1->Print(pdfFileName.data());
-
+        for (i=0;i<3;i++) {
+            Ssb_H[i].h_M->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_Pt->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_nComb->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_ptAs->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_sdAs->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_b1Pt->Draw("hist");
+            c1->Print(pdfFileName.data());
+            Ssb_H[i].h_b2Pt->Draw("hist");
+            c1->Print(pdfFileName.data());
+             
+        }
         c1->Print((pdfFileName+"]").data());
     }
     f->Close();
