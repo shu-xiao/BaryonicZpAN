@@ -8,19 +8,30 @@
 
 #define L2016 35.9*1000 //35.9 fb^-1
 //#define L2016 1
-#define drop false
+//#define drop false
 
 using namespace std;
 float getL(int nEvent, float xs) {
     return nEvent/xs;
 }
-void mergeQCD() {
+int getNhist(TFile* f) {
+    TIter keyList(f->GetListOfKeys()); 
+    TKey *key;
+    int j = 0;
+    while ((key = (TKey*)keyList())) {
+        TClass *cl = gROOT->GetClass(key->GetClassName());
+        if (!cl->InheritsFrom("TH1")) continue;
+        j++;
+    }
+    return j;
+}
+void mergeQCD(bool drop=true) {
     setNCUStyle(true);
 
     //bool drop = true; //drop out QCD_HT50to100    
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
-    float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
+    const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     string HT_list[9] = {"QCD_HT50to100","QCD_HT100to200","QCD_HT200to300","QCD_HT300to500","QCD_HT500to700","QCD_HT700to1000","QCD_HT1000to1500","QCD_HT1500to2000","QCD_HT2000toInf"};
     TFile* file[9];
     file[0] = TFile::Open("QCD_HT50to100.root");
@@ -33,7 +44,7 @@ void mergeQCD() {
     file[7] = TFile::Open("QCD_HT1500to2000.root");
     file[8] = TFile::Open("QCD_HT2000toInf.root");
     
-    const int nHist = 13; 
+    const int nHist = getNhist(file[0]); 
     TH1F* hmerge[nHist];
     TH1F* th1f[9][nHist];
     TH1F* h_HTmerge = new TH1F();
@@ -56,13 +67,11 @@ void mergeQCD() {
             j++;
         }
     }
-    cout << HTindex << endl;
     TString outputName = (drop)? "QCDbg":"QCDbg_whole";
     c1->Print((outputName+".pdf[").Data());
     
-    TLegend *legend = new TLegend(0.65,0.3,0.85,0.75);
-    legend->AddEntry((TObject*)0,"normalized to 2016 L","");
-    //for (int j=1;j<9;j++) legend->AddEntry(th1f[j][0],HT_list[j].data(),"lf");
+    TLegend *legend = new TLegend(0.78,0.6,0.94,0.83);
+    //legend->AddEntry((TObject*)0,"normalized to 2016 L","");
     for (int i=0;i<nHist;i++) { // loop of hist
         TH1F *h_tem[9];
         c1->Clear();
@@ -92,17 +101,29 @@ void mergeQCD() {
             if (i==0) legend->AddEntry(h_tem[j],HT_list[j].data(),"lf");
         }
         int hnum = (drop)? 8:9; 
-        if (i>0&&i<=7) h_tem[8]->GetXaxis()->SetTitle("M^{allCombinaitons}_{jj}");
-        else if (i!=0) h_tem[8]->GetXaxis()->SetTitle("N_{combinations}");
-        h_tem[8]->GetYaxis()->SetTitle("number of events");
-        //h_tem[8]->GetXaxis()->SetTitleSize(0.05);
-        //h_tem[8]->GetYaxis()->SetTitleSize(0.05);
+        // setting histogram
+        TString hName = h_tem[8]->GetName();
+        static float ymax; 
+        ymax = h_tem[8]->GetMaximum()*1.6;
+        c1->SetLogy(0);
+        if (i==0) h_tem[8]->GetYaxis()->SetTitle("N_{events}");
+        else if (hName.Contains("mass")) h_tem[8]->GetXaxis()->SetTitle("M_{jj}^{QCD bg} (GeV)");
+        else if (hName.Contains("Pt")) h_tem[8]->GetXaxis()->SetTitle("Pt_{jj}^{QCD bg} (GeV)");
+        else if (hName.Contains("Com")) {
+            h_tem[8]->GetXaxis()->SetTitle("N_{allCombinations}");
+            c1->SetLogy();
+            ymax = h_tem[8]->GetMaximum()*100;
+        }
+        h_tem[8]->GetYaxis()->SetTitle("A.U.");
+        h_tem[8]->GetYaxis()->SetTitleOffset(0.5);
+        h_tem[8]->GetYaxis()->SetLabelOffset(999);
+        h_tem[8]->GetYaxis()->SetLabelSize(0);
+        c1->SetLeftMargin(0.1);
+        
         h_tem[8]->Draw("hist");
-        if (i==HTindex||i==0) c1->SetLogy();
-        else c1->SetLogy(0);
+        h_tem[8]->SetMaximum(ymax);
         for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
         legend->Draw();
-        c1->SetLeftMargin(0.15);
         c1->SetBottomMargin(0.15);
         c1->SetTopMargin(0.15);
         c1->Update();
