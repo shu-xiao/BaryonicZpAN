@@ -11,58 +11,12 @@
 #include <TCanvas.h>
 #include "string"
 #include "setNCUStyle.C"
+#include "pfRatio.h"
 
 #define basePtEtaCut true
 using namespace std;
-float calChiSquare(float mh, float ma0, float mzp);
-struct fourJetInfo{
-    float Mh;
-    float MA0;
-    float MZp;
-    float Pth;
-    float PtA0;
-    float PtZp;
-    float ChiSquare;
-    fourJetInfo() {};
-    fourJetInfo(TLorentzVector* hj1,TLorentzVector* hj2, TLorentzVector* a0j1, TLorentzVector* a0j2) {
-        Mh   = (*hj1+*hj2).M();
-        MA0  = (*a0j1+*a0j2).M();
-        MZp  = (*hj1+*hj2+*a0j1+*a0j2).M();
-        Pth  = (*hj1+*hj2).Pt();
-        PtA0 = (*a0j1+*a0j2).Pt();
-        PtZp = (*hj1+*hj2+*a0j1+*a0j2).Pt();
-        ChiSquare = calChiSquare(Mh,MA0,MZp);
-    }
-};
-void efferr(float nsig,float ntotal,float factor=1)
-{
-    float eff = nsig/ntotal;
-    float err = sqrt( (1-eff)*eff/ntotal);
-    cout << "efficiency = " << eff*factor << " +- " << err*factor << endl;
-}
-float caldePhi(float phi1, float phi2) {
-    float dePhi = 0;
-    if (abs(phi1-phi2)>TMath::Pi()) dePhi = 2*TMath::Pi() - abs(phi1-phi2);
-    else dePhi = abs(phi1-phi2);
-    return dePhi;
-}
-float ptAssymetry(TLorentzVector* j1, TLorentzVector* j2) {
-    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
-    float deR = j1->DeltaR(*j2);
-    float mj = (*j1+*j2).M();
-    return pow(minPt*deR/mj,2);
-}
-float softDropAs(TLorentzVector *j1, TLorentzVector *j2, float r0 = 0.4, float beta = 0) {
-    float minPt = (j1->Pt()>j2->Pt())? j2->Pt():j1->Pt();
-    return minPt/(j1->Pt()+j2->Pt())*pow(r0/j1->DeltaR(*j2),beta);
-}
-bool sortListbyPt(vector<float> a, vector<float> b) {return a[2]>b[2];}
+
 bool sortfourJets(fourJetInfo a, fourJetInfo b) {return a.ChiSquare<b.ChiSquare;}
-float calChiSquare(float Mh, float MA0, float MZp) {
-    return TMath::Power((Mh-125)/7.6,2) + TMath::Power(((MA0-300)/22),2) + TMath::Power((MZp-1000)/41,2);
-}
-
-
 void pfRatio(string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root") {
     
     setNCUStyle(true);
@@ -83,6 +37,14 @@ void pfRatio(string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root")
     TH1F* h_zpNcandi = new TH1F("h_zpNcandi", "h_Zp_NcombinationJets", nCom,-0.5,nCom-0.5);
     TH1F* h_A0M_noCISVV2 = new TH1F("h_A0M_noCISVV2","h_A0M_noCISVV2",100,-50,50);
     TH1F* h_A0M_CISVV2 = new TH1F("h_A0M_CISVV2","h_A0M_CISVV2",100,-50,50);
+    TH1F* h_pfA0M[2];
+    h_pfA0M[0] = new TH1F("h_pfA0M_f","h_pfA0M_f",150,225,275);
+    h_pfA0M[1] = new TH1F("h_pfA0M_p","h_pfA0M_p",150,225,275);
+    TH1F* h_pfCISVV2[2];
+    h_pfCISVV2[0] = new TH1F("h_pfCISVV2_f","h_pfCISVV2_f",150,-75,75);
+    h_pfCISVV2[1] = new TH1F("h_pfCISVV2_p","h_pfCISVV2_p",150,-75,75);
+    TH1F* h_pfCISVV2_ratio = new TH1F("h_pfCISVV2_ratio","h_pfCISVV2_ratio",150,-75,75);
+
     vector<vector<float>> HindexList, A0indexList;
     vector<fourJetInfo> ZpindexList;
     fourJetInfo fourJets;
@@ -97,7 +59,8 @@ void pfRatio(string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root")
         if(nGenJet<4) continue;
         nPass[1]++;
         //static vector<bool> isHpassCISVV2;
-        static bool isHpassCISVV2;
+        static bool isHpassCISVV2 = false;
+        static bool isA0passCISVV2 = false;
         TClonesArray* genjetP4 =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
         float *CISVV2 = data.GetPtrFloat("THINjetCISVV2");
         HindexList.clear();
@@ -143,7 +106,8 @@ void pfRatio(string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root")
                     if(basePtEtaCut && fabs(thatJet->Eta())>2.4) continue;
                     TLorentzVector* HJet1 = (TLorentzVector*)genjetP4->At((int)HindexList[i][0]);
                     TLorentzVector* HJet2 = (TLorentzVector*)genjetP4->At((int)HindexList[i][1]);
-                    fourJets = fourJetInfo(HJet1,HJet2,thisJet,thatJet);
+                    //fourJets = fourJetInfo(HJet1,HJet2,thisJet,thatJet);
+                    fourJets = fourJetInfo(data,(int)HindexList[i][0],(int)HindexList[i][1],ij,jj);
                     if (fourJets.MZp<900 || fourJets.MZp>1100) continue;
                     ZpindexList.push_back(fourJets); 
                 }
@@ -153,12 +117,26 @@ void pfRatio(string inputFile="../../QCDtestBGrootfile/NCUGlobalTuples_76.root")
         if (ZpindexList.size()==0) continue;
         sort(ZpindexList.begin(),ZpindexList.end(),sortfourJets);
         nPass[3]++;
-        
+        isA0passCISVV2 = ZpindexList[0].minCISVV2[1]>CISVV2CUT_L;
+        h_pfCISVV2[isA0passCISVV2]->Fill(ZpindexList[0].MA0-300);
+        h_pfA0M[isA0passCISVV2]->Fill(ZpindexList[0].MA0);
         //if(jEntry>=2000) break;
     } // end of event loop
+    
+    h_pfCISVV2_ratio->Divide(h_pfCISVV2[1],h_pfCISVV2[0]);
     string pdfName = "tes.pdf";
     
     c1->Print((pdfName+"[").data());
+    h_pfCISVV2_ratio->Draw("hist");
+    c1->Print(pdfName.data());
+    h_pfCISVV2[0]->Draw("hist");
+    c1->Print(pdfName.data());
+    h_pfCISVV2[1]->Draw("hist");
+    c1->Print(pdfName.data());
+    h_pfA0M[0]->Draw("hist");
+    c1->Print(pdfName.data());
+    h_pfA0M[1]->Draw("hist");
+    c1->Print(pdfName.data());
     h_hNcandi->Draw("hist text 0");
     c1->Print(pdfName.data());
     h_zpNcandi->Draw("hist text 0");
