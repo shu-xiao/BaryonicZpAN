@@ -39,6 +39,7 @@ struct fourJetInfo{
     float ChiSquare;
     float CISVV2_HA0[4];
     float minCISVV2[2];
+    float maxPtCISVV2[2];
     fourJetInfo() {};
     fourJetInfo(TLorentzVector* hj1,TLorentzVector* hj2, TLorentzVector* a0j1, TLorentzVector* a0j2) {
         Mh   = (*hj1+*hj2).M();
@@ -69,5 +70,7 @@ struct fourJetInfo{
         CISVV2_HA0[3] = CISVV2[a0i2];
         minCISVV2[0] = min(CISVV2_HA0[0],CISVV2_HA0[1]);
         minCISVV2[1] = min(CISVV2_HA0[2],CISVV2_HA0[3]);
+        maxPtCISVV2[0] = (hj1->Pt()>hj2->Pt())?CISVV2[hi1]:CISVV2[hi2];
+        maxPtCISVV2[1] = (a0j1->Pt()>a0j2->Pt())?CISVV2[a0i1]:CISVV2[a0i2];
     }
 };
