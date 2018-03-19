@@ -131,9 +131,9 @@ Float_t TMVA_15plus3_jetGenJet_nu_3_1(TreeReader &data, Int_t i, Float_t jjDR)
   	TJet.SetPtEtaPhiE(jetPt[i],jetEta[i],jetPhi[i],jetEn[i]);
   	TJetLep.SetPtEtaPhiE(jetLepTrackPt[i],jetLepTrackEta[i],jetLepTrackPhi[i],jetLepTrackPt[i]*cosh(jetLepTrackEta[i]));
   	TVector3 TJetAxis(TJet.Vect().X(),TJet.Vect().Y(),TJet.Vect().Z());
-  	Jet_leptonPtRel_	= (jetLepTrackPt[i] > 0) ?  TJetLep.Perp(TJetAxis)	:0.;//Soft Lepton pTRel, relative transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonPt_     = (jetLepTrackPt[i] < 0) ? 0. : jetLepTrackPt[i];//Soft Lepton pT, transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonDeltaR_ = (jetLepTrackPt[i] < 0) ? 0. : deltaR(jetEta[i], jetPhi[i], jetLepTrackEta[i], jetLepTrackPhi[i]);//Soft Lepton dR, relative distance in the η-phi space of soft lepton candidate in the jet and the jet;
+  	Jet_leptonPtRel_	= (jetLepTrackPt[i] > 0 && jetLepTrackPt[i]<99900) ?  TJetLep.Perp(TJetAxis)	:0.;//Soft Lepton pTRel, relative transverse momentum of soft lepton candidate in the jet;
+  	Jet_leptonPt_     = (jetLepTrackPt[i] < 0 || jetLepTrackPt[i]>99900) ? 0. : jetLepTrackPt[i];//Soft Lepton pT, transverse momentum of soft lepton candidate in the jet;
+  	Jet_leptonDeltaR_ = (jetLepTrackPt[i] < 0 || jetLepTrackPt[i]>99900) ? 0. : deltaR(jetEta[i], jetPhi[i], jetLepTrackEta[i], jetLepTrackPhi[i]);//Soft Lepton dR, relative distance in the η-phi space of soft lepton candidate in the jet and the jet;
   	Jet_neHEF_       	= (jetNHF[i]<1.) ? jetNHF[i]:1.;//Neutral hadron energy fraction
   	Jet_neEmEF_      	= (jetNEF[i]<1.) ? jetNEF[i]:1.;//Photon energy fraction
   	//Jet_chMult_       = (Float_t) jetNCH[i];//total number of jet constituents
