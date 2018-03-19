@@ -293,8 +293,8 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
         TMVAweight[1] = TMVA_15plus3_jetGenJet_nu_3_1(data,(int)ZpindexList[0][1],HbJet0_base->DeltaR(*HbJet1_base));
         // cout << TMVAweight[0] << "\t" << TMVAweight[1] << endl;
         static TLorentzVector v1 = TLorentzVector(),v2 = TLorentzVector();
-        v1.SetPtEtaPhiE(HbJet0_base->Pt()*TMVAweight[0],HbJet0_base->Eta(),HbJet0_base->Phi(),HbJet0_base->E()); 
-        v2.SetPtEtaPhiE(HbJet1_base->Pt()*TMVAweight[1],HbJet1_base->Eta(),HbJet1_base->Phi(),HbJet1_base->E()); 
+        v1.SetPtEtaPhiE(HbJet0_base->Pt()*TMVAweight[0],HbJet0_base->Eta(),HbJet0_base->Phi(),HbJet0_base->E()*TMVAweight[0]); 
+        v2.SetPtEtaPhiE(HbJet1_base->Pt()*TMVAweight[1],HbJet1_base->Eta(),HbJet1_base->Phi(),HbJet1_base->E()*TMVAweight[1]); 
         TLorentzVector* HbJet0 = &v1;
         TLorentzVector* HbJet1 = &v2;
         
@@ -354,7 +354,7 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
     } // end of loop over entries
     
     h_zpPtSD->SetMaximum(1000);
-    
+    h_zpPtAs_ori->SetMaximum(150); 
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     
