@@ -249,15 +249,23 @@ Float_t TMVA_15plus3_jetGenJet_nu(TreeReader &data, Int_t i, Float_t jjDR)
 
 struct HA0JetInfo
 {
-	TLorentzVector* Hjet1;
-	TLorentzVector* Hjet2;
-	TLorentzVector* A0jet1;
-	TLorentzVector* A0jet2;
-	HA0JetInfo *weight4Jets;
+	TLorentzVector* Hjet1   = NULL;
+	TLorentzVector* Hjet2   = NULL;
+	TLorentzVector* A0jet1  = NULL;
+	TLorentzVector* A0jet2  = NULL;
+	
+	HA0JetInfo *weight4Jets = NULL;
 private:
 	float weight[4] = {-99,-99,-99,-99};
+
 public:
-	HA0JetInfo(){}
+	HA0JetInfo(){
+		Hjet1       = NULL;
+		Hjet2       = NULL;
+		A0jet1      = NULL;
+		A0jet2      = NULL;
+		weight4Jets = NULL;
+	}
 	HA0JetInfo(TMVAinputInfo &info, int hi1, int hi2, int a0i1, int a0i2, bool doWeight = false) {
 		Hjet1 = info.ak4jet[hi1];
 		Hjet2 = info.ak4jet[hi2];
@@ -269,7 +277,7 @@ public:
 		}
 	}
 	~HA0JetInfo(){
-		if (!weight4Jets) {
+		if (weight4Jets) {
 			if (weight[0]>0) delete weight4Jets->Hjet1;
 			if (weight[1]>0) delete weight4Jets->Hjet2;
 			if (weight[2]>0) delete weight4Jets->A0jet1;
@@ -292,6 +300,11 @@ public:
 		else weight4Jets->Hjet2 = Hjet2;
 		weight4Jets->A0jet1 = A0jet1;
 		weight4Jets->A0jet2 = A0jet2;
+		weight4Jets->weight[0] = -1;
+		weight4Jets->weight[1] = -1;
+		weight4Jets->weight[2] = -1;
+		weight4Jets->weight[3] = -1;
+		// cout << weight4Jets->weight[0] << "\t" << weight4Jets->weight[1] << "\t" << weight4Jets->weight[2] << "\t" << weight4Jets->weight[3] << "\t" << endl;
 		return weight4Jets;
 	}
 	inline float Mh()     {return (*Hjet2+*Hjet1).M();}
