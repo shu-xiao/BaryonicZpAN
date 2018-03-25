@@ -257,7 +257,7 @@ struct HA0JetInfo
 	HA0JetInfo *weight4Jets = NULL;
 private:
 	float weight[4] = {-99,-99,-99,-99};
-
+	int   ind[4]    = {-1,-1,-1,-1};
 public:
 	HA0JetInfo(){
 		Hjet1       = NULL;
@@ -267,6 +267,10 @@ public:
 		weight4Jets = NULL;
 	}
 	HA0JetInfo(TMVAinputInfo &info, int hi1, int hi2, int a0i1, int a0i2, bool doWeight = false) {
+		ind[0] = hi1;
+		ind[1] = hi2;
+		ind[2] = a0i1;
+		ind[3] = a0i2;
 		Hjet1 = info.ak4jet[hi1];
 		Hjet2 = info.ak4jet[hi2];
 		A0jet1 = info.ak4jet[a0i1];
@@ -283,6 +287,7 @@ public:
 			if (weight[2]>0) delete weight4Jets->A0jet1;
 			if (weight[3]>0) delete weight4Jets->A0jet2;
 			delete weight4Jets;
+			weight4Jets = NULL;
 		}
 	}
 	HA0JetInfo* weightJets(){
@@ -304,6 +309,10 @@ public:
 		weight4Jets->weight[1] = -1;
 		weight4Jets->weight[2] = -1;
 		weight4Jets->weight[3] = -1;
+		weight4Jets->ind[0] = ind[0];
+		weight4Jets->ind[1] = ind[1];
+		weight4Jets->ind[2] = ind[2];
+		weight4Jets->ind[3] = ind[3];
 		// cout << weight4Jets->weight[0] << "\t" << weight4Jets->weight[1] << "\t" << weight4Jets->weight[2] << "\t" << weight4Jets->weight[3] << "\t" << endl;
 		return weight4Jets;
 	}
@@ -314,6 +323,8 @@ public:
 	inline float A0dR()   {return A0jet1->DeltaR(*A0jet2);}
 	inline float ZpdR()   {return (*Hjet2+*Hjet1).DeltaR(*A0jet2+*A0jet1);}
 	inline float xSqure() {return calChiSquare(Mh(),MA0(),MZp());}
-	inline float* getWeight()        {return weight;}
+	inline float* getWeight()      {return weight;}
 	inline float  getWeight(int i) {return (i<4&&i>=0)?weight[i]:-1;}
+	inline float* getIndex() 	   {return ind;}
+	inline float  getIndex(int i)  {return (i<4&&i>=0)?ind[i]:-1;}
 };

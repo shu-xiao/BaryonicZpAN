@@ -61,6 +61,11 @@ void savenPass(int nPass[],string fileName) {
     fp.close();
 
 }
+void setMax(TH1F* h1, TH1F* h2,int i=kBlue, float weight = 1.1) {
+    h1->SetMaximum((h1->GetMaximum()>h2->GetMaximum())? h1->GetMaximum()*weight : h2->GetMaximum()*weight );
+    h2->SetMaximum((h1->GetMaximum()>h2->GetMaximum())? h1->GetMaximum()*weight : h2->GetMaximum()*weight );
+    h2->SetLineColor(i);
+}
 using namespace std;
 void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root"){
     
@@ -83,61 +88,53 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         A0mass = "300";
         isBG = true;
     }
-    TCanvas* c1 = new TCanvas("c1","",600,600);
-    TH1F* h_allEvent = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
-    //float bin_HT[10] = {50,100,200,300,500,700,1000,1500,2000,3000};
-    //TH1F* h_HT = new TH1F("h_HT","h_HT",9,bin_HT);
-    TH1F* h_HT = new TH1F("h_HT","h_HT",60,0,3000);
-    
-    TH1F* h_hPtAs = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
-    TH1F* h_hPtAs_ori = new TH1F("h_hPtAs_ori","h_higgsPtAssymetry",40,0,2);
-    TH1F* h_a0PtAs = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
-    TH1F* h_zpPtAs = new TH1F("h_zpPtAs","h_ZpPtAssymetry",60,0,3.0);
-    TH1F* h_zpPtAs_ori = new TH1F("h_zpPtAs_ori","h_ZpPtAssymetry",60,0,3.0);
-
-    TH1F* h_hPtSD = new TH1F("h_hPtSD","h_higgsPtSD",40,0,0.7);
-    TH1F* h_hPtSD_ori = new TH1F("h_hPtSD_ori","h_higgsPtSD",40,0,0.7);
-    TH1F* h_a0PtSD = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
-    TH1F* h_zpPtSD = new TH1F("h_zpPtSD","h_ZpPtSD",30,0.1,0.7);
-    TH1F* h_zpPtSD_ori = new TH1F("h_zpPtSD_ori","h_ZpPtSD",30,0.1,0.7);
+    TCanvas* c1       = new TCanvas("c1","",600,600);
+    TH1F* h_allEvent  = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
     
     const int njets = 20;
     const int ncom = 50;
-    TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
-    TH1F* h_Ncom = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
 
-    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_weight", 40,0,200);
-    TH1F* h_hM_ori = new TH1F("h_higgsM_ori", "h_higgsM_reco", 40,0,200);
-    TH1F* h_hM_all = new TH1F("h_higgsM_all", "h_higgsM_all", 100,50,150);
-    //TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_weight", 24,A0mass.Atof()-60,A0mass.Atof()+60);
-    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_weight", 100,0,500);
-    TH1F* h_a0M_ori = new TH1F("h_A0M_ori", "h_A0M_ori", 100,0,500);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_weight", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
-    TH1F* h_zpM_ori = new TH1F("h_ZpM_ori", "h_ZpM_reco", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
+    TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
+    TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
+    // Mass
+    TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 40,0,200);
+    TH1F* h_hM_sw     = new TH1F("h_higgsM_sw", "h_higgsM_sw", 40,0,200);
+    TH1F* h_hM_ws     = new TH1F("h_higgsM_ws", "h_higgsM_ws", 40,0,200);
+    TH1F* h_a0M       = new TH1F("h_a0M", "h_A0M", 100,0,500);
+    TH1F* h_a0M_sw    = new TH1F("h_A0M_sw", "h_A0M_sw", 100,0,500);
+    TH1F* h_a0M_ws    = new TH1F("h_A0M_ws", "h_A0M_ws", 100,0,500);
+    TH1F* h_zpM       = new TH1F("h_ZpM", "h_ZpM", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* h_zpM_sw    = new TH1F("h_ZpM_sw", "h_ZpM_sw", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* h_zpM_ws    = new TH1F("h_ZpM_ws", "h_ZpM_ws", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
     
-    TH1F* h_hPt = new TH1F("h_higgsPt", "h_higgsPt_reco", 60,0,1200);
-    TH1F* h_hPt_ori = new TH1F("h_higgsPt_ori", "h_higgsPt_reco", 60,0,1200);
-    TH1F* h_a0Pt = new TH1F("h_a0Pt", "h_A0Pt_reco", 60,0,1200);
-    
-    TH1F* h_hDeltaR = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR_reco", 40,0,4);
-    TH1F* h_hDeltaR_ori = new TH1F("h_HiggstobbDeltaR_ori", "h_HiggstobbDeltaR_reco", 40,0,4);
-    TH1F* h_a0DeltaR = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR_reco", 40,0,4);
-    TH1F* h_zpDeltaR = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 35,1,4.5);
-    TH1F* h_zpDeltaR_ori = new TH1F("h_ZptoHA0DeltaR_ori", "h_ZptoHA0DeltaR_reco", 35,1,4.5);
-    TH1F* h_hDeltaEta = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta_reco", 40,0,4);
-    TH1F* h_hDeltaEta_ori = new TH1F("h_HiggstobbDeltaEta_ori", "h_HiggstobbDeltaEta_reco", 40,0,4);
-    TH1F* h_a0DeltaEta = new TH1F("h_A0tobbDeltaEta", "h_A0tobbDeltaEta_reco", 40,0,4);
-    TH1F* h_zpDeltaEta_ori = new TH1F("h_ZptoHA0DeltaEta_ori", "h_ZptoHA0DeltaEta_reco", 40,0,4);
-    TH1F* h_zpDeltaEta = new TH1F("h_ZptoHA0DeltaEta", "h_ZptoHA0DeltaEta_reco", 40,0,4);
-    TH1F* h_hDeltaPhi = new TH1F("h_HiggstobbDeltaPhi", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_hDeltaPhi_ori = new TH1F("h_HiggstobbDeltaPhi_ori", "h_HiggstobbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_a0DeltaPhi = new TH1F("h_A0tobbDeltaPhi", "h_A0obbDeltaPhi_reco", 32,0,3.2);
-    TH1F* h_zpDeltaPhi = new TH1F("h_ZptoHA0DeltaPhi", "h_ZptoHA0DeltaPhi_reco", 32,0,3.2);
-    TH1F* h_zpDeltaPhi_ori = new TH1F("h_ZptoHA0DeltaPhi_ori", "h_ZptoHA0DeltaPhi_reco", 32,0,3.2);
-    
-    TH1F *h_CISVV2_H[2], *h_CISVV2_A0[2];
+    TH1F* h_hPt       = new TH1F("h_higgsPt", "h_higgsPt", 60,0,1200);
+    TH1F* h_a0Pt      = new TH1F("h_a0Pt", "h_A0Pt", 60,0,1200);
+    TH1F* h_hPt_sw    = new TH1F("h_higgsPt_sw", "h_higgsPt_sw", 60,0,1200);
+    TH1F* h_a0Pt_sw   = new TH1F("h_a0Pt_sw", "h_A0Pt_sw", 60,0,1200);
+    TH1F* h_hPt_ws    = new TH1F("h_higgsPt_ws", "h_higgsPt_ws", 60,0,1200);
+    TH1F* h_a0Pt_ws   = new TH1F("h_a0Pt_ws", "h_A0Pt_ws", 60,0,1200);
+    // Assymetry
+    TH1F* h_hPtAs     = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
+    TH1F* h_hPtAs_sw  = new TH1F("h_hPtAs_sw","h_higgsPtAssymetry_sw",40,0,2);
+    TH1F* h_hPtAs_ws  = new TH1F("h_hPtAs_ws","h_higgsPtAssymetry_ws",40,0,2);
+    TH1F* h_a0PtAs    = new TH1F("h_a0PtAs","h_A0PtAssymetry",40,0,2);
+    TH1F* h_a0PtAs_sw = new TH1F("h_a0PtAs_sw","h_A0PtAssymetry_sw",40,0,2);
+    TH1F* h_a0PtAs_ws = new TH1F("h_a0PtAs_ws","h_A0PtAssymetry_ws",40,0,2);
+    TH1F* h_zpPtAs    = new TH1F("h_zpPtAs","h_ZpPtAssymetry",60,0,3.0);
+    TH1F* h_zpPtAs_sw = new TH1F("h_zpPtAs_sw","h_ZpPtAssymetry_sw",60,0,3.0);
+    TH1F* h_zpPtAs_ws = new TH1F("h_zpPtAs_ws","h_ZpPtAssymetry_ws",60,0,3.0);
+
+    TH1F* h_hPtSD     = new TH1F("h_hPtSD","h_higgsPtSD",40,0,0.7);
+    TH1F* h_hPtSD_sw  = new TH1F("h_hPtSD_sw","h_higgsPtSD_sw",40,0,0.7);
+    TH1F* h_hPtSD_ws  = new TH1F("h_hPtSD_ws","h_higgsPtSD_ws",40,0,0.7);
+    TH1F* h_a0PtSD    = new TH1F("h_a0PtSD","h_A0PtSD",30,0,0.6);
+    TH1F* h_zpPtSD_sw = new TH1F("h_zpPtSD_sw","h_ZpPtSD_sw",30,0.1,0.7);
+    TH1F* h_zpPtSD_ws = new TH1F("h_zpPtSD_ws","h_ZpPtSD_ws",30,0.1,0.7);
+    // CISVV2 & weight
+    TH1F *h_CISVV2_H[6], *h_CISVV2_A0[6];
     TH1F *h_TMVAweight_sw[2];
     TH1F *h_TMVAweight_ws[2];
+    /*
     h_hM->SetLineColor(kBlue);
     h_zpM->SetLineColor(kBlue);
     h_hPt->SetLineColor(kBlue);
@@ -152,13 +149,49 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
     h_zpDeltaEta->SetLineColor(kBlue);
     h_zpPtSD->SetLineColor(kBlue);
     h_zpPtAs->SetLineColor(kBlue);
+    */
     for (int i=0;i<2;i++) {
-        h_CISVV2_H[i]= new TH1F(Form("h_CISVV2_Htobb_%d",i),Form("h_CISVV2_Htobb_%d",i),22,0,1.1);
-        h_CISVV2_A0[i]= new TH1F(Form("h_CISVV2_A0tobb_%d",i),Form("h_CISVV2_A0tobb_%d",i),22,0,1.1);
-        h_TMVAweight_ws[i] = new TH1F(Form("TMVAweightWS_%d",i),Form("TMVAweightWS_%d",i),40,0.0,2);
-        h_TMVAweight_sw[i] = new TH1F(Form("TMVAweightSW_%d",i),Form("TMVAweightSW_%d",i),40,0.0,2);
+        h_CISVV2_H[i]       = new TH1F(Form("h_CISVV2_H_%d",i),Form("h_CISVV2_H_%d",i),50,0.5,1);
+        h_CISVV2_H[2+i]     = new TH1F(Form("h_CISVV2_Hsw_%d",i),Form("h_CISVV2_Hsw_%d",i),50,0.5,1);
+        h_CISVV2_H[4+i]     = new TH1F(Form("h_CISVV2_Hws_%d",i),Form("h_CISVV2_Hws_%d",i),50,0.5,1);
+        h_CISVV2_A0[i]      = new TH1F(Form("h_CISVV2_A0_%d",i),Form("h_CISVV2_A0_%d",i),50,0.5,1);
+        h_CISVV2_A0[2+i]    = new TH1F(Form("h_CISVV2_A0sw_%d",i),Form("h_CISVV2_A0sw_%d",i),50,0.5,1);
+        h_CISVV2_A0[4+i]    = new TH1F(Form("h_CISVV2_A0ws_%d",i),Form("h_CISVV2_A0ws_%d",i),50,0.5,1);
+        h_TMVAweight_ws[i]  = new TH1F(Form("h_TMVAweightWS_%d",i),Form("h_TMVAweightWS_%d",i),40,0.0,2);
+        h_TMVAweight_sw[i]  = new TH1F(Form("h_TMVAweightSW_%d",i),Form("h_TMVAweightSW_%d",i),40,0.0,2);
         
     }
+    // Delta R, theta, phi
+    TH1F* h_hDeltaR         = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR", 40,0,4);
+    TH1F* h_hDeltaR_sw      = new TH1F("h_HiggstobbDeltaR_sw", "h_HiggstobbDeltaR_sw", 40,0,4);
+    TH1F* h_hDeltaR_ws      = new TH1F("h_HiggstobbDeltaR_ws", "h_HiggstobbDeltaR_ws", 40,0,4);
+    TH1F* h_a0DeltaR        = new TH1F("h_A0tobbDeltaR", "h_A0tobbDeltaR", 40,0,4);
+    TH1F* h_a0DeltaR_sw     = new TH1F("h_A0tobbDeltaR_sw", "h_A0tobbDeltaR_sw", 40,0,4);
+    TH1F* h_a0DeltaR_ws     = new TH1F("h_A0tobbDeltaR_ws", "h_A0tobbDeltaR_ws", 40,0,4);
+    TH1F* h_zpDeltaR        = new TH1F("h_ZptoHA0DeltaR", "h_ZptoHA0DeltaR_reco", 35,1,4.5);
+    TH1F* h_zpDeltaR_sw     = new TH1F("h_ZptoHA0DeltaR_sw", "h_ZptoHA0DeltaR_sw", 35,1,4.5);
+    TH1F* h_zpDeltaR_ws     = new TH1F("h_ZptoHA0DeltaR_ws", "h_ZptoHA0DeltaR_ws", 35,1,4.5);
+
+    TH1F* h_hDeltaEta       = new TH1F("h_HiggstobbDeltaEta", "h_HiggstobbDeltaEta", 40,0,4);
+    TH1F* h_hDeltaEta_sw    = new TH1F("h_HiggstobbDeltaEta_sw", "h_HiggstobbDeltaEta_sw", 40,0,4);
+    TH1F* h_hDeltaEta_ws    = new TH1F("h_HiggstobbDeltaEta_ws", "h_HiggstobbDeltaEta_ws", 40,0,4);
+    TH1F* h_a0DeltaEta      = new TH1F("h_A0tobbDeltaEta", "h_A0tobbDeltaEta", 40,0,4);
+    TH1F* h_a0DeltaEta_sw   = new TH1F("h_A0tobbDeltaEta_sw", "h_A0tobbDeltaEta_sw", 40,0,4);
+    TH1F* h_a0DeltaEta_ws   = new TH1F("h_A0tobbDeltaEta_ws", "h_A0tobbDeltaEta_ws", 40,0,4);
+    TH1F* h_zpDeltaEta      = new TH1F("h_ZptoHA0DeltaEta", "h_ZptoHA0DeltaEta", 40,0,4);
+    TH1F* h_zpDeltaEta_sw   = new TH1F("h_ZptoHA0DeltaEta_sw", "h_ZptoHA0DeltaEta_sw", 40,0,4);
+    TH1F* h_zpDeltaEta_ws   = new TH1F("h_ZptoHA0DeltaEta_ws", "h_ZptoHA0DeltaEta_ws", 40,0,4);
+
+    TH1F* h_hDeltaPhi       = new TH1F("h_HiggstobbDeltaPhi", "h_HiggstobbDeltaPhi", 32,0,3.2);
+    TH1F* h_hDeltaPhi_sw    = new TH1F("h_HiggstobbDeltaPhi_sw", "h_HiggstobbDeltaPhi_sw", 32,0,3.2);
+    TH1F* h_hDeltaPhi_ws    = new TH1F("h_HiggstobbDeltaPhi_ws", "h_HiggstobbDeltaPhi_ws", 32,0,3.2);
+    TH1F* h_a0DeltaPhi      = new TH1F("h_A0tobbDeltaPhi", "h_A0obbDeltaPhi", 32,0,3.2);
+    TH1F* h_a0DeltaPhi_sw   = new TH1F("h_A0tobbDeltaPhi_sw", "h_A0obbDeltaPhi_sw", 32,0,3.2);
+    TH1F* h_a0DeltaPhi_ws   = new TH1F("h_A0tobbDeltaPhi_ws", "h_A0obbDeltaPhi_ws", 32,0,3.2);
+    TH1F* h_zpDeltaPhi      = new TH1F("h_ZptoHA0DeltaPhi", "h_ZptoHA0DeltaPhi", 32,0,3.2);
+    TH1F* h_zpDeltaPhi_sw   = new TH1F("h_ZptoHA0DeltaPhi_sw", "h_ZptoHA0DeltaPhi_sw", 32,0,3.2);
+    TH1F* h_zpDeltaPhi_ws   = new TH1F("h_ZptoHA0DeltaPhi_ws", "h_ZptoHA0DeltaPhi_ws", 32,0,3.2);
+    
     Int_t nPass[20]={0};
     int maxHIndexNum = 0, maxZpIndexNum = 0;
     
@@ -166,7 +199,7 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         data.GetEntry(jEntry);
-        //if (jEntry>50) break; 
+        if (jEntry>50) break; 
         nPass[0]++;
         float HT = data.GetFloat("HT");
         h_HT->Fill(HT);
@@ -219,7 +252,6 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         static HA0JetInfo minX2, minWeightX2; 
         fourJetList.clear();
         static int hi, hj, ai, aj;
-        cout << "good" << endl;
         for (hi=0;hi<goodJet.size();hi++) {
             for (hj=0;hj<hi;hj++) {
                 for (ai=0;ai<goodJet.size();ai++) {
@@ -231,8 +263,8 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
                 }
             }
         }
-        cout << "loop" << endl;
         h_Ncom->Fill(fourJetList.size());
+        
         if (fourJetList.size()==0) continue;
         nPass[3]++;
 
@@ -253,11 +285,11 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         h_TMVAweight_sw[1]->Fill(minX2.getWeight(1)); 
         h_TMVAweight_ws[0]->Fill(minWeightX2.getWeight(0)); 
         h_TMVAweight_ws[1]->Fill(minWeightX2.getWeight(1));
+        
         //h_TMVAweight_ws[0]->Fill(minX2.weightJets()->getWeight(0)); 
         //h_TMVAweight_ws[1]->Fill(minX2.weightJets()->getWeight(1));
         //cout << minX2.getWeight(0) << " " << minX2.getWeight(1)  << "| \t" << minX2.weightJets()->getWeight(0) << " " << minX2.weightJets()->getWeight(1) << endl;
         //cout << minX2.getWeight(0) << " " << minX2.getWeight(1)  << "| \t" << minWeightX2.getWeight(0) << " " << minWeightX2.getWeight(1) << endl;
-        
         
         
         
