@@ -316,15 +316,35 @@ public:
 		// cout << weight4Jets->weight[0] << "\t" << weight4Jets->weight[1] << "\t" << weight4Jets->weight[2] << "\t" << weight4Jets->weight[3] << "\t" << endl;
 		return weight4Jets;
 	}
-	inline float Mh()     {return (*Hjet2+*Hjet1).M();}
-	inline float MA0()    {return (*A0jet2+*A0jet1).M();}
-	inline float MZp()    {return (*Hjet2+*Hjet1+*A0jet2+*A0jet1).M();}
-	inline float HdR()    {return Hjet1->DeltaR(*Hjet2);}
-	inline float A0dR()   {return A0jet1->DeltaR(*A0jet2);}
-	inline float ZpdR()   {return (*Hjet2+*Hjet1).DeltaR(*A0jet2+*A0jet1);}
-	inline float xSqure() {return calChiSquare(Mh(),MA0(),MZp());}
-	inline float* getWeight()      {return weight;}
-	inline float  getWeight(int i) {return (i<4&&i>=0)?weight[i]:-1;}
-	inline float* getIndex() 	   {return ind;}
-	inline float  getIndex(int i)  {return (i<4&&i>=0)?ind[i]:-1;}
+	inline float Mh()     	{return (*Hjet2+*Hjet1).M();}
+	inline float MA0()    	{return (*A0jet2+*A0jet1).M();}
+	inline float MZp()    	{return (*Hjet2+*Hjet1+*A0jet2+*A0jet1).M();}
+	inline float Pth()	  	{return (*Hjet2+*Hjet1).Pt();}
+	inline float Pta0()		{return (*A0jet2+*A0jet1).Pt();}
+	inline float PtZp()		{return (*Hjet2+*Hjet1+*A0jet2+*A0jet1).Pt();}
+	inline float HdR()    	{return Hjet1->DeltaR(*Hjet2);}
+	inline float A0dR()   	{return A0jet1->DeltaR(*A0jet2);}
+	inline float ZpdR()   	{return (*Hjet2+*Hjet1).DeltaR(*A0jet2+*A0jet1);}
+	inline float xSqure() 	{return calChiSquare(Mh(),MA0(),MZp());}
+	inline float* getWeight()      	{return weight;}
+	inline float  getWeight(int i) 	{return (i<4&&i>=0)?weight[i]:-1;}
+	inline int* getIndex()			{return ind;}
+	inline int  getIndex(int i)  	{return (i<4&&i>=0)?ind[i]:-1;}
+	inline TLorentzVector* getHjet(int i)	{
+		if (i==0) return Hjet1;
+		else if (i==1) return Hjet2;
+		else return NULL;
+	}
+	inline TLorentzVector* getA0jet(int i)	{
+		if (i==0) return A0jet1;
+		else if (i==1) return A0jet2;
+		else return NULL;
+	}
+	inline TLorentzVector* getHA0jet(int i) 	{
+		TLorentzVector* vec = new TLorentzVector();
+		if (i==0) *vec = *Hjet1+*Hjet2;
+		else if (i==1) *vec = *A0jet1+*A0jet2;
+		else vec = NULL;
+		return vec;
+	}
 };
