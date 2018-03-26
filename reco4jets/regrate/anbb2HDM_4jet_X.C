@@ -276,20 +276,12 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         if (goodJet.size()<4) continue;
         nPass[2]++;
         TMVAinputInfo info(data);
-        /*
-        HA0JetInfo    fourJet(info,goodJet[0],goodJet[1],goodJet[2],goodJet[3],1);
-        thisJet = (TLorentzVector*)genjetP4->At(goodJet[0]);
-        thatJet = (TLorentzVector*)genjetP4->At(goodJet[1]);
-        float weight[2];
-        weight[0] = TMVA_15plus3_jetGenJet_nu_3_1(info,goodJet[0],thisJet->DeltaR(*thatJet));
-        weight[1] = TMVA_15plus3_jetGenJet_nu_3_1(info,goodJet[1],thisJet->DeltaR(*thatJet));
-        cout << weight[0] << " " << fourJet.getWeight()[0] <<"\t" << weight[1] << " " << fourJet.getWeight()[1] << endl;
-        */
         
         static vector<HA0JetInfo> fourJetList;
         static HA0JetInfo minX2, minWeightX2; 
         fourJetList.clear();
         static unsigned int hi, hj, ai, aj;
+        /*
         for (hi=0;hi<goodJet.size();hi++) {
             for (hj=0;hj<hi;hj++) {
                 for (ai=0;ai<goodJet.size();ai++) {
@@ -297,6 +289,18 @@ void anbb2HDM_4jet_X(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
                     for (aj=0;aj<ai;aj++) {
                         if ( aj==hi || aj==hj ) continue;
                         fourJetList.push_back(HA0JetInfo(info,hi,hj,ai,aj,1));
+                    }
+                }
+            }
+        }
+        */
+        for (hi=0;hi<goodJet.size();hi++) {
+            for (hj=0;hj<hi;hj++) {
+                for (ai=0;ai<goodJet.size();ai++) {
+                    if ( ai==hi || ai==hj ) continue;
+                    for (aj=0;aj<ai;aj++) {
+                        if ( aj==hi || aj==hj ) continue;
+                        fourJetList.push_back(HA0JetInfo(info,goodJet[hi],goodJet[hj],goodJet[ai],goodJet[aj],1));
                     }
                 }
             }
