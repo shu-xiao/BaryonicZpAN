@@ -240,43 +240,17 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
         //c1->Print(pdfName.data());
         c1->Print((pdfName+"]").data());
     }
-    /*
-    string fileName; 
-    if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
-    else if (doBTagCut) fileName = Form("sigRootFile/bb2HDM_recoBTag_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    else fileName = Form("sigRootFile/bb2HDM_reco_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    if (!saveEffi&&false) {
+    
+    string fileName = "fitwidth.root"; 
+    if (!saveEffi||true) {
         TFile* outputFile = new TFile(fileName.data(),"recreate");
         h_zpM->Write();
         h_hM->Write();
         h_a0M->Write();
-        h_hPt->Write();
-        h_a0Pt->Write();
-        h_hPtAs->Write();
-        h_a0PtAs->Write();
-        h_zpPtAs->Write();
-        h_hPtSD->Write();
-        h_a0PtSD->Write();
-        h_zpPtSD->Write();
-        h_hDeltaR->Write();
-        h_a0DeltaR->Write();
-        h_zpDeltaR->Write();
-        h_hDeltaEta->Write();
-        h_a0DeltaEta->Write();
-        h_zpDeltaEta->Write();
-        h_hDeltaPhi->Write();
-        h_a0DeltaPhi->Write();
-        h_zpDeltaPhi->Write();
-        h_CISVV2_H[0]->Write();
-        h_CISVV2_H[1]->Write();
-        h_CISVV2_A0[0]->Write();
-        h_CISVV2_A0[1]->Write();
-        h_hNcandi->Write();
-        h_a0Ncandi->Write();
-        h_zpNcandi->Write();
         
         outputFile->Close();
     }
+    /*
     string fileNPassName;
     if (doBTagCut) fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_recoBTag4jets.txt",Zpmass.Data(),A0mass.Data());
     else fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_reco4jets.txt",Zpmass.Data(),A0mass.Data());
