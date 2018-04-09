@@ -18,7 +18,7 @@
 
 #define saveEffi          true
 #define basePtEtaCut    true
-#define doGenMatch      false
+#define doGenMatch      1
 #define doBTagCut       false
 #define CISVV2Cut       0.5426
 
@@ -41,6 +41,7 @@ inline float caldePhi(float phi1, float phi2) {
 bool sortListbyPt(vector<float> a, vector<float> b) {return a[2]>b[2];}
 bool sortListbyPtZp(vector<float> a, vector<float> b) {return a[4]>b[4];}
 bool sortListbyxSquare(HA0JetInfo s1, HA0JetInfo s2) {return s1.xSqure()<s2.xSqure();}
+bool sortListbyxSquareLT(HA0JetInfo s1, HA0JetInfo s2) {return s1.xSqure(2,2)<s2.xSqure(2,2);}
 bool sortListbyWeightxSquare(HA0JetInfo s1, HA0JetInfo s2) {return s1.xSqure(1,0)<s2.xSqure(1,0);}
 bool sortListbyWeightxSquare_2(HA0JetInfo s1, HA0JetInfo s2) {return s1.xSqure(1,1)<s2.xSqure(1,1);}
 //bool sortListbyWeightxSquare(HA0JetInfo s1, HA0JetInfo s2) {return s1.xSqure(1,0)<s2.xSqure(1,0);}
@@ -139,12 +140,15 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 70,60,200);
     TH1F* h_hM_sw     = new TH1F("h_higgsM_sw", "h_higgsM_sw", 70,60,200);
     TH1F* h_hM_ws     = new TH1F("h_higgsM_ws", "h_higgsM_ws", 70,60,200);
+    TH1F* h_hM_LT     = new TH1F("h_higgsM_ws_LT", "h_higgsM_ws_LT", 70,60,200);
     TH1F* h_a0M       = new TH1F("h_a0M", "h_A0M", 50,0,500);
     TH1F* h_a0M_sw    = new TH1F("h_A0M_sw", "h_A0M_sw", 50,0,500);
     TH1F* h_a0M_ws    = new TH1F("h_A0M_ws", "h_A0M_ws", 50,0,500);
+    TH1F* h_a0M_LT    = new TH1F("h_A0M_ws_LT", "h_A0M_ws_LT", 50,0,500);
     TH1F* h_zpM       = new TH1F("h_ZpM", "h_ZpM", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
     TH1F* h_zpM_sw    = new TH1F("h_ZpM_sw", "h_ZpM_sw", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
     TH1F* h_zpM_ws    = new TH1F("h_ZpM_ws", "h_ZpM_ws", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* h_zpM_LT    = new TH1F("h_ZpM_ws_LT", "h_ZpM_ws_LT", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
     
     TH1F* h_hPt       = new TH1F("h_higgsPt", "h_higgsPt", 60,0,1200);
     TH1F* h_a0Pt      = new TH1F("h_a0Pt", "h_A0Pt", 60,0,1200);
@@ -238,9 +242,9 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
         if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
-        //if (jEntry >= 30) break;
+        //if (jEntry >= 10) break;
         data.GetEntry(jEntry);
-        //if (jEntry>500) break; 
+        //if (jEntry>50) break; 
         nPass[0]++;
         float HT = data.GetFloat("HT");
         //h_HT->Fill(HT);
@@ -278,57 +282,73 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_NgoodJets->Fill(goodJet.size());
         if (goodJet.size()<4) continue;
         nPass[2]++;
-        TMVAinputInfo info(data);
+        TMVAinputInfo info(data,1);
         
         static vector<HA0JetInfo> fourJetList;
-        static HA0JetInfo minX2, minWeightX2, minWeightX2_2; 
+        static HA0JetInfo minX2, minWeightX2, minWeightX2_2, minWeight_LT; 
         fourJetList.clear();
         static unsigned int hi, hj, ai, aj;
-        //cout << "start loop" << endl;
         for (hi=0;hi<goodJet.size();hi++) {
             for (hj=0;hj<hi;hj++) {
+                // genMatchin
+                if (doGenMatch) {
+                    TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(hi);
+                    TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(hj);
+                    bool genParA=false, genParB=false;
+                    if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&genHA0Par[1]->DeltaR(*thatJet)<0.4) genParA=true;
+                    if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&genHA0Par[0]->DeltaR(*thatJet)<0.4) genParB=true; 
+                    if (!(genParA||genParB)) continue;
+                }
+                // Loop for A0
                 for (ai=0;ai<goodJet.size();ai++) {
                     if ( ai==hi || ai==hj ) continue;
                     for (aj=0;aj<ai;aj++) {
                         if ( aj==hi || aj==hj ) continue;
-                        //cout << hi << "  " << hj << "\t" << ai << "  " << aj << endl;
-                        //cout << goodJet[hi] << "  " << goodJet[hj] << "\t" << goodJet[ai] << "  " << goodJet[aj] << endl;
-                        fourJetList.push_back(HA0JetInfo(info,goodJet[hi],goodJet[hj],goodJet[ai],goodJet[aj],1));
-                        //cout << "finish ini" << endl;
+                        if (doGenMatch) {
+                            TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ai);
+                            TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(aj);
+                            bool genParA=false, genParB=false;
+                            if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&genHA0Par[3]->DeltaR(*thatJet)<0.4) genParA=true;
+                            if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&genHA0Par[2]->DeltaR(*thatJet)<0.4) genParB=true; 
+                            if (!(genParA||genParB)) continue;
+                        }
+                        HA0JetInfo tem(info,goodJet[hi],goodJet[hj],goodJet[ai],goodJet[aj]);
+                        fourJetList.push_back(tem);
                     }
                 }
             }
         }
-        //cout << "end of loop" << endl; 
         h_Ncom->Fill(fourJetList.size());
         
         if (fourJetList.size()<1) continue;
         nPass[3]++;
-        //cout << jEntry << "\t tt" << endl;
-        //cout << fourJetList[0].Jets.Hjet1 << endl;
-        //cout << fourJetList[0].weightJets.Hjet1 << endl;
-        //cout << fourJetList[0].weightJetsLT.Hjet1 << endl;
-
-        //cout << "end of test" << endl;
         sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
         minX2       = fourJetList[0];
         sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
         minWeightX2 = fourJetList[0];
         sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare_2); 
         minWeightX2_2 = fourJetList[0];
+        sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
+        minWeight_LT = fourJetList[0];
         // fill TH1F
+        
         // Mass 
         h_hM->Fill(minX2.Mh());
         h_hM_sw->Fill(minWeightX2.Mh(1));
         h_hM_ws->Fill(minWeightX2_2.Mh(1));
+        h_hM_LT->Fill(minWeight_LT.Mh(2));
         //cout << "MA0 " << minX2.MA0() << "\t" << minX2.MA0(1) << "\t" << minWeightX2.MA0(1) << endl;
         h_a0M->Fill(minX2.MA0());
         h_a0M_sw->Fill(minWeightX2.MA0(1));
         h_a0M_ws->Fill(minWeightX2_2.MA0(1));
+        h_a0M_LT->Fill(minWeight_LT.MA0(2));
         h_zpM->Fill(minX2.MZp());
         h_zpM_sw->Fill(minWeightX2.MZp(1,0));
         h_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
+        h_zpM_LT->Fill(minWeight_LT.MZp(2,2));
         // Pt
+        // delete pointer
+        for (int i=0;i<fourJetList.size();i++) fourJetList[i].Release();
         /*
         h_hPt->Fill(minX2.Pth()); 
         h_hPt_sw->Fill(minX2.weightJets()->Pth()); 
@@ -432,15 +452,15 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     if (!isBG) 
     {
         string pdfName;
-        if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s.pdf",Zpmass.Data(),A0mass.Data());
+        if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s_genMatchLT.pdf",Zpmass.Data(),A0mass.Data());
         else if (doBTagCut) pdfName = Form("anRecoBTagJet_bb2HDM_MZp%s_MA0%s_tt.pdf",Zpmass.Data(),A0mass.Data());
-        else pdfName = Form("anRecoJet_bb2HDM_MZp%s_MA0%s_weightA0.pdf",Zpmass.Data(),A0mass.Data());
+        else pdfName = Form("anRecoJet_bb2HDM_MZp%s_MA0%s_LT.pdf",Zpmass.Data(),A0mass.Data());
         c1->Print((pdfName+"[").data());
         h_NgoodJets->Draw("hist");
         c1->Print(pdfName.data());
         h_Ncom->Draw("hist");
         c1->Print(pdfName.data());
-        draw(h_hM,h_hM_sw,h_hM_ws);
+        draw(h_hM,h_hM_ws,h_hM_LT);
         c1->Print(pdfName.data());
         /*
         h_a0M->Draw("hist");
@@ -450,9 +470,9 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_a0M_ws->Draw("hist");
         c1->Print(pdfName.data());
         */
-        draw(h_a0M,h_a0M_sw,h_a0M_ws);
+        draw(h_a0M,h_a0M_ws,h_a0M_LT);
         c1->Print(pdfName.data());
-        draw(h_zpM,h_zpM_sw,h_zpM_ws);
+        draw(h_zpM,h_zpM_ws,h_zpM_LT);
         c1->Print(pdfName.data());
         h_a0Pt->SetTitle("h_HA0rawPt_comparison");
         draw(h_a0Pt,h_hPt);
