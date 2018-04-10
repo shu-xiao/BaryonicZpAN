@@ -60,6 +60,26 @@ void savenPass(int nPass[],string fileName) {
     fp.close();
 
 }
+void draw(TH1F* h1, TH1F* h2, TH1F *h3, float weight = 1.1, int i = kBlue) {
+    h2->Scale(0.2);
+    h3->Scale(0.2);
+    float yMax = max({h1->GetMaximum(),h2->GetMaximum(),h3->GetMaximum()});
+    static TLegend *le = new TLegend(0.15,0.6,0.45,0.9);
+    le->Clear();
+    le->AddEntry(h1,"GenMatching");
+    le->AddEntry(h2,"genPar X0.2");
+    le->AddEntry(h3,"genPar+Neutrino X0.2");
+    h1->SetMaximum(yMax*weight );
+    h2->SetMaximum(yMax*weight );
+    h3->SetMaximum(yMax*weight );
+    h1->SetLineColor(1);
+    h2->SetLineColor(i);
+    h3->SetLineColor(kGreen-3);
+    h1->Draw("hist");
+    h2->Draw("histsame");
+    h3->Draw("histsame");
+    le->Draw();
+}
 using namespace std;
 void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root"){
     
@@ -75,7 +95,7 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
     bool isBG = false;
     
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
-    TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%.root}; echo \"${test}\"",inputFile.data()));
+    TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%_re.root}; echo \"${test}\"",inputFile.data()));
     // set default value
     if (Zpmass.Atof()>2500||Zpmass.Atof()<500 || A0mass.Atof()>800 || A0mass.Atof()<300) {
         Zpmass = "800";
@@ -92,13 +112,19 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
     TH1F* h_zpNcandi = new TH1F("h_zpNcandi", "h_Zp_NcombinationJets", 10,-0.5,9.5);
 
     //TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_reco", 75,100,175);
-    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_reco", 75,-100,50);
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genMatch", 75,-100,50);
+    TH1F* h_hM_par = new TH1F("h_higgsM_par", "h_higgsM_par", 75,-100,50);
+    TH1F* h_hM_parNeu = new TH1F("h_higgsM_parNeu", "h_higgsM_parNeu", 75,-100,50);
     TH1F* h_hM_ori = new TH1F("h_higgsM_ori", "h_higgsM_reco", 75,100,175);
     TH1F* h_hM_all = new TH1F("h_higgsM_all", "h_higgsM_all", 100,50,150);
-    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_reco", 40,-300,+100);
+    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genMatch", 40,-300,+100);
+    TH1F* h_a0M_par = new TH1F("h_a0M_par", "h_A0M_par", 40,-300,+100);
+    TH1F* h_a0M_parNeu = new TH1F("h_a0M_parNeu", "h_A0M_parNeu", 40,-300,+100);
     //TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_reco", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_a0M_all = new TH1F("h_A0M_all", "h_A0M_all", 100,0,500);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_reco", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genMatch", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
+    TH1F* h_zpM_par = new TH1F("h_ZpM_par", "h_ZpM_par", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
+    TH1F* h_zpM_parNeu = new TH1F("h_ZpM_parNeu", "h_ZpM_parNeu", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
     TH1F* h_zpM_ori = new TH1F("h_ZpM_ori", "h_ZpM_reco", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
     Int_t nPass[20]={0};
@@ -155,7 +181,8 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
             }
         } // end of outer loop jet
         nPass[2]++;
-        sort(HindexList.begin(),HindexList.end(),sortListbyPt);
+        //sort(HindexList.begin(),HindexList.end(),sortListbyPt);
+        sort(HindexList.begin(),HindexList.end(),sortListbyM);
         h_hNcandi->Fill(HindexList.size());
         
         
@@ -183,7 +210,8 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
                 A0indexList.push_back({(float)ij,(float)jj,(float)((*thisJet+*thatJet).M()-A0mass.Atof()),(float)((*thisJet+*thatJet).Pt())});
             }
         } // end of outer loop jet
-        sort(A0indexList.begin(),A0indexList.end(),sortListbyPt);
+        //sort(A0indexList.begin(),A0indexList.end(),sortListbyPt);
+        sort(A0indexList.begin(),A0indexList.end(),sortListbyM);
         h_a0Ncandi->Fill(A0indexList.size());
         nPass[3]++;
         if (A0indexList.size()!=0&&HindexList.size()==0) {
@@ -194,6 +222,19 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
             h_hM->Fill(HindexList[0][2]);
             continue;
         }
+        if (doGenMatch) {
+            vector<TLorentzVector*> bjets = genPar4v(data);  
+            vector<TLorentzVector*> bjets_Neu = genPar4v(data,1);
+            h_hM_par->Fill((*bjets[0]+*bjets[1]).M()-125);
+            //cout << (*bjets[0]+*bjets[1]).M() << endl;
+            h_hM_parNeu->Fill((*bjets_Neu[0]+*bjets_Neu[1]).M()-125);
+            h_a0M_par->Fill((*bjets[2]+*bjets[3]).M()-A0mass.Atof());
+            h_a0M_parNeu->Fill((*bjets_Neu[2]+*bjets_Neu[3]).M()-A0mass.Atof());
+            h_zpM_par->Fill((*bjets[0]+*bjets[1]+*bjets[2]+*bjets[3]).M());
+            h_zpM_parNeu->Fill((*bjets_Neu[0]+*bjets_Neu[1]+*bjets_Neu[2]+*bjets_Neu[3]).M());
+            for (int i=0;i<4;i++) delete bjets_Neu[i];
+        }
+        // save 4 jet info
         float zpM = -999;
         bool isSave = false;
         for (int i=0 ;i<HindexList.size();i++) {
@@ -225,16 +266,17 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
     if (!isBG) 
     {
         string pdfName;
-        if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s_width.pdf",Zpmass.Data(),A0mass.Data());
+        if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s_par.pdf",Zpmass.Data(),A0mass.Data());
+        //if (doGenMatch) pdfName = Form("anGenMatchJet_bb2HDM_MZp%s_MA0%s_width.pdf",Zpmass.Data(),A0mass.Data());
         c1->Print((pdfName+"[").data());
-        h_zpM->Draw("hist");
+        h_hM->GetXaxis()->SetTitle("M_{jj}-M_{h}");
+        draw(h_hM,h_hM_par,h_hM_parNeu);
         c1->Print(pdfName.data());
-        //h_hM_ori->Draw("hist");
-        h_hM->Draw("hist");
+        h_a0M->GetXaxis()->SetTitle("M_{jj}-M_{A0}");
+        draw(h_a0M,h_a0M_par,h_a0M_parNeu);
         c1->Print(pdfName.data());
-        //h_hM_all->Draw("hist");
-        //c1->Print(pdfName.data());
-        h_a0M->Draw("hist");
+        h_zpM->GetXaxis()->SetTitle("M_{jj}");
+        draw(h_zpM,h_zpM_par,h_zpM_parNeu);
         c1->Print(pdfName.data());
         //h_a0M_all->Draw("hist");
         //c1->Print(pdfName.data());
