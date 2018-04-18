@@ -26,8 +26,9 @@ struct TMVAinputInfo{
 	TLorentzVector *ak4jet[35];
 	TLorentzVector *leadjet[35];
 	TLorentzVector *lepjet[35];
+	TLorentzVector *Parjet[30];
 	TMVAinputInfo() {}
-	TMVAinputInfo(TreeReader &data) {
+	TMVAinputInfo(TreeReader &data, bool usePar = false) {
 		nJet         = data.GetInt("THINnJet");
 		nVtx         = data.GetInt("nVtx");
 		jetMt        = data.GetPtrFloat("THINjetMt");
@@ -43,7 +44,7 @@ struct TMVAinputInfo{
 		pfMET        = data.GetFloat("pfMetCorrPt");
 		pfMETPhi     = data.GetFloat("pfMetCorrPhi");
 		
-		static TClonesArray *ak4jetP4, *rawjetP4, *THINjetLeadTrackP4, *LepjetP4;
+		static TClonesArray *ak4jetP4, *rawjetP4, *THINjetLeadTrackP4, *LepjetP4, *genParP4;
 		ak4jetP4            =  (TClonesArray*) data.GetPtrTObject("THINunCorrJetP4");
 		rawjetP4            =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
 		THINjetLeadTrackP4  =  (TClonesArray*) data.GetPtrTObject("THINjetLeadTrackP4");
@@ -54,6 +55,10 @@ struct TMVAinputInfo{
 			rawjet[i]       =  (TLorentzVector*)rawjetP4->At(i);
 			leadjet[i]      =  (TLorentzVector*)THINjetLeadTrackP4->At(i);
 			lepjet[i]       =  (TLorentzVector*)LepjetP4->At(i);
+		}
+		if (usePar) {
+			genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
+			for (i=0;i<30;i++) Parjet[i] = (TLorentzVector*)genParP4->At(i);
 		}
 	}
 };
@@ -67,154 +72,14 @@ inline float deltaPhi(float phi1, float phi2) {
 	return (abs(phi2-phi1)<(Float_t)TMath::Pi())? abs(phi2-phi1): 2*TMath::Pi()-abs(phi2-phi1);
 }
 inline float calChiSquare(float Mh, float MA0, float MZp) {
-    return TMath::Power((Mh-125)/7.6,2) + TMath::Power(((MA0-300)/22),2) + TMath::Power((MZp-1000)/41,2);
+    //return TMath::Power((Mh-125)/7.6,2) + TMath::Power(((MA0-300)/22),2) + TMath::Power((MZp-1000)/41,2);
+    return TMath::Power((Mh-125)/14.48,2) + TMath::Power(((MA0-300)/37.86),2) + TMath::Power((MZp-1000)/83.62,2);
 }
 #endif
 // structure, new one
 // LL
-Float_t TMVA_15plus3_jetGenJet_nu_L(TMVAinputInfo &info, Int_t i, Float_t jjDR,int mode = -1) 
-{
-	if (i>=info.nJet) {
-		cout << "get out of range index" << endl;
-		return 1.;
-	}
 
-  	// classification variables
-	static float Jet_pt_, Jet_corr_,  Jet_eta_, Jet_mt_;
-	static float Jet_leadTrackPt_, Jet_leptonPtRel_, Jet_leptonPt_, Jet_leptonDeltaR_;
-	static float Jet_neHEF_, Jet_neEmEF_, Jet_chMult_, Jet_vtxPt_, Jet_vtxMass_, Jet_vtx3dL_, Jet_vtxNtrk_, Jet_vtx3deL_;
-	static float Jet_PFMET_, Jet_METDPhi_, Jet_JetDR_;
-	static float nVtx_;
-  	// MVA classifiers for b-jet
-	static TMVA::Reader* tmvaReader_L = NULL;
 
-  	// one-time MVA initialization
-
-	if (!tmvaReader_L) {
-		tmvaReader_L = new TMVA::Reader("!Color:Silent");
-		tmvaReader_L->AddVariable("Jet_pt",             	&Jet_pt_);
-		tmvaReader_L->AddVariable("Jet_eta",            	&Jet_eta_);
-		tmvaReader_L->AddVariable("Jet_mt",             	&Jet_mt_);
-		tmvaReader_L->AddVariable("Jet_leadTrackPt",    	&Jet_leadTrackPt_);
-		tmvaReader_L->AddVariable("Jet_leptonPtRel_new",  	&Jet_leptonPtRel_);
-		tmvaReader_L->AddVariable("Jet_leptonPt",       	&Jet_leptonPt_);
-		tmvaReader_L->AddVariable("Jet_leptonDeltaR",   	&Jet_leptonDeltaR_);
-		tmvaReader_L->AddVariable("Jet_neHEF",				&Jet_neHEF_);
-		tmvaReader_L->AddVariable("Jet_neEmEF",         	&Jet_neEmEF_);
-		tmvaReader_L->AddVariable("Jet_vtxPt",          	&Jet_vtxPt_);
-		tmvaReader_L->AddVariable("Jet_vtxMass",        	&Jet_vtxMass_);
-		tmvaReader_L->AddVariable("Jet_vtx3dL",         	&Jet_vtx3dL_);
-		tmvaReader_L->AddVariable("Jet_vtxNtrk",        	&Jet_vtxNtrk_);
-		tmvaReader_L->AddVariable("Jet_vtx3deL_new",      	&Jet_vtx3deL_);
-		tmvaReader_L->AddVariable("nGoodPVs",            	&nVtx_);
-		tmvaReader_L->AddVariable("Jet_PFMET",            	&Jet_PFMET_);
-		tmvaReader_L->AddVariable("Jet_METDPhi",          	&Jet_METDPhi_);
-		tmvaReader_L->AddVariable("Jet_JetDR",          	&Jet_JetDR_);
-    	// read weight files
-		tmvaReader_L->BookMVA("BDTG method","BDTG_15plus3_jetGenJet_nu_leading_summer16_2_26.weights.xml");
-	}
-	
-  	// set MVA variables
-  	Jet_pt_           = info.ak4jet[i]->Pt();//Jet pT
-  	Jet_corr_         = info.ak4jet[i]->Pt()/info.rawjet[i]->Pt();//JEC
-  	nVtx_             = info.nVtx;//nPVs
-  	Jet_eta_          = info.ak4jet[i]->Eta();//Jet η
-  	Jet_mt_           = info.jetMt[i];//Jet transverse mass
-  	Jet_leadTrackPt_  = (info.leadjet[i]->Pt() < 0) ? 0. : info.leadjet[i]->Pt();//pTLeadTrk, transverse momentum of the leading track in the jet
-  	static TLorentzVector TJet, TJetLep;
-  	//TJet.SetPtEtaPhiE(info.ak4jet[i]->Pt(),info.ak4jet[i]->Eta(),info.ak4jet[i]->Phi(),info.ak4jet[i]->E());
-  	//TJetLep.SetPtEtaPhiE(jetLepTrackPt[i],jetLepTrackEta[i],jetLepTrackPhi[i],jetLepTrackPt[i]*cosh(jetLepTrackEta[i]));
-  	TVector3 TJetAxis(info.ak4jet[i]->Vect().X(),info.ak4jet[i]->Vect().Y(),info.ak4jet[i]->Vect().Z());
-  	Jet_leptonPtRel_  = (info.lepjet[i]->Pt() > 0 && info.lepjet[i]->Pt() < 99900) ?  info.lepjet[i]->Perp(TJetAxis)	:0.;//Soft Lepton pTRel, relative transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonPt_     = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->Pt();//Soft Lepton pT, transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonDeltaR_ = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->DeltaR(*info.ak4jet[i]);//Soft Lepton dR, relative distance in the η-phi space of soft lepton candidate in the jet and the jet;
-  	Jet_neHEF_        = (info.jetNHF[i] < 1.) ? info.jetNHF[i]:1.;//Neutral hadron energy fraction
-  	Jet_neEmEF_       = (info.jetNEF[i] < 1.) ? info.jetNEF[i]:1.;//Photon energy fraction
-  	//Jet_chMult_       = (Float_t) jetNCH[i];//total number of jet constituents
-  	Jet_vtxPt_        = info.jetVtxPt[i];//SecVtxPt, pT of the jet secondary vertex
-  	Jet_vtxMass_      = info.jetVtxMass[i];//SecVtxM, Mass of the jet secondary vertex
-  	Jet_vtx3dL_       = (info.jetVtx3DVal[i] > 0) ? info.jetVtx3DVal[i] : 0.;//SecVtxdL, the 3-d flight length of the jet secondary vertex
-  	Jet_vtxNtrk_      = (Int_t) info.jetVtxNtrks[i];//SecVtxNtrk, track multiplicity of the reconstructed secondary vertex
-  	Jet_vtx3deL_	  = (info.jetVtx3DSig[i] > 0) ? Jet_vtx3dL_/info.jetVtx3DSig[i] : 0.;//SecVtxdeL, Error on the 3-d flight length of the jet secondary vertex
-  	Jet_PFMET_        = info.pfMET;
-  	Jet_METDPhi_      = deltaPhi(info.pfMETPhi,info.ak4jet[i]->Phi());
-  	Jet_JetDR_        = jjDR;
-	return tmvaReader_L->EvaluateRegression("BDTG method")[0];
-
-}
-// TT
-Float_t TMVA_15plus3_jetGenJet_nu_T(TMVAinputInfo &info, Int_t i, Float_t jjDR,int mode = -1) 
-{
-	if (i>=info.nJet) {
-		cout << "get out of range index" << endl;
-		return 1.;
-	}
-
-  	// classification variables
-	static float Jet_pt_, Jet_corr_,  Jet_eta_, Jet_mt_;
-	static float Jet_leadTrackPt_, Jet_leptonPtRel_, Jet_leptonPt_, Jet_leptonDeltaR_;
-	static float Jet_neHEF_, Jet_neEmEF_, Jet_chMult_, Jet_vtxPt_, Jet_vtxMass_, Jet_vtx3dL_, Jet_vtxNtrk_, Jet_vtx3deL_;
-	static float Jet_PFMET_, Jet_METDPhi_, Jet_JetDR_;
-	static float nVtx_;
-  	// MVA classifiers for b-jet
-	static TMVA::Reader* tmvaReader = NULL;
-	static TMVA::Reader* tmvaReader_L = NULL;
-	static TMVA::Reader* tmvaReader_T = NULL;
-  	// one-time MVA initialization
-	
-	if (!tmvaReader_T) {
-		tmvaReader_T = new TMVA::Reader("!Color:Silent");
-		tmvaReader_T->AddVariable("Jet_pt",             	&Jet_pt_);
-		tmvaReader_T->AddVariable("Jet_eta",            	&Jet_eta_);
-		tmvaReader_T->AddVariable("Jet_mt",             	&Jet_mt_);
-		tmvaReader_T->AddVariable("Jet_leadTrackPt",    	&Jet_leadTrackPt_);
-		tmvaReader_T->AddVariable("Jet_leptonPtRel_new",  	&Jet_leptonPtRel_);
-		tmvaReader_T->AddVariable("Jet_leptonPt",       	&Jet_leptonPt_);
-		tmvaReader_T->AddVariable("Jet_leptonDeltaR",   	&Jet_leptonDeltaR_);
-		tmvaReader_T->AddVariable("Jet_neHEF",				&Jet_neHEF_);
-		tmvaReader_T->AddVariable("Jet_neEmEF",         	&Jet_neEmEF_);
-		tmvaReader_T->AddVariable("Jet_vtxPt",          	&Jet_vtxPt_);
-		tmvaReader_T->AddVariable("Jet_vtxMass",        	&Jet_vtxMass_);
-		tmvaReader_T->AddVariable("Jet_vtx3dL",         	&Jet_vtx3dL_);
-		tmvaReader_T->AddVariable("Jet_vtxNtrk",        	&Jet_vtxNtrk_);
-		tmvaReader_T->AddVariable("Jet_vtx3deL_new",      	&Jet_vtx3deL_);
-		tmvaReader_T->AddVariable("nGoodPVs",            	&nVtx_);
-		tmvaReader_T->AddVariable("Jet_PFMET",            	&Jet_PFMET_);
-		tmvaReader_T->AddVariable("Jet_METDPhi",          	&Jet_METDPhi_);
-		tmvaReader_T->AddVariable("Jet_JetDR",          	&Jet_JetDR_);
-    	// read weight files
-		tmvaReader_T->BookMVA("BDTG method T","BDTG_15plus3_jetGenJet_nu_trailing_summer16_2_26.weights.xml");
- 	 // one-time initialization
-	}
-  	// set MVA variables
-  	Jet_pt_           = info.ak4jet[i]->Pt();//Jet pT
-  	Jet_corr_         = info.ak4jet[i]->Pt()/info.rawjet[i]->Pt();//JEC
-  	nVtx_             = info.nVtx;//nPVs
-  	Jet_eta_          = info.ak4jet[i]->Eta();//Jet η
-  	Jet_mt_           = info.jetMt[i];//Jet transverse mass
-  	Jet_leadTrackPt_  = (info.leadjet[i]->Pt() < 0) ? 0. : info.leadjet[i]->Pt();//pTLeadTrk, transverse momentum of the leading track in the jet
-  	static TLorentzVector TJet, TJetLep;
-  	//TJet.SetPtEtaPhiE(info.ak4jet[i]->Pt(),info.ak4jet[i]->Eta(),info.ak4jet[i]->Phi(),info.ak4jet[i]->E());
-  	//TJetLep.SetPtEtaPhiE(jetLepTrackPt[i],jetLepTrackEta[i],jetLepTrackPhi[i],jetLepTrackPt[i]*cosh(jetLepTrackEta[i]));
-  	TVector3 TJetAxis(info.ak4jet[i]->Vect().X(),info.ak4jet[i]->Vect().Y(),info.ak4jet[i]->Vect().Z());
-  	Jet_leptonPtRel_  = (info.lepjet[i]->Pt() > 0 && info.lepjet[i]->Pt() < 99900) ?  info.lepjet[i]->Perp(TJetAxis)	:0.;//Soft Lepton pTRel, relative transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonPt_     = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->Pt();//Soft Lepton pT, transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonDeltaR_ = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->DeltaR(*info.ak4jet[i]);//Soft Lepton dR, relative distance in the η-phi space of soft lepton candidate in the jet and the jet;
-  	Jet_neHEF_        = (info.jetNHF[i] < 1.) ? info.jetNHF[i]:1.;//Neutral hadron energy fraction
-  	Jet_neEmEF_       = (info.jetNEF[i] < 1.) ? info.jetNEF[i]:1.;//Photon energy fraction
-  	//Jet_chMult_       = (Float_t) jetNCH[i];//total number of jet constituents
-  	Jet_vtxPt_        = info.jetVtxPt[i];//SecVtxPt, pT of the jet secondary vertex
-  	Jet_vtxMass_      = info.jetVtxMass[i];//SecVtxM, Mass of the jet secondary vertex
-  	Jet_vtx3dL_       = (info.jetVtx3DVal[i] > 0) ? info.jetVtx3DVal[i] : 0.;//SecVtxdL, the 3-d flight length of the jet secondary vertex
-  	Jet_vtxNtrk_      = (Int_t) info.jetVtxNtrks[i];//SecVtxNtrk, track multiplicity of the reconstructed secondary vertex
-  	Jet_vtx3deL_	  = (info.jetVtx3DSig[i] > 0) ? Jet_vtx3dL_/info.jetVtx3DSig[i] : 0.;//SecVtxdeL, Error on the 3-d flight length of the jet secondary vertex
-  	Jet_PFMET_        = info.pfMET;
-  	Jet_METDPhi_      = deltaPhi(info.pfMETPhi,info.ak4jet[i]->Phi());
-  	Jet_JetDR_        = jjDR;
-
-	return tmvaReader_T->EvaluateRegression("BDTG method T")[0];
-
-}
 Float_t TMVA_15plus3_jetGenJet_nu_3_1(TMVAinputInfo &info, Int_t i, Float_t jjDR,int mode = -1) 
 {
 	if (i>=info.nJet) {
@@ -344,12 +209,9 @@ struct HA0JetInfo_base
 public:
 	void remove(TLorentzVector* v1) {
 		if (v1) {
-			//delete v1;
 			v1 = NULL;
-			//cout << "delete obj base" << endl;
 		}
 	}
-	//HA0JetInfo_base(){}
 	HA0JetInfo_base(bool b=false) {
 		dodelete = b;
 	}
@@ -382,21 +244,12 @@ public:
 		}
 		TLorentzVector* v1 = new TLorentzVector();
 		v1->SetPtEtaPhiE(refv1->Pt()*weight,refv1->Eta(),refv1->Phi(),refv1->E()*weight);
+		//v1->SetPtEtaPhiM(refv1->Pt()*weight,refv1->Eta(),refv1->Phi(),refv1->M());
 		return v1;
 	}
 	HA0JetInfo() {
-		/*
-		weightJets.Hjet1 	= new TLorentzVector();
-		weightJets.Hjet2 	= new TLorentzVector();
-		weightJets.A0jet1 	= new TLorentzVector();
-		weightJets.A0jet2 	= new TLorentzVector();
-		weightJetsLT.Hjet1 	= new TLorentzVector();
-		weightJetsLT.Hjet2 	= new TLorentzVector();
-		weightJetsLT.A0jet1 = new TLorentzVector();
-		weightJetsLT.A0jet2 = new TLorentzVector();
-		*/
 	}
-	HA0JetInfo(TMVAinputInfo &info, int hi1, int hi2, int a0i1, int a0i2, Int_t doWeight = 1) {
+	HA0JetInfo(TMVAinputInfo &info, int hi1, int hi2, int a0i1, int a0i2) {
 		
 		if (info.ak4jet[hi1]->Pt() < info.ak4jet[hi2]->Pt()) swap(hi1,hi2);
 		if (info.ak4jet[a0i1]->Pt() < info.ak4jet[a0i2]->Pt()) swap(a0i1,a0i2);
@@ -408,31 +261,24 @@ public:
 		Jets.Hjet2 = info.ak4jet[hi2];
 		Jets.A0jet1 = info.ak4jet[a0i1];
 		Jets.A0jet2 = info.ak4jet[a0i2];
-		//cout << "con " << ind[0] << " " << ind[1] << " " << ind[2] << " " << ind[3] << endl;
+		// gen Par
+		/*
+		Jets.Hjet1 = info.Parjet[hi1];
+		Jets.Hjet2 = info.Parjet[hi2];
+		Jets.A0jet1 = info.Parjet[a0i1];
+		Jets.A0jet2 = info.Parjet[a0i2];
+		*/
 		if (weight[0]<0) weight[0] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi1,  Jets.Hjet1->DeltaR(*Jets.Hjet2));
 		if (weight[1]<0) weight[1] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi2,  Jets.Hjet1->DeltaR(*Jets.Hjet2));
 		if (weight[2]<0) weight[2] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2));
 		if (weight[3]<0) weight[3] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i2, Jets.A0jet1->DeltaR(*Jets.A0jet2));
-		if (weightLT[0]<0) weightLT[0] = TMVA_15plus3_jetGenJet_nu_L(info, hi1,  Jets.Hjet1->DeltaR(*Jets.Hjet2),	1);
-		if (weightLT[1]<0) weightLT[1] = TMVA_15plus3_jetGenJet_nu_T(info, hi2,  Jets.Hjet1->DeltaR(*Jets.Hjet2), 	0);
-		if (weightLT[2]<0) weightLT[2] = TMVA_15plus3_jetGenJet_nu_L(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2),	1);
-		if (weightLT[3]<0) weightLT[3] = TMVA_15plus3_jetGenJet_nu_T(info, a0i2, Jets.A0jet1->DeltaR(*Jets.A0jet2),	0);
-		/*
-		if (weightLT[0]<0) weight[0] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi1,  Jets.Hjet1->DeltaR(*Jets.Hjet2),	1);
-		if (weightLT[1]<0) weight[1] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi2,  Jets.Hjet1->DeltaR(*Jets.Hjet2), 	0);
-		if (weightLT[2]<0) weight[2] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2),	1);
-		if (weightLT[3]<0) weight[3] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i2, Jets.A0jet1->DeltaR(*Jets.A0jet2),	0);
-		*/
-		/*
-		if (!weightJets.Hjet1)	weightJets.Hjet1 = new TLorentzVector();
-		if (!weightJets.Hjet2)	weightJets.Hjet2 = new TLorentzVector();
-		if (!weightJets.A0jet1)	weightJets.A0jet1 = new TLorentzVector();
-		if (!weightJets.A0jet2)	weightJets.A0jet2 = new TLorentzVector();
-		if (!weightJetsLT.Hjet1)	weightJetsLT.Hjet1 = new TLorentzVector();
-		if (!weightJetsLT.Hjet2)	weightJetsLT.Hjet2 = new TLorentzVector();
-		if (!weightJetsLT.A0jet1)	weightJetsLT.A0jet1 = new TLorentzVector();
-		if (!weightJetsLT.A0jet2)	weightJetsLT.A0jet2 = new TLorentzVector();
-		*/
+		
+		if (weightLT[0]<0) weightLT[0] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi1,  Jets.Hjet1->DeltaR(*Jets.Hjet2),		1);
+		if (weightLT[1]<0) weightLT[1] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi2,  Jets.Hjet1->DeltaR(*Jets.Hjet2), 	0);
+		if (weightLT[2]<0) weightLT[2] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2),	1);
+		if (weightLT[3]<0) weightLT[3] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i2, Jets.A0jet1->DeltaR(*Jets.A0jet2),	0);
+		
+
 		weightJets.dodelete = true;
 		weightJets.Hjet1 = 	applyWeight(Jets.Hjet1,	weight[0]);
 		weightJets.Hjet2 = 	applyWeight(Jets.Hjet2,	weight[1]);
@@ -443,15 +289,6 @@ public:
 		weightJetsLT.Hjet2 = 	applyWeight(Jets.Hjet2,		weightLT[1]);
 		weightJetsLT.A0jet1 = 	applyWeight(Jets.A0jet1,	weightLT[2]);
 		weightJetsLT.A0jet2 = 	applyWeight(Jets.A0jet2,	weightLT[3]);
-
-		//cout << "first weight jet" << endl;
-		//cout << weight[0] << "\t" << weight[1] << "\t" << weight[2] << "\t" << weight[3] << endl;
-
-		//cout << "end of ini" << endl;
-		
-		//cout << weightLT[0] << "\t" << weightLT[1] << "\t" << weightLT[2] << "\t" << weightLT[3] << endl;
-		
-
 		
 		
 		/*
@@ -466,6 +303,7 @@ public:
 		applyWeight(weightJetsLT.A0jet2,Jets.A0jet1,weightLT[3]);
 		*/
 	}
+
 	void remove(TLorentzVector* v1) {
 		if (v1) {
 			delete v1;
@@ -473,7 +311,6 @@ public:
 		}
 	}
 	~HA0JetInfo(){
-		//cout << "dec " << ind[0] << " " << ind[1] << " " << ind[2] << " " << ind[3] << endl;
 	}
 	void Release(){
 		if (weightJets.Hjet1)	remove(weightJets.Hjet1);
@@ -484,7 +321,6 @@ public:
 		if (weightJetsLT.Hjet2)	remove(weightJetsLT.Hjet2);
 		if (weightJetsLT.A0jet1)	remove(weightJetsLT.A0jet1);
 		if (weightJetsLT.A0jet2)	remove(weightJetsLT.A0jet2);
-		//cout << "### delete OBJ ###" << endl;
 	}
 	inline float Mh(int H = 0) 	{
 		TLorentzVector Hdijet;
@@ -493,11 +329,19 @@ public:
 		else Hdijet = *(Jets.Hjet1) + *(Jets.Hjet2);
 		return Hdijet.M();
 	}
-	inline float MA0(int A0 = 0)    	{
+	inline float MA0(int A0 = 0,bool print=false)    	{
 		TLorentzVector A0dijet;
-		if (A0==1) A0dijet =  *(weightJets.A0jet1) + *(weightJets.A0jet2);
-		else if (A0==2) A0dijet = *(weightJetsLT.A0jet1) + *(weightJetsLT.A0jet2);
-		else A0dijet = *(Jets.A0jet1) + *(Jets.A0jet2);
+		if (print) cout << "test: " << weightJetsLT.A0jet1 << "\t" << weightJetsLT.A0jet2 << endl;
+		if (A0==1) {
+			A0dijet =  *(weightJets.A0jet1) + *(weightJets.A0jet2);
+		}
+		else if (A0==2) {
+			A0dijet = *(weightJetsLT.A0jet1) + *(weightJetsLT.A0jet2);
+		}
+		else {
+			A0dijet = *(Jets.A0jet1) + *(Jets.A0jet2);
+		}
+
 		return A0dijet.M();
 	}
 	inline float MZp(int H = 0, int A0 = 0)    	{
@@ -513,6 +357,16 @@ public:
 	inline float xSqure(int H = 0, int A0 = 0) 	{
 		float x2 = calChiSquare(Mh(H),MA0(A0),MZp(H,A0));
 		return x2;
+	}
+	inline float xSquare_Xpar(int i=0,float pow=1) {
+		//if (i==0) cout << Form("%f",Mh(2)) << endl;
+		//else if (i==1) cout << Form("%f",TMath::Power(((MA0(2)-300)/37.86),2)) << endl;
+		//else if (i==2) cout << Form("%f",TMath::Power((MZp(2)-1000)/83.62,2)) << endl;
+		//else cout << "Nan" << endl;
+		if (i==0) return TMath::Power((Mh(2)-125)/14.48,pow);
+		else if (i==1) return TMath::Power(((MA0(2)-300)/37.86),pow);
+		else if (i==2) return TMath::Power((MZp(2)-1000)/83.62,pow);
+		else return -1;
 	}
 	inline float  getWeight(int i) 	{return (i<4&&i>=0)?weight[i]:-1;}
 	inline float  getWeightLT(int i) 	{return (i<4&&i>=0)?weightLT[i]:-1;}

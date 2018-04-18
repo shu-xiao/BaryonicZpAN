@@ -91,7 +91,7 @@ void draw(TH1F* h1, TH1F* h2, float weight = 1.1, int i = kBlue) {
     h1->Draw("hist");
     h2->Draw("histsame");
 }
-void draw(TH1F* h1, TH1F* h2, TH1F* h3, float weight = 1.1, int i = kBlue-5, int j = kBlue){
+void draw(TH1F* h1, TH1F* h2, TH1F* h3, bool box = false, float weight = 1.1, int i = kBlue-5, int j = kBlue){
     static float max;
     if ((h1->GetMaximum()>h2->GetMaximum())&&(h1->GetMaximum()>h3->GetMaximum())) max = h1->GetMaximum();
     else if ((h2->GetMaximum()>h1->GetMaximum())&&(h2->GetMaximum()>h3->GetMaximum())) max = h2->GetMaximum();
@@ -104,7 +104,43 @@ void draw(TH1F* h1, TH1F* h2, TH1F* h3, float weight = 1.1, int i = kBlue-5, int
     h3->SetLineColor(j);
     h1->Draw("hist");
     h2->Draw("histsame");
+    gPad->Update();
+    TPaveStats *st1 = (TPaveStats*)gPad->GetPrimitive("stats");
+    if (box&&false) {
+        st1->SetY1NDC(.5);
+        st1->SetY2NDC(.7);
+        gPad->Modified();
+    }
     h3->Draw("histsame");
+    gPad->Update();
+    TPaveStats *st2 = (TPaveStats*)gPad->GetPrimitive("stats");
+    if (box&&false) {
+        st2->SetY1NDC(.3);
+        st2->SetY2NDC(.5);
+        gPad->Modified();
+    }
+}
+void draw2Dhist(TH2F *h,int x, int y) {
+    //string list[] = {"#frac{M_{jj}-M_{h}}{#sigma_{h}}","#frac{M_{jj}-M_{A0}}{#sigma_{A0}}","#frac{M_{4j}-M_{Zp}}{#sigma_{Zp}}"};
+    
+    //gROOT->SetOptStat(0001111110.);
+    string list[] = {"(M_{jj}-M_{h})/#sigma_{h}","(M_{jj}-M_{A0})/#sigma_{A0}","(M_{4j}-M_{Zp})/#sigma_{Zp}"};
+    // h:0   A0:1   Zp:2
+    if (x>2||x<0||y>2||y<0) return;
+    gPad->SetRightMargin(0.12);
+    h->SetBit(TH1::kNoTitle);
+    h->SetXTitle(list[x].data());
+    h->SetYTitle(list[y].data());
+    h->SetTitleSize(0.04,"XYZ");
+    h->SetLabelSize(0.04,"Z");
+    h->SetTitleOffset(1.4,"XYZ");
+    h->SetTitleFont(62,"XYZ");
+    h->Draw("colz");
+    gPad->Update();
+    TPaveStats *st1 = (TPaveStats*)gPad->GetPrimitive("stats");
+    st1->SetX1NDC(.7);
+    st1->SetX2NDC(.9);
+    
 }
 using namespace std;
 void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root"){
@@ -136,6 +172,15 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
 
     TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
     TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
+    TH1F* h_x2        = new TH1F("h_x2","h_x2",100,0,300);
+    TH1F* h_x2_LT     = new TH1F("h_x2_LT","h_x2_LT",100,0,300);
+    TH1F* h_x2_all    = new TH1F("h_x2_all","h_x2_all",100,0,300);
+    TH2F* h_x2_ha0    = new TH2F("h_x2_ha0","h_x2_ha0",100,-50,50,100,-50,50);
+    TH2F* h_x2_hzp    = new TH2F("h_x2_hzp","h_x2_hzp",100,-50,50,100,-50,50);
+    TH2F* h_x2_a0zp   = new TH2F("h_x2_a0zp","h_x2_a0zp",100,-50,50,100,-50,50);
+    TH2F* h_x2_ha0_s    = new TH2F("h_x2_ha0_s","h_x2_ha0",100,-5,5,100,-5,5);
+    TH2F* h_x2_hzp_s    = new TH2F("h_x2_hzp_s","h_x2_hzp",100,-5,5,100,-5,5);
+    TH2F* h_x2_a0zp_s   = new TH2F("h_x2_a0zp_s","h_x2_a0zp",100,-5,5,100,-5,5);
     // Mass
     TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 70,60,200);
     TH1F* h_hM_sw     = new TH1F("h_higgsM_sw", "h_higgsM_sw", 70,60,200);
@@ -319,8 +364,16 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
             }
         }
         h_Ncom->Fill(fourJetList.size());
-        
         if (fourJetList.size()<1) continue;
+        for (int i=0;i<fourJetList.size();i++) {
+            h_x2_all->Fill(fourJetList[i].xSqure()); 
+            h_x2_ha0->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+            h_x2_hzp->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+            h_x2_a0zp->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+            h_x2_ha0_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+            h_x2_hzp_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+            h_x2_a0zp_s->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+        }
         nPass[3]++;
         sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
         minX2       = fourJetList[0];
@@ -346,6 +399,9 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_zpM_sw->Fill(minWeightX2.MZp(1,0));
         h_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
         h_zpM_LT->Fill(minWeight_LT.MZp(2,2));
+        // x2
+        h_x2_LT->Fill(minWeight_LT.xSqure());
+        h_x2->Fill(minWeightX2_2.xSqure());
         // Pt
         // delete pointer
         for (int i=0;i<fourJetList.size();i++) fourJetList[i].Release();
@@ -459,6 +515,20 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_NgoodJets->Draw("hist");
         c1->Print(pdfName.data());
         h_Ncom->Draw("hist");
+        c1->Print(pdfName.data());
+        draw(h_x2_all,h_x2,h_x2_LT);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_ha0,0,1);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_hzp,0,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_a0zp,1,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_ha0_s,0,1);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_hzp_s,0,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_a0zp_s,1,2);
         c1->Print(pdfName.data());
         draw(h_hM,h_hM_ws,h_hM_LT);
         c1->Print(pdfName.data());
