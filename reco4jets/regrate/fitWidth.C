@@ -3,6 +3,7 @@
 #include <RooBreitWigner.h>
 
 //# define remote 0
+#define largeRange
 #define _DBCB 0
 # ifdef remote
 #undef _DBCB
@@ -14,6 +15,29 @@ void fit_(TH1F* h, int par=0) {
     string xTitle;
     static TLegend *le = new TLegend(0.15,0.75,0.45,0.9);
     float xMin, xMax;
+#ifdef largeRange
+    if (par==0) {
+        xMin = -100;
+        xMax = 100;
+        le->SetX1NDC(0.2); 
+        le->SetX2NDC(0.5); 
+        xTitle = "M_{jj}-M_{h}";
+    }
+    if (par==1) {
+        xMin = -300;
+        xMax = 300;
+        le->SetX1NDC(0.15); 
+        le->SetX2NDC(0.45); 
+        xTitle = "M_{jj}-M_{A0}";
+    }
+    if (par==2) {
+        xMin = -500;
+        xMax = 500;
+        le->SetX1NDC(0.15); 
+        le->SetX2NDC(0.45); 
+        xTitle = "M_{jj}-M_{zp}";
+    }
+#else
     if (par==0) {
         xMin = -100;
         xMax = 100;
@@ -35,6 +59,7 @@ void fit_(TH1F* h, int par=0) {
         le->SetX2NDC(0.45); 
         xTitle = "M_{jj}-M_{zp}";
     }
+#endif
     le->Clear();
     RooRealVar x("x",xTitle.data(),0,xMin,xMax);
     RooRealVar x0_cb("x0","x0",0,xMin,xMax);
@@ -57,9 +82,9 @@ void fit_(TH1F* h, int par=0) {
     float fontSize = 0.025;
     cb.plotOn(frame,LineColor(kBlue),RooFit::Name("CB"));
     bw.plotOn(frame,LineColor(kRed),RooFit::Name("BW"));
-    cb.paramOn(frame, Layout(0.14,0.37,0.73));
+    cb.paramOn(frame, Layout(0.65,0.93,0.73));
     frame->getAttText()->SetTextSize(fontSize);
-    bw.paramOn(frame, Layout(0.14,0.37,0.48));
+    bw.paramOn(frame, Layout(0.65,0.93,0.48));
     frame->getAttText()->SetTextSize(fontSize);
     hist_h.plotOn(frame,Name("hist"));
     frame->Draw();
@@ -79,9 +104,32 @@ void fit_(TH1F* h, int par=0) {
 # ifdef remote
 void fitDBCBxBW(TH1F* h,int par=0) {
     string xTitle;
-    static TLegend *le = new TLegend(0.15,0.75,0.45,0.9);
+    static TLegend *le = new TLegend(0.15,0.75,0.40,0.9);
     le->Clear();
     float xMin, xMax;
+#ifdef largeRange
+    if (par==0) {
+        xMin = -100;
+        xMax = 100;
+        le->SetX1NDC(0.2); 
+        le->SetX2NDC(0.5); 
+        xTitle = "M_{jj}-M_{h}";
+    }
+    if (par==1) {
+        xMin = -300;
+        xMax = 300;
+        le->SetX1NDC(0.15); 
+        le->SetX2NDC(0.45); 
+        xTitle = "M_{jj}-M_{A0}";
+    }
+    if (par==2) {
+        xMin = -500;
+        xMax = 500;
+        le->SetX1NDC(0.15); 
+        le->SetX2NDC(0.4); 
+        xTitle = "M_{jj}-M_{zp}";
+    }
+#else
     if (par==0) {
         xMin = -100;
         xMax = 100;
@@ -103,13 +151,15 @@ void fitDBCBxBW(TH1F* h,int par=0) {
         le->SetX2NDC(0.45); 
         xTitle = "M_{jj}-M_{zp}";
     }
+#endif
     float mean = 0, sigma = 5;
+    RooRealVar x("x",xTitle.data(),0, xMin, xMax);
+    RooDataHist hist_h("hist_h","hist_h",x,h);
     //keep silence
     RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING);
     RooMsgService::instance().setGlobalKillBelow(RooFit::FATAL);
     RooMsgService::instance().setSilentMode(true);
       
-    RooRealVar x("x",xTitle.data(),0, xMin, xMax);
 
     //BreitWigner
     RooRealVar Width_BW("#sigma_{BW}"," ",0,200);
@@ -127,16 +177,34 @@ void fitDBCBxBW(TH1F* h,int par=0) {
       
     //Convolution
     RooFFTConvPdf SigPdf("SigPdf"," ",x,BreitWigner,DBCB); // convolve
-    RooDataHist hist_h("hist_h","hist_h",x,h);
-    // fit and plot
     SigPdf.fitTo(hist_h, Save(kTRUE), Range("x"),RooFit::NumCPU(1));
+    
+    //single DBCB pdf var
+    RooRealVar alphaA("#alpha_{1}"," ",0,200); // Alpha: Gaussian tail
+    RooRealVar alphaB("#alpha_{2}"," ",0,200); // Alpha: Gaussian tail
+    RooRealVar nA("n_{1}"," ",-10,+10);
+    RooRealVar nB("n_{2}"," ",-10,+10);
+    RooRealVar mean_CB_A("#mu_{DBCB}"," ",xMin,xMax);
+    RooRealVar sigma_CB_B("#sigma_{DBCB}"," ",0 ,200);
+    RooDoubleCB DBCB_AB("x_pdf"," ", x, mean_CB_A, sigma_CB_B, alphaA, nA, alphaB, nB);
+    DBCB_AB.fitTo(hist_h,Save(kTRUE),NumCPU(1));
+    // fit and plot
+    float fontSize = 0.022;
     RooPlot* frame = x.frame(Name("frame"));
     hist_h.plotOn(frame,Name("hist_h"));
     frame->SetMaximum(frame->GetMaximum()*1.1); 
-    SigPdf.plotOn(frame,Name("curve"));
+    SigPdf.plotOn(frame,Name("curve"),LineColor(kBlue));
+    DBCB_AB.plotOn(frame,Name("DBCB_AB"),LineColor(kRed));
+    
+    SigPdf.paramOn(frame,Layout(0.65,0.93,0.9));
+    frame->getAttText()->SetTextSize(fontSize);
+    DBCB_AB.paramOn(frame,Layout(0.15,0.36,0.74));
+    frame->getAttText()->SetTextSize(fontSize);
+    hist_h.plotOn(frame,Name("hist_h"));
     frame->Draw();
 
     float x2_DBCB = frame->chiSquare("curve","hist_h",8);
+    float x2_DBCB_single = frame->chiSquare("DBCB_AB","hist_h",6);
     float fit_mean = mean_CB.getVal();
     float fit_sigma = sigma_CB.getVal();
     float fit_mean_Uncer = mean_CB.getError();
@@ -144,6 +212,8 @@ void fitDBCBxBW(TH1F* h,int par=0) {
     le->AddEntry(h,"genMatching","lp");
     le->AddEntry(frame->findObject("curve"),"DBCB#otimesBW","l");
     le->AddEntry((TObject*)0,Form("#chi^{2} = %.3f",x2_DBCB),"");
+    le->AddEntry(frame->findObject("DBCB_AB"),"DBCB","l");
+    le->AddEntry((TObject*)0,Form("#chi^{2} = %.3f",x2_DBCB_single),"");
     le->Draw();
 }
 #endif
