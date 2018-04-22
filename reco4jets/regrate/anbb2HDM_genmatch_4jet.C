@@ -13,8 +13,8 @@
 #include "../setNCUStyle.C"
 #include "../../gen2HDMsample/genMatch.C"
 #include "TMVA_regression_nu_Vali_st.h"
-//#include "TMVA_regression_nu_Vali_f.h"
 
+//#define largeRange
 #define saveEffi          true
 #define basePtEtaCut    true
 #define doGenMatch      true
@@ -111,20 +111,26 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
     TH1F* h_a0Ncandi = new TH1F("h_a0Ncandi", "h_A0_NcombinationJets", 10,-0.5,9.5);
     TH1F* h_zpNcandi = new TH1F("h_zpNcandi", "h_Zp_NcombinationJets", 10,-0.5,9.5);
 
-    //TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_reco", 75,100,175);
+#ifdef largeRange
+    TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genMatch", 100,-100,100);
+    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genMatch", 60,-300,+300);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genMatch", 100,-500,+500);
+#else
     TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_genMatch", 75,-100,50);
+    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genMatch", 40,-300,+100);
+    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genMatch", 60,-400,+200);
+#endif
+    //TH1F* h_hM = new TH1F("h_higgsM", "h_higgsM_reco", 75,100,175);
     TH1F* h_hM_par = new TH1F("h_higgsM_par", "h_higgsM_par", 75,-100,50);
     TH1F* h_hM_parNeu = new TH1F("h_higgsM_parNeu", "h_higgsM_parNeu", 75,-100,50);
     TH1F* h_hM_ori = new TH1F("h_higgsM_ori", "h_higgsM_reco", 75,100,175);
     TH1F* h_hM_all = new TH1F("h_higgsM_all", "h_higgsM_all", 100,50,150);
-    TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_genMatch", 40,-300,+100);
     TH1F* h_a0M_par = new TH1F("h_a0M_par", "h_A0M_par", 40,-300,+100);
     TH1F* h_a0M_parNeu = new TH1F("h_a0M_parNeu", "h_A0M_parNeu", 40,-300,+100);
     //TH1F* h_a0M = new TH1F("h_a0M", "h_A0M_reco", 24,A0mass.Atof()-60,A0mass.Atof()+60);
     TH1F* h_a0M_all = new TH1F("h_A0M_all", "h_A0M_all", 100,0,500);
-    TH1F* h_zpM = new TH1F("h_ZpM", "h_ZpM_genMatch", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
-    TH1F* h_zpM_par = new TH1F("h_ZpM_par", "h_ZpM_par", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
-    TH1F* h_zpM_parNeu = new TH1F("h_ZpM_parNeu", "h_ZpM_parNeu", 60,Zpmass.Atof()-400,Zpmass.Atof()+200);
+    TH1F* h_zpM_par = new TH1F("h_ZpM_par", "h_ZpM_par", 60,-400,+200);
+    TH1F* h_zpM_parNeu = new TH1F("h_ZpM_parNeu", "h_ZpM_parNeu", 60,-400,+200);
     TH1F* h_zpM_ori = new TH1F("h_ZpM_ori", "h_ZpM_reco", 24,Zpmass.Atof()-120,Zpmass.Atof()+120);
     
     Int_t nPass[20]={0};
@@ -143,6 +149,8 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
         nPass[1]++;
         
         TClonesArray* genjetP4 =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
+        float *CISVV2 = data.GetPtrFloat("THINjetCISVV2");
+        vector<bool>& vPassID_L = *(vector<bool>*) data.GetPtr("THINjetPassIDLoose");
         
         const int nCandidates = 100;
         vector<vector<float>> HindexList, A0indexList, ZpindexList;
@@ -159,9 +167,15 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
         float genMatchHiggs[3]={0}, genMatchA0[3] = {0};
         float diJetM = 0, mindiJetM = 0;
         for(int ij=0; ij < nGenJet; ij++) {
+            if (!vPassID_L[ij]) continue;
+            if (CISVV2[ij]<CISVV2Cut) continue;
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+            if (thisJet->Pt()<30||thisJet->Eta()>2.4) continue;
             for (int jj=0;jj<ij;jj++) {
+                if (!vPassID_L[jj]) continue;
+                if (CISVV2[ij]<CISVV2Cut) continue;
                 TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
+                if (thatJet->Pt()<30||thatJet->Eta()>2.4) continue;
                 if (!isBG||doGenMatch) {
                     bool genParA=false, genParB=false;
                     if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&genHA0Par[1]->DeltaR(*thatJet)<0.4) genParA=true;
@@ -190,10 +204,15 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
         mindiJetM = 0;
         diJetM = 0;
         for(int ij=0; ij < nGenJet; ij++) {
-            
+            if (!vPassID_L[ij]) continue;
+            if (CISVV2[ij]<CISVV2Cut) continue;
             TLorentzVector* thisJet = (TLorentzVector*)genjetP4->At(ij);
+            if (thisJet->Pt()<30||thisJet->Eta()>2.4) continue;
             for (int jj=0;jj<ij;jj++) {
+                if (!vPassID_L[jj]) continue;
+                if (CISVV2[ij]<CISVV2Cut) continue;
                 TLorentzVector* thatJet = (TLorentzVector*)genjetP4->At(jj);
+                if (thatJet->Pt()<30||thatJet->Eta()>2.4) continue;
                 if (!isBG||doGenMatch) {
                     bool genParA=false, genParB=false;
                     if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&genHA0Par[3]->DeltaR(*thatJet)<0.4) genParA=true;
@@ -226,12 +245,11 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
             vector<TLorentzVector*> bjets = genPar4v(data);  
             vector<TLorentzVector*> bjets_Neu = genPar4v(data,1);
             h_hM_par->Fill((*bjets[0]+*bjets[1]).M()-125);
-            //cout << (*bjets[0]+*bjets[1]).M() << endl;
             h_hM_parNeu->Fill((*bjets_Neu[0]+*bjets_Neu[1]).M()-125);
             h_a0M_par->Fill((*bjets[2]+*bjets[3]).M()-A0mass.Atof());
             h_a0M_parNeu->Fill((*bjets_Neu[2]+*bjets_Neu[3]).M()-A0mass.Atof());
-            h_zpM_par->Fill((*bjets[0]+*bjets[1]+*bjets[2]+*bjets[3]).M());
-            h_zpM_parNeu->Fill((*bjets_Neu[0]+*bjets_Neu[1]+*bjets_Neu[2]+*bjets_Neu[3]).M());
+            h_zpM_par->Fill((*bjets[0]+*bjets[1]+*bjets[2]+*bjets[3]).M()-Zpmass.Atof());
+            h_zpM_parNeu->Fill((*bjets_Neu[0]+*bjets_Neu[1]+*bjets_Neu[2]+*bjets_Neu[3]).M()-Zpmass.Atof());
             for (int i=0;i<4;i++) delete bjets_Neu[i];
         }
         // save 4 jet info
@@ -249,7 +267,7 @@ void anbb2HDM_genmatch_4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_
                 zpM = (*bJet0+*bJet1+*bJet2+*bJet3).M();
                 h_hM->Fill(HindexList[i][2]);
                 h_a0M->Fill(A0indexList[j][2]);
-                h_zpM->Fill(zpM);
+                h_zpM->Fill(zpM-Zpmass.Atof());
                 isSave = true;
                 if (isSave) break;
             }
