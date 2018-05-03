@@ -14,21 +14,9 @@ using namespace std;
 float getL(int nEvent, float xs) {
     return nEvent/xs;
 }
-int getNhist(TFile* f) {
-    TIter keyList(f->GetListOfKeys()); 
-    TKey *key;
-    int j = 0;
-    while ((key = (TKey*)keyList())) {
-        TClass *cl = gROOT->GetClass(key->GetClassName());
-        if (!cl->InheritsFrom("TH1")) continue;
-        j++;
-    }
-    return j;
-}
 void mergeQCD(bool drop=true) {
     setNCUStyle(true);
 
-    //bool drop = true; //drop out QCD_HT50to100    
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
@@ -44,9 +32,11 @@ void mergeQCD(bool drop=true) {
     file[7] = TFile::Open("QCD_HT1500to2000.root");
     file[8] = TFile::Open("QCD_HT2000toInf.root");
     
-    const int nHist = getNhist(file[0]); 
-    TH1F* hmerge[nHist];
-    TH1F* th1f[9][nHist];
+    // load TH1F and TH2D from root files 
+    vector <TH1F*> hmerge;
+    vector <vector<TH1F*>> th1f(9);
+    vector <vector<TH2D*>> th2d(9);
+    vector <TH2D*> th2d_sum;
     TH1F* h_HTmerge = new TH1F();
     h_HTmerge->Sumw2();
     vector <int> nTii, nEvent;
@@ -57,44 +47,47 @@ void mergeQCD(bool drop=true) {
         int j = 0;
         while ((key = (TKey*)keyList())) {
             TClass *cl = gROOT->GetClass(key->GetClassName());
+            // TH2D
+            if (c1->InheritsFrom("TH2D")) {
+                th2d[i].push_back((TH2D*)key->ReadObj()); 
+            }
             if (!cl->InheritsFrom("TH1")) continue;
-            th1f[i][j] = (TH1F*)key->ReadObj();
-            TString hName = th1f[i][j]->GetName();
+            // TH1F
+            TH1F* temth1f = (TH1F*)key->ReadObj();
+            TString hName = temth1f->GetName();
             if ( hName.Contains("h_allEvent")) {
-                nEvent.push_back(th1f[i][j]->GetEntries());
+                nEvent.push_back(temth1f->GetEntries());
             }
             if (hName.Contains("h_HT")) HTindex = j;
+            th1f[i].push_back(temth1f);
             j++;
         }
     }
+    // normalize to 2017 luminosity
     TString outputName = (drop)? "QCDbg":"QCDbg_whole";
     c1->Print((outputName+".pdf[").Data());
     
     TLegend *legend = new TLegend(0.78,0.6,0.94,0.83);
     //legend->AddEntry((TObject*)0,"normalized to 2016 L","");
-    for (int i=0;i<nHist;i++) { // loop of hist
+    for (int i=0;i<th1f[0].size();i++) { // loop of hist
         TH1F *h_tem[9];
         c1->Clear();
         bool init = true;
-        for (int j=0;j<9;j++) { // loop of HT
-            if (drop&&j==0) continue; 
-            // set base hist
-            if (init) { 
-                hmerge[i] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
-                hmerge[i]->Sumw2();
-                hmerge[i]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
-                h_tem[j] = (TH1F*)th1f[j][i]->Clone(th1f[j][i]->GetName());
-                h_tem[j]->Sumw2();
-                h_tem[j]->Scale(L2016/getL(nEvent[j],xsHTbeam[j]));
-                h_tem[j]->SetLineColor(99);
-                init = false;
-            }
+        // copy first file
+        int iniInd = (drop) ?1:0;
+        hmerge.push_back((TH1F*)th1f[iniInd][i]->Clone(th1f[iniInd][i]->GetName()));
+        hmerge[i]->Sumw2();
+        hmerge[i]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
+        h_tem[iniInd] = (TH1F*)th1f[iniInd][i]->Clone(th1f[iniInd][i]->GetName());
+        h_tem[iniInd]->Sumw2();
+        h_tem[iniInd]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
+        h_tem[iniInd]->SetLineColor(99);
+        for (int j=1;j<9;j++) { // loop of HT
+            if (drop&&j==1) continue; 
             // set the others
-            else {
-                hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
-                h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
-                h_tem[j]->SetLineColor(-j*6+99);
-            }
+            hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
+            h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
+            h_tem[j]->SetLineColor(-j*6+99);
             if (i==HTindex) {
                 //h_HTmerge->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
             }
@@ -130,7 +123,25 @@ void mergeQCD(bool drop=true) {
         c1->Print((outputName+".pdf").Data());
     }
     //h_HTmerge->Draw("hist");
-    //c1->Print((outputName+".pdf").Data());
+    
+    // setting th2d
+    for (int i=0;i<th2d[0].size();i++) {
+        c1->Clear();
+        int iniInd = (drop)?1:0;
+        TH2D* th2d_tem = (TH2D*)th2d[iniInd][i]->Clone(th2d[iniInd][i]->GetName());
+        th2d_tem->Sumw2();
+        th2d_tem->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
+        
+        for (int j=1;j<9;j++) {
+            if (drop&&j==1) continue;
+            th2d_tem->Add(th2d[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
+        }
+        th2d_sum.push_back(th2d_tem);
+        th2d_tem->Draw("colz");
+        c1->Update();
+        c1->Print((outputName+".pdf").Data());
+    }
+    
     c1->Print((outputName+".pdf]").Data());
     //for (int i=0;i<nTi.size();i++) cout << nTi[i] << " ";
     /*
@@ -143,8 +154,9 @@ void mergeQCD(bool drop=true) {
     }
     */
     
+    // write root file
     TFile* output = new TFile((outputName+".root").Data(),"recreate");
-    for (int i=0;i<nHist;i++) hmerge[i]->Write();
-    //hmerge[0]->Write();
+    for (int i=0;i<hmerge.size();i++) hmerge[i]->Write();
+    for (int i=0;i<th2d_sum.size();i++) th2d_sum[i]->Write();
     output->Close();
 }
