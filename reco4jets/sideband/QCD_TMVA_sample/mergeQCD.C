@@ -22,6 +22,17 @@ void mergeQCD(bool drop=true) {
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     string HT_list[9] = {"QCD_TMVA_HT50to100","QCD_TMVA_HT100to200","QCD_TMVA_HT200to300","QCD_TMVA_HT300to500","QCD_TMVA_HT500to700","QCD_TMVA_HT700to1000","QCD_TMVA_HT1000to1500","QCD_TMVA_HT1500to2000","QCD_TMVA_HT2000toInf"};
     TFile* file[9];
+    file[0] = TFile::Open("QCD_HT50to100_T2.root");
+    file[1] = TFile::Open("QCD_TMVA_HT100to200.root");
+    //file[1] = TFile::Open("QCD_HT100to200_T2.root");
+    file[2] = TFile::Open("QCD_HT200to300_T2.root");
+    file[3] = TFile::Open("QCD_HT300to500_T2.root");
+    file[4] = TFile::Open("QCD_HT500to700_T2.root");
+    file[5] = TFile::Open("QCD_HT700to1000_T2.root");
+    file[6] = TFile::Open("QCD_HT1000to1500_T2.root");
+    file[7] = TFile::Open("QCD_HT1500to2000_T2.root");
+    file[8] = TFile::Open("QCD_HT2000toInf_T2.root");
+    /*
     file[0] = TFile::Open("QCD_TMVA_HT50to100.root");
     file[1] = TFile::Open("QCD_TMVA_HT100to200.root");
     file[2] = TFile::Open("QCD_TMVA_HT200to300.root");
@@ -31,7 +42,7 @@ void mergeQCD(bool drop=true) {
     file[6] = TFile::Open("QCD_TMVA_HT1000to1500.root");
     file[7] = TFile::Open("QCD_TMVA_HT1500to2000.root");
     file[8] = TFile::Open("QCD_TMVA_HT2000toInf.root");
-    
+    */
     // empty 3 4 0 5
     // load TH1F and TH2D from root files 
     vector <TH1F*> hmerge;
@@ -77,10 +88,12 @@ void mergeQCD(bool drop=true) {
         bool init = true;
         // copy first file
         int iniInd = (drop) ?1:0;
+        /*
         if (i==3||i==4||i==5) {
             hmerge.push_back(new TH1F());
             continue;
         }
+        */
         hmerge.push_back((TH1F*)th1f[iniInd][i]->Clone(th1f[iniInd][i]->GetName()));
         hmerge[i]->Sumw2();
         if (nEvent[iniInd]) hmerge[i]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
@@ -88,19 +101,20 @@ void mergeQCD(bool drop=true) {
         h_tem[iniInd]->Sumw2();
         if (nEvent[iniInd]) h_tem[iniInd]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
         h_tem[iniInd]->SetLineColor(99);
-        for (int j=1;j<9;j++) { // loop of HT
-            if (drop&&j==1) continue; 
+        for (int j=iniInd;j<9;j++) { // loop of HT
+            //if (drop&&j==0) continue; 
             // set the others
             if (nEvent[j]) hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
             h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
-            h_tem[j]->SetLineColor(-j*6+99);
+            h_tem[j]->SetLineColor((-j+iniInd)*6+99);
+            //h_tem[j]->SetLineColor((-j+iniInd)*6+99);
             if (i==HTindex) {
                 //h_HTmerge->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
             }
             if (i==0) legend->AddEntry(h_tem[j],HT_list[j].data(),"lf");
         }
-        int hnum = (drop)? 8:9; 
         // setting histogram
+        int hnum = (drop)? 8:9; 
         TString hName = h_tem[8]->GetName();
         static float ymax;
         ymax = 0;
@@ -121,8 +135,8 @@ void mergeQCD(bool drop=true) {
         c1->SetLeftMargin(0.1);
         h_tem[8]->Draw("hist");
         h_tem[8]->SetMaximum(ymax);
-        for (int j=0;j<hnum;j++) if (8-j!=3||8-j!=4||8-j!=5)h_tem[8-j]->Draw("histsame");
-        //for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
+        //for (int j=0;j<hnum;j++) if (8-j!=3||8-j!=4||8-j!=5)h_tem[8-j]->Draw("histsame");
+        for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
         legend->Draw();
         //c1->SetBottomMargin(0.15);
         //c1->SetTopMargin(0.15);
@@ -133,6 +147,7 @@ void mergeQCD(bool drop=true) {
     
     // setting th2f
     cout << "merge TH2F" << endl;
+    gStyle->SetOptTitle(0);
     for (int i=0;i<th2f[0].size();i++) {
         c1->Clear();
         int iniInd = (drop)?1:0;
@@ -144,8 +159,26 @@ void mergeQCD(bool drop=true) {
             if (drop&&j==1) continue;
             if (nEvent[j]) th2f_tem->Add(th2f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
         }
+        // setting hist
+        TString name = th2f_tem->GetName(); 
+        if (name.Contains("ha0")) {
+            th2f_tem->GetXaxis()->SetTitle("(M_{jj}-M_{h})/#sigma_{h}");
+            th2f_tem->GetYaxis()->SetTitle("(M_{jj}-M_{A0})/#sigma_{A0}");
+        }
+        if (name.Contains("hzp")) {
+            th2f_tem->GetXaxis()->SetTitle("(M_{jj}-M_{h})/#sigma_{h}");
+            th2f_tem->GetYaxis()->SetTitle("(M_{4j}-M_{Zp})/#sigma_{Zp}");
+        }
+        if (name.Contains("a0zp")) {
+            th2f_tem->GetXaxis()->SetTitle("(M_{jj}-M_{A0})/#sigma_{A0}");
+            th2f_tem->GetYaxis()->SetTitle("(M_{4j}-M_{Zp})/#sigma_{Zp}");
+        }
+        th2f_tem->SetTitleFont(62,"XYZ");
         th2f_sum.push_back(th2f_tem);
         th2f_tem->Draw("colz");
+        c1->SetLeftMargin(0.15);
+        c1->SetRightMargin(0.15);
+        c1->SetBottomMargin(0.15);
         c1->Update();
         c1->Print((outputName+".pdf").Data());
     }
