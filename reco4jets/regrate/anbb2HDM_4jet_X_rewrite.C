@@ -2,8 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <TH1D.h>
+#include <TH2F.h>
 #include <TFile.h>
+#include <TPaveStats.h>
 #include "../untuplizer.h"
 #include <TClonesArray.h>
 #include <TLorentzVector.h>
@@ -12,16 +13,16 @@
 #include <TLegend.h>
 #include "string"
 #include "../setNCUStyle.C"
-#include "../../gen2HDMsample/genMatch.C"
-#define nn
 #include "TMVA_regression_nu_Vali_rewrite.h"
 
 #define saveEffi          true
 #define basePtEtaCut    true
-#define doGenMatch      1
+#define doGenMatch      0
 #define doBTagCut       false
-#define CISVV2Cut       0.5426
 
+# if doGenMatch != 0 
+#include "../../gen2HDMsample/genMatch.C"
+#endif
 void efferr(float nsig,float ntotal,float factor=1)
 {
     float eff = nsig/ntotal;
@@ -152,15 +153,16 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
 
     //get TTree from file ...
     TreeReader data(inputFile.data());
+# if doGenMatch != 0 
     vector<vector<int>> genPar = genMatch_base(inputFile.data());
-    
+#endif    
     bool isBG = false;
     
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
     TString A0mass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*MA0}; test=${test1%%_re.root}; echo \"${test}\"",inputFile.data()));
     // set default value
     if (Zpmass.Atof()>2500||Zpmass.Atof()<500 || A0mass.Atof()>800 || A0mass.Atof()<300) {
-        Zpmass = "800";
+        Zpmass = "1000";
         A0mass = "300";
         isBG = true;
     }
@@ -169,18 +171,33 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     
     const int njets = 10;
     const int ncom = 50;
-
+    //const float x2MaxCut = 50;
+    const float x2MaxCut = 100;
+    const float CISVV2CUT_L = 0.5426;
+    const float CISVV2CUT_M = 0.8484;
+    const float CISVV2CUT_T = 0.9535;
+    
     TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
     TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
     TH1F* h_x2        = new TH1F("h_x2","h_x2",100,0,300);
     TH1F* h_x2_LT     = new TH1F("h_x2_LT","h_x2_LT",100,0,300);
     TH1F* h_x2_all    = new TH1F("h_x2_all","h_x2_all",100,0,300);
-    TH2F* h_x2_ha0    = new TH2F("h_x2_ha0","h_x2_ha0",100,-50,50,100,-50,50);
-    TH2F* h_x2_hzp    = new TH2F("h_x2_hzp","h_x2_hzp",100,-50,50,100,-50,50);
-    TH2F* h_x2_a0zp   = new TH2F("h_x2_a0zp","h_x2_a0zp",100,-50,50,100,-50,50);
+    TH1F* h_x2_h      = new TH1F("h_x2_h","h_x2_h",100,-20,80);
+    TH1F* h_x2_a0     = new TH1F("h_x2_a0","h_x2_a0",100,-20,80);
+    TH1F* h_x2_zp     = new TH1F("h_x2_zp","h_x2_zp",100,-20,80);
+    // 2D plot
+    TH2F* h_x2_ha0    = new TH2F("h_x2_ha0","h_x2_ha0",100,-20,80,100,-20,80);
+    TH2F* h_x2_hzp    = new TH2F("h_x2_hzp","h_x2_hzp",100,-20,80,100,-20,80);
+    TH2F* h_x2_a0zp   = new TH2F("h_x2_a0zp","h_x2_a0zp",100,-20,80,100,-20,80);
     TH2F* h_x2_ha0_s    = new TH2F("h_x2_ha0_s","h_x2_ha0",100,-5,5,100,-5,5);
     TH2F* h_x2_hzp_s    = new TH2F("h_x2_hzp_s","h_x2_hzp",100,-5,5,100,-5,5);
     TH2F* h_x2_a0zp_s   = new TH2F("h_x2_a0zp_s","h_x2_a0zp",100,-5,5,100,-5,5);
+    TH2F* h_x2_ha01    = new TH2F("h_x2_ha01","h_x2_ha01",100,-20,80,100,-20,80);
+    TH2F* h_x2_hzp1    = new TH2F("h_x2_hzp1","h_x2_hzp1",100,-20,80,100,-20,80);
+    TH2F* h_x2_a0zp1   = new TH2F("h_x2_a0zp1","h_x2_a0zp1",100,-20,80,100,-20,80);
+    TH2F* h_x2_ha0_s1    = new TH2F("h_x2_ha0_s1","h_x2_ha01",100,-5,5,100,-5,5);
+    TH2F* h_x2_hzp_s1    = new TH2F("h_x2_hzp_s1","h_x2_hzp1",100,-5,5,100,-5,5);
+    TH2F* h_x2_a0zp_s1   = new TH2F("h_x2_a0zp_s1","h_x2_a0zp1",100,-5,5,100,-5,5);
     // Mass
     TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 70,60,200);
     TH1F* h_hM_sw     = new TH1F("h_higgsM_sw", "h_higgsM_sw", 70,60,200);
@@ -201,6 +218,36 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     TH1F* h_a0Pt_sw   = new TH1F("h_a0Pt_sw", "h_A0Pt_sw", 60,0,1200);
     TH1F* h_hPt_ws    = new TH1F("h_higgsPt_ws", "h_higgsPt_ws", 60,0,1200);
     TH1F* h_a0Pt_ws   = new TH1F("h_a0Pt_ws", "h_A0Pt_ws", 60,0,1200);
+    // study the correlation of CISVV2 and different variables
+    TH2F* h_2d_hpt    = new TH2F("h_2d_hpt","h_2d_hpt",60,0,1200,100,0,1);
+    TH2F* h_2d_hx2    = new TH2F("h_2d_hx2","h_2d_hx2",50,0,50,100,0,1);
+    TH2F* h_2d_hptas  = new TH2F("h_2d_hptas","h_2d_hptas",40,0,2,100,0,1);
+    TH2F* h_2d_hptsd  = new TH2F("h_2d_hptsd","h_2d_hptsd",35,0,0.7,100,0,1);
+    TH2F* h_2d_hdeltaR  = new TH2F("h_2d_hdeltaR","h_2d_hdeltaR",40,0,4,100,0,1);
+    TH2F* h_2d_hdeltaEta = new TH2F("h_2d_hdeltaEta","h_2d_hdeltaEta",40,0,4,100,0,1);
+    TH2F* h_2d_hdeltaPhi = new TH2F("h_2d_hdeltaPhi","h_2d_hdeltaPhi",32,0,3.2,100,0,1);
+    TH1F* h_1d_hpt[3];
+    TH1F* h_1d_hx2[3];
+    TH1F* h_1d_hptas[3],*h_1d_hptsd[3];
+    TH1F* h_1d_hDeltaR[3],*h_1d_hDeltaEta[3], *h_1d_hDeltaPhi[3];
+    string suffixA[3] = {"_fail","_pass","_ratio"};
+    for (int i=0;i<3;i++) {
+        string sPt = "h_1d_hpt" + suffixA[i];
+        string sx2 = "h_1d_hx2" + suffixA[i];
+        string sptas = "h_1d_hptas" + suffixA[i];
+        string sptsd = "h_1d_hptsd" + suffixA[i];
+        string sdeltaR = "h_1d_hDeltaR" + suffixA[i];
+        string sdeltaEta = "h_1d_hDeltaEta" + suffixA[i];
+        string sdeltaPhi = "h_1d_hDeltaPhi" + suffixA[i];
+
+        h_1d_hpt[i]   = new TH1F(sPt.data(),sPt.data(),60,0,1200);
+        h_1d_hx2[i]   = new TH1F(sx2.data(),sx2.data(),50,0,50);
+        h_1d_hptas[i] = new TH1F(sptas.data(),sptas.data(),40,0,2);
+        h_1d_hptsd[i] = new TH1F(sptsd.data(),sptsd.data(),35,0,0.7);
+        h_1d_hDeltaR[i] = new TH1F(sdeltaR.data(),sdeltaR.data(),40,0,4);
+        h_1d_hDeltaEta[i] = new TH1F(sdeltaEta.data(),sdeltaEta.data(),40,0,4);
+        h_1d_hDeltaPhi[i] = new TH1F(sdeltaPhi.data(),sdeltaPhi.data(),32,0,3.2);
+    }
     // Assymetry
     TH1F* h_hPtAs     = new TH1F("h_hPtAs","h_higgsPtAssymetry",40,0,2);
     TH1F* h_hPtAs_sw  = new TH1F("h_hPtAs_sw","h_higgsPtAssymetry_sw",40,0,2);
@@ -250,6 +297,32 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_TMVAweight_sw[i]  = new TH1F(Form("h_TMVAweightSW_%d",i),Form("h_TMVAweightSW_%d",i),40,0.0,2);
         
     }
+    // pf Ratio
+    TH1F* h_hM_pfRation[3][3]; // high Pt
+    TH1F* h_hM_pfRationMin[3][3]; 
+    TH1F* h_hM_pfRationMean[3][3]; 
+    TH1F* h_a0M_pfRation[3][3]; 
+    TH1F* h_zpM_pfRation[3][3];
+    string suffixM[3] = {"higgsM","A0M","ZpM"}; 
+    string suffixB[3] = {"_L","_M","_T"};
+    for (int i=0;i<3;i++) {
+        for (int j=0;j<3;j++) {
+            string name[3], name_min[3], name_mean[3];
+            for (int k=0;k<3;k++) name[k] = "h_highPt"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            for (int k=0;k<3;k++) name_min[k] = "h_min"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            for (int k=0;k<3;k++) name_mean[k] = "h_mean"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            h_hM_pfRationMin[i][j] = new TH1F(name_min[0].data(),name_min[0].data(),32,40,200);
+            h_hM_pfRationMean[i][j] = new TH1F(name_mean[0].data(),name_mean[0].data(),32,40,200);
+            h_hM_pfRation[i][j] = new TH1F(name[0].data(),name[0].data(),32,40,200);
+            h_a0M_pfRation[i][j] = new TH1F(name[1].data(),name[1].data(),60,0,600);
+            h_zpM_pfRation[i][j] = new TH1F(name[2].data(),name[2].data(),80,Zpmass.Atof()-400,Zpmass.Atof()+400);
+            h_hM_pfRationMin[i][j]->Sumw2();
+            h_hM_pfRationMean[i][j]->Sumw2();
+            h_hM_pfRation[i][j]->Sumw2();
+            h_a0M_pfRation[i][j]->Sumw2();
+            h_zpM_pfRation[i][j]->Sumw2();
+        }
+    }
     // Delta R, theta, phi
     TH1F* h_hDeltaR         = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR", 40,0,4);
     TH1F* h_hDeltaR_sw      = new TH1F("h_HiggstobbDeltaR_sw", "h_HiggstobbDeltaR_sw", 40,0,4);
@@ -282,17 +355,15 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     TH1F* h_zpDeltaPhi_ws   = new TH1F("h_ZptoHA0DeltaPhi_ws", "h_ZptoHA0DeltaPhi_ws", 32,0,3.2);
     
     Int_t nPass[20]={0};
-    int maxHIndexNum = 0, maxZpIndexNum = 0;
     
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
-        if (jEntry %2000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        if (jEntry %500 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         //if (jEntry >= 10) break;
         data.GetEntry(jEntry);
         //if (jEntry>50) break; 
+        //if (jEntry>1000) break; 
         nPass[0]++;
-        float HT = data.GetFloat("HT");
-        //h_HT->Fill(HT);
         h_allEvent->Fill(1);
         
         //0. has a good vertex
@@ -304,21 +375,21 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         TClonesArray* genjetP4 =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
         float *CISVV2 = data.GetPtrFloat("THINjetCISVV2");
         
-        vector<vector<float>> HindexList, A0indexList, ZpindexList;
-        vector<TLorentzVector*> genHA0Par;
-        
-        if (!isBG||doGenMatch) {
+        static vector<TLorentzVector*> genHA0Par;
+# if doGenMatch != 0 
+        if (!isBG) {
+            genHA0Par.clear();
             TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
             for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
         }
-        
+# endif
         // find good jet
         static vector<int> goodJet;
         goodJet.clear();
         static TLorentzVector* thisJet, *thatJet;
         for (int i=0;i<nGenJet;i++) {
             if (!vPassID_L[i]) continue;
-            if (CISVV2[i]<CISVV2Cut) continue;
+            //if (CISVV2[i]<CISVV2CUT_L) continue;
             thisJet = (TLorentzVector*)genjetP4->At(i);
             if (thisJet->Pt()<30) continue;
             if (thisJet->Eta()>2.4) continue;
@@ -358,14 +429,60 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
                             if (!(genParA||genParB)) continue;
                         }
                         HA0JetInfo tem(info,goodJet[hi],goodJet[hj],goodJet[ai],goodJet[aj]);
-                        fourJetList.push_back(tem);
+                        // cut on x^2 and a0 min CISVV2 L cut 
+                        if (tem.xSqure()<x2MaxCut&&tem.isMinCISVV2_L(1)) fourJetList.push_back(tem);
+                        else tem.Release();
                     }
                 }
             }
         }
         h_Ncom->Fill(fourJetList.size());
         if (fourJetList.size()<1) continue;
-        for (int i=0;i<fourJetList.size();i++) {
+        sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
+        // higgs high pt
+        if (fourJetList[0].isCISVV2_L(0)) h_hM_pfRation[1][0]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRation[0][0]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isCISVV2_M(0)) h_hM_pfRation[1][1]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRation[0][1]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isCISVV2_T(0)) h_hM_pfRation[1][2]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRation[0][2]->Fill(fourJetList[0].Mh(2));
+        // higgs min CISVV2
+        if (fourJetList[0].isMinCISVV2_L(0)) h_hM_pfRationMin[1][0]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMin[0][0]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isMinCISVV2_M(0)) h_hM_pfRationMin[1][1]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMin[0][1]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isMinCISVV2_T(0)) h_hM_pfRationMin[1][2]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMin[0][2]->Fill(fourJetList[0].Mh(2));
+        // higgs mean CISVV2
+        if (fourJetList[0].isMeanCISVV2_L(0)) h_hM_pfRationMean[1][0]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMean[0][0]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isMeanCISVV2_M(0)) h_hM_pfRationMean[1][1]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMean[0][1]->Fill(fourJetList[0].Mh(2));
+        if (fourJetList[0].isMeanCISVV2_T(0)) h_hM_pfRationMean[1][2]->Fill(fourJetList[0].Mh(2));
+        else h_hM_pfRationMean[0][2]->Fill(fourJetList[0].Mh(2));
+        
+        // save something to test variable
+      
+        h_2d_hpt->Fill(fourJetList[0].Pth(),fourJetList[0].xSqure(2,2));
+        h_2d_hx2->Fill(fourJetList[0].xSqure(2,2),fourJetList[0].xSqure(2,2));
+        h_2d_hptas->Fill(fourJetList[0].HptAs(),fourJetList[0].xSqure(2,2));
+        h_2d_hptsd->Fill(fourJetList[0].HptSD(),fourJetList[0].xSqure(2,2));
+        h_2d_hdeltaR->Fill(fourJetList[0].HdR(),fourJetList[0].xSqure(2,2)); 
+        h_2d_hdeltaEta->Fill(fourJetList[0].HdEta(),fourJetList[0].xSqure(2,2));
+        h_2d_hdeltaPhi->Fill(fourJetList[0].HdPhi(),fourJetList[0].xSqure(2,2));
+        int isPass = fourJetList[0].isCISVV2_L(0);
+        h_1d_hpt[isPass]->Fill(fourJetList[0].Pth());
+        h_1d_hx2[isPass]->Fill(fourJetList[0].xSqure(2,2));
+        h_1d_hptas[isPass]->Fill(fourJetList[0].HptAs());
+        h_1d_hptsd[isPass]->Fill(fourJetList[0].HptSD());
+        h_1d_hDeltaR[isPass]->Fill(fourJetList[0].HdR());
+        h_1d_hDeltaEta[isPass]->Fill(fourJetList[0].HdEta());
+        h_1d_hDeltaPhi[isPass]->Fill(fourJetList[0].HdPhi());
+        // remain old code
+        for (unsigned int i=0;i<fourJetList.size();i++) if (!fourJetList[i].isMinCISVV2_L(0)) fourJetList.erase(fourJetList.begin()+i); 
+        if (fourJetList.size()<1) continue;
+        // Fill hist
+        for (size_t i=0;i<fourJetList.size();i++) {
             h_x2_all->Fill(fourJetList[i].xSqure()); 
             h_x2_ha0->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
             h_x2_hzp->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
@@ -377,26 +494,36 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         nPass[3]++;
         sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
         minX2       = fourJetList[0];
-        sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
-        minWeightX2 = fourJetList[0];
+        //sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
+        //minWeightX2 = fourJetList[0];
         sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare_2); 
         minWeightX2_2 = fourJetList[0];
         sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
         minWeight_LT = fourJetList[0];
+        // fill 2D plot
+        h_x2_ha01->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+        h_x2_hzp1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+        h_x2_a0zp1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
+        h_x2_ha0_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+        h_x2_hzp_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+        h_x2_a0zp_s1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
         // fill TH1F
-        
+        h_x2_h->Fill(minWeight_LT.xSquare_Xpar(0));
+        h_x2_a0->Fill(minWeight_LT.xSquare_Xpar(1));
+        h_x2_zp->Fill(minWeight_LT.xSquare_Xpar(2));
+
         // Mass 
         h_hM->Fill(minX2.Mh());
-        h_hM_sw->Fill(minWeightX2.Mh(1));
+        //h_hM_sw->Fill(minWeightX2.Mh(1));
         h_hM_ws->Fill(minWeightX2_2.Mh(1));
         h_hM_LT->Fill(minWeight_LT.Mh(2));
         //cout << "MA0 " << minX2.MA0() << "\t" << minX2.MA0(1) << "\t" << minWeightX2.MA0(1) << endl;
         h_a0M->Fill(minX2.MA0());
-        h_a0M_sw->Fill(minWeightX2.MA0(1));
+        //h_a0M_sw->Fill(minWeightX2.MA0(1));
         h_a0M_ws->Fill(minWeightX2_2.MA0(1));
         h_a0M_LT->Fill(minWeight_LT.MA0(2));
         h_zpM->Fill(minX2.MZp());
-        h_zpM_sw->Fill(minWeightX2.MZp(1,0));
+        //h_zpM_sw->Fill(minWeightX2.MZp(1,0));
         h_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
         h_zpM_LT->Fill(minWeight_LT.MZp(2,2));
         // x2
@@ -404,7 +531,7 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_x2->Fill(minWeightX2_2.xSqure());
         // Pt
         // delete pointer
-        for (int i=0;i<fourJetList.size();i++) fourJetList[i].Release();
+        for (size_t i=0;i<fourJetList.size();i++) fourJetList[i].Release();
         /*
         h_hPt->Fill(minX2.Pth()); 
         h_hPt_sw->Fill(minX2.weightJets()->Pth()); 
@@ -497,9 +624,25 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     h_zpPtSD->SetMaximum(1000);
     h_zpPtAs_ori->SetMaximum(150); 
     */
+    h_x2_all->SetXTitle("#chi^{2}");
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
     
+    for(int i=0;i<3;i++) {
+        h_hM_pfRation[2][i]->Divide(h_hM_pfRation[1][i],h_hM_pfRation[0][i]);
+        h_hM_pfRationMin[2][i]->Divide(h_hM_pfRationMin[1][i],h_hM_pfRationMin[0][i]);
+        h_hM_pfRationMean[2][i]->Divide(h_hM_pfRationMean[1][i],h_hM_pfRationMean[0][i]);
+        h_a0M_pfRation[2][i]->Divide(h_a0M_pfRation[1][i],h_a0M_pfRation[0][i]);
+        h_zpM_pfRation[2][i]->Divide(h_zpM_pfRation[1][i],h_zpM_pfRation[0][i]);
+    }
+    // try variables 
+    h_1d_hpt[2]->Divide(h_1d_hpt[1],h_1d_hpt[0]);
+    h_1d_hx2[2]->Divide(h_1d_hx2[1],h_1d_hx2[0]);
+    h_1d_hptas[2]->Divide(h_1d_hptas[1],h_1d_hptas[0]);
+    h_1d_hptsd[2]->Divide(h_1d_hptsd[1],h_1d_hptsd[0]);
+    h_1d_hDeltaR[2]->Divide(h_1d_hDeltaR[1],h_1d_hDeltaR[0]);
+    h_1d_hDeltaEta[2]->Divide(h_1d_hDeltaEta[1],h_1d_hDeltaEta[0]);
+    h_1d_hDeltaPhi[2]->Divide(h_1d_hDeltaPhi[1],h_1d_hDeltaPhi[0]);
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
     efferr(nPass[3],nTotal);
     TLegend* leg = new TLegend(0.68,0.8,0.9,0.9);
@@ -529,6 +672,24 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         draw2Dhist(h_x2_hzp_s,0,2);
         c1->Print(pdfName.data());
         draw2Dhist(h_x2_a0zp_s,1,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_ha01,0,1);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_hzp1,0,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_a0zp1,1,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_ha0_s1,0,1);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_hzp_s1,0,2);
+        c1->Print(pdfName.data());
+        draw2Dhist(h_x2_a0zp_s1,1,2);
+        c1->Print(pdfName.data());
+        h_x2_h->Draw("hist");
+        c1->Print(pdfName.data());
+        h_x2_a0->Draw("hist");
+        c1->Print(pdfName.data());
+        h_x2_zp->Draw("hist");
         c1->Print(pdfName.data());
         draw(h_hM,h_hM_ws,h_hM_LT);
         c1->Print(pdfName.data());
@@ -603,20 +764,96 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         c1->Print(pdfName.data());
         draw(h_zpDeltaPhi_sw,h_zpDeltaPhi_ws);
         c1->Print(pdfName.data());
+        // store test
+        h_2d_hpt->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hx2->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hptas->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hptsd->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hdeltaR->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hdeltaEta->Draw("colz");
+        c1->Print(pdfName.data());
+        h_2d_hdeltaPhi->Draw("colz");
+        c1->Print(pdfName.data());
+        for (int i=0;i<3;i++) {
+            h_1d_hpt[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hx2[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hptas[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hptsd[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hDeltaR[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hDeltaEta[i]->Draw("hist");
+            c1->Print(pdfName.data());
+            h_1d_hDeltaPhi[i]->Draw("hist");
+            c1->Print(pdfName.data());
+        }
+        // storde pfcut
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) { h_hM_pfRationMin[i][j]->Draw("hist");c1->Print(pdfName.data());}
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) { h_hM_pfRationMean[i][j]->Draw("hist");c1->Print(pdfName.data());}
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) { h_hM_pfRation[i][j]->Draw("hist");c1->Print(pdfName.data());}
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) { h_a0M_pfRation[i][j]->Draw("hist");c1->Print(pdfName.data());}
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++) { h_zpM_pfRation[i][j]->Draw("hist");c1->Print(pdfName.data());}
 
         c1->Print((pdfName+"]").data());
     }
-    /*
     string fileName; 
     if (isBG) fileName = Form("QCDbg2HDMbb_%d.root",w);
     else if (doBTagCut) fileName = Form("sigRootFile/bb2HDM_recoBTag_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
     else fileName = Form("sigRootFile/bb2HDM_reco_MZp%s_MA0%s.root",Zpmass.Data(),A0mass.Data());
-    if (!saveEffi&&false) {
+    if (!saveEffi||isBG||true) {
         TFile* outputFile = new TFile(fileName.data(),"recreate");
-        h_HT->Write();
-        h_zpM->Write();
+        h_allEvent->Write();
+        h_NgoodJets->Write();
         h_hM->Write();
+        h_hM_LT->Write();
         h_a0M->Write();
+        h_a0M_LT->Write();
+        h_zpM->Write();
+        h_zpM_LT->Write();
+        h_x2_ha0_s1->Write();
+        h_x2_hzp_s1->Write();
+        h_x2_a0zp_s1->Write();
+        h_x2_h->Write();
+        h_x2_a0->Write();
+        h_x2_zp->Write();
+        // all possible jets
+        h_x2_all->Write();
+        h_x2_ha0_s->Write();
+        h_x2_hzp_s->Write();
+        h_x2_a0zp_s->Write();
+        // store test
+        h_2d_hpt->Write();
+        h_2d_hx2->Write();
+        h_2d_hptas->Write();
+        h_2d_hptsd->Write();
+        h_2d_hdeltaR->Write();
+        h_2d_hdeltaEta->Write();
+        h_2d_hdeltaPhi->Write();
+        for (int i=0;i<3;i++) {
+            h_1d_hpt[i]->Write();
+            h_1d_hx2[i]->Write();
+            h_1d_hptas[i]->Write();
+            h_1d_hptsd[i]->Write();
+            h_1d_hDeltaR[i]->Write();
+            h_1d_hDeltaEta[i]->Write();
+            h_1d_hDeltaPhi[i]->Write();
+        }
+        // storde pfcut
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_hM_pfRationMin[i][j]->Write();
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_hM_pfRationMean[i][j]->Write();
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_hM_pfRation[i][j]->Write();
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_a0M_pfRation[i][j]->Write();
+        for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_zpM_pfRation[i][j]->Write();
+
+        /*
         h_hPt->Write();
         h_a0Pt->Write();
         h_hPtAs->Write();
@@ -642,8 +879,10 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_a0Ncandi->Write();
         h_zpNcandi->Write();
         
+        */
         outputFile->Close();
     }
+    /*
     string fileNPassName;
     if (doBTagCut) fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_recoBTag4jets.txt",Zpmass.Data(),A0mass.Data());
     else fileNPassName = Form("../njetsnPass/effi_Zpmass%s_A0mass%s_reco4jets.txt",Zpmass.Data(),A0mass.Data());
