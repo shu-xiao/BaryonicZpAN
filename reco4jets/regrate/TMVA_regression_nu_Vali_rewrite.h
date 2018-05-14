@@ -20,13 +20,15 @@ struct TMVAinputInfo{
 	Float_t* jetVtx3DVal;
 	Float_t* jetVtxNtrks;
 	Float_t* jetVtx3DSig;
-	
+	Float_t* CISVV2;
 
 	TLorentzVector *rawjet[35];
 	TLorentzVector *ak4jet[35];
 	TLorentzVector *leadjet[35];
 	TLorentzVector *lepjet[35];
 	TLorentzVector *Parjet[30];
+
+public:
 	TMVAinputInfo() {}
 	TMVAinputInfo(TreeReader &data, bool usePar = false) {
 		nJet         = data.GetInt("THINnJet");
@@ -43,6 +45,7 @@ struct TMVAinputInfo{
 		jetVtx3DSig  = data.GetPtrFloat("THINjetVtx3DSig");
 		pfMET        = data.GetFloat("pfMetCorrPt");
 		pfMETPhi     = data.GetFloat("pfMetCorrPhi");
+		CISVV2 		 = data.GetPtrFloat("THINjetCISVV2");
 		
 		static TClonesArray *ak4jetP4, *rawjetP4, *THINjetLeadTrackP4, *LepjetP4, *genParP4;
 		ak4jetP4            =  (TClonesArray*) data.GetPtrTObject("THINunCorrJetP4");
@@ -235,6 +238,11 @@ private:
 	float weight[4] 	= {-99,-99,-99,-99};
 	float weightLT[4] 	= {-99,-99,-99,-99};
 	int   ind[4]    	= {-1,-1,-1,-1};
+	float vCISVV2[4]	= {-1,-1,-1,-1};
+private:
+	Float_t CISVV2CUT_L = 0.5426;
+    Float_t CISVV2CUT_M = 0.8484;
+    Float_t CISVV2CUT_T = 0.9535;
 public:
 
 	TLorentzVector* applyWeight(TLorentzVector *refv1, float weight) {
@@ -268,6 +276,7 @@ public:
 		Jets.A0jet1 = info.Parjet[a0i1];
 		Jets.A0jet2 = info.Parjet[a0i2];
 		*/
+		// calculate weight
 		if (weight[0]<0) weight[0] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi1,  Jets.Hjet1->DeltaR(*Jets.Hjet2));
 		if (weight[1]<0) weight[1] = TMVA_15plus3_jetGenJet_nu_3_1(info, hi2,  Jets.Hjet1->DeltaR(*Jets.Hjet2));
 		if (weight[2]<0) weight[2] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2));
@@ -278,7 +287,7 @@ public:
 		if (weightLT[2]<0) weightLT[2] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i1, Jets.A0jet1->DeltaR(*Jets.A0jet2),	1);
 		if (weightLT[3]<0) weightLT[3] = TMVA_15plus3_jetGenJet_nu_3_1(info, a0i2, Jets.A0jet1->DeltaR(*Jets.A0jet2),	0);
 		
-
+		// weight jets
 		weightJets.dodelete = true;
 		weightJets.Hjet1 = 	applyWeight(Jets.Hjet1,	weight[0]);
 		weightJets.Hjet2 = 	applyWeight(Jets.Hjet2,	weight[1]);
@@ -289,19 +298,8 @@ public:
 		weightJetsLT.Hjet2 = 	applyWeight(Jets.Hjet2,		weightLT[1]);
 		weightJetsLT.A0jet1 = 	applyWeight(Jets.A0jet1,	weightLT[2]);
 		weightJetsLT.A0jet2 = 	applyWeight(Jets.A0jet2,	weightLT[3]);
-		
-		
-		/*
-		applyWeight(weightJets.Hjet1,	Jets.Hjet1,	weight[0]);
-		applyWeight(weightJets.Hjet2,	Jets.Hjet2,	weight[1]);
-		applyWeight(weightJets.A0jet1,	Jets.A0jet1,weight[2]);
-		applyWeight(weightJets.A0jet2,	Jets.A0jet1,weight[3]);
-
-		applyWeight(weightJetsLT.Hjet1,	Jets.Hjet1,	weightLT[0]);
-		applyWeight(weightJetsLT.Hjet2,	Jets.Hjet2,	weightLT[1]);
-		applyWeight(weightJetsLT.A0jet1,Jets.A0jet1,weightLT[2]);
-		applyWeight(weightJetsLT.A0jet2,Jets.A0jet1,weightLT[3]);
-		*/
+		// CISVV2
+		for (int i=0;i<4;i++) if (ind[i]>=0) vCISVV2[i] = info.CISVV2[ind[i]];
 	}
 
 	void remove(TLorentzVector* v1) {
@@ -370,11 +368,43 @@ public:
 	}
 	inline float  getWeight(int i) 	{return (i<4&&i>=0)?weight[i]:-1;}
 	inline float  getWeightLT(int i) 	{return (i<4&&i>=0)?weightLT[i]:-1;}
+	inline int* getIndex()			{return ind;}
+	inline int  getIndex(int i)  	{return (i<4&&i>=0)?ind[i]:-1;}
+
+	inline float* getCISVV2()		{return vCISVV2;}
+	inline float  getCISVV2(int i)	{return (i<4&&i>=0)?vCISVV2[i]:-1;}
+	inline bool isCISVV2_L(int i)	{return getCISVV2(i)>CISVV2CUT_L;}
+	inline bool isCISVV2_M(int i)	{return getCISVV2(i)>CISVV2CUT_M;}
+	inline bool isCISVV2_T(int i)	{return getCISVV2(i)>CISVV2CUT_T;}
+
+	inline float getMinCISVV2(int i) 	{
+		if (i==0) return min(getCISVV2(0),getCISVV2(1));
+		else if (i==1) return min(getCISVV2(2),getCISVV2(3));
+		else return -1;
+	}
+	inline bool isMinCISVV2_L(int i) {return getMinCISVV2(i)>CISVV2CUT_L;} 
+	inline bool isMinCISVV2_M(int i) {return getMinCISVV2(i)>CISVV2CUT_M;} 
+	inline bool isMinCISVV2_T(int i) {return getMinCISVV2(i)>CISVV2CUT_T;} 
+	
+	inline float getMeanCISVV2(int i) {
+		if (i==0) return (getCISVV2(0)+getCISVV2(1))/2;
+		else if (i==1) return (getCISVV2(2)+getCISVV2(3))/2;
+		else return -1;
+	}
+	inline bool isMeanCISVV2_L(int i) {return getMeanCISVV2(i)>CISVV2CUT_L;}
+	inline bool isMeanCISVV2_M(int i) {return getMeanCISVV2(i)>CISVV2CUT_M;}
+	inline bool isMeanCISVV2_T(int i) {return getMeanCISVV2(i)>CISVV2CUT_T;}
+	inline float Pth()	  	{return (*weightJetsLT.Hjet2+*weightJetsLT.Hjet1).Pt();}
+	inline float HdR()    	{return Jets.Hjet1->DeltaR(*Jets.Hjet2);}
+	inline float HdEta()	{return abs(Jets.Hjet1->Eta()-Jets.Hjet2->Eta());}
+	inline float HdPhi()	{return Jets.Hjet1->DeltaPhi(*Jets.Hjet2);}
+	inline float HptAs()	{
+		return pow(weightJetsLT.Hjet2->Pt()*HdR()/Mh(),2);
+	}
+	inline float HptSD() 	{return weightJetsLT.Hjet2->Pt()/(weightJetsLT.Hjet2->Pt()+weightJetsLT.Hjet1->Pt());}
 	/*
-	inline float Pth()	  	{return (*Hjet2+*Hjet1).Pt();}
 	inline float Pta0()		{return (*A0jet2+*A0jet1).Pt();}
 	inline float PtZp()		{return (*Hjet2+*Hjet1+*A0jet2+*A0jet1).Pt();}
-	inline float HdR()    	{return Hjet1->DeltaR(*Hjet2);}
 	inline float A0dR()   	{return A0jet1->DeltaR(*A0jet2);}
 	inline float ZpdR()   	{return (*Hjet2+*Hjet1).DeltaR(*A0jet2+*A0jet1);}
 	*/
@@ -383,8 +413,6 @@ public:
 	/*
 	inline float* getWeight()      	{return weight;}
 	
-	inline int* getIndex()			{return ind;}
-	inline int  getIndex(int i)  	{return (i<4&&i>=0)?ind[i]:-1;}
 	inline TLorentzVector* getHjet(int i)	{
 		if (i==0) return Hjet1;
 		else if (i==1) return Hjet2;
