@@ -22,6 +22,7 @@ void mergeQCD(bool drop=true) {
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     string HT_list[9] = {"QCD_TMVA_HT50to100","QCD_TMVA_HT100to200","QCD_TMVA_HT200to300","QCD_TMVA_HT300to500","QCD_TMVA_HT500to700","QCD_TMVA_HT700to1000","QCD_TMVA_HT1000to1500","QCD_TMVA_HT1500to2000","QCD_TMVA_HT2000toInf"};
     TFile* file[9];
+    /*
     file[0] = TFile::Open("QCD_HT50to100_T2.root");
     file[1] = TFile::Open("QCD_TMVA_HT100to200.root");
     //file[1] = TFile::Open("QCD_HT100to200_T2.root");
@@ -32,7 +33,7 @@ void mergeQCD(bool drop=true) {
     file[6] = TFile::Open("QCD_HT1000to1500_T2.root");
     file[7] = TFile::Open("QCD_HT1500to2000_T2.root");
     file[8] = TFile::Open("QCD_HT2000toInf_T2.root");
-    /*
+    */
     file[0] = TFile::Open("QCD_TMVA_HT50to100.root");
     file[1] = TFile::Open("QCD_TMVA_HT100to200.root");
     file[2] = TFile::Open("QCD_TMVA_HT200to300.root");
@@ -42,7 +43,7 @@ void mergeQCD(bool drop=true) {
     file[6] = TFile::Open("QCD_TMVA_HT1000to1500.root");
     file[7] = TFile::Open("QCD_TMVA_HT1500to2000.root");
     file[8] = TFile::Open("QCD_TMVA_HT2000toInf.root");
-    */
+    
     // empty 3 4 0 5
     // load TH1F and TH2D from root files 
     vector <TH1F*> hmerge;
@@ -88,12 +89,6 @@ void mergeQCD(bool drop=true) {
         bool init = true;
         // copy first file
         int iniInd = (drop) ?1:0;
-        /*
-        if (i==3||i==4||i==5) {
-            hmerge.push_back(new TH1F());
-            continue;
-        }
-        */
         hmerge.push_back((TH1F*)th1f[iniInd][i]->Clone(th1f[iniInd][i]->GetName()));
         hmerge[i]->Sumw2();
         if (nEvent[iniInd]) hmerge[i]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
@@ -102,7 +97,6 @@ void mergeQCD(bool drop=true) {
         if (nEvent[iniInd]) h_tem[iniInd]->Scale(L2016/getL(nEvent[iniInd],xsHTbeam[iniInd]));
         h_tem[iniInd]->SetLineColor(99);
         for (int j=iniInd;j<9;j++) { // loop of HT
-            //if (drop&&j==0) continue; 
             // set the others
             if (nEvent[j]) hmerge[i]->Add(th1f[j][i],L2016/getL(nEvent[j],xsHTbeam[j]));
             h_tem[j] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
@@ -128,23 +122,82 @@ void mergeQCD(bool drop=true) {
             c1->SetLogy();
             ymax = h_tem[8]->GetMaximum()*100;
         }
-        h_tem[8]->GetYaxis()->SetTitle("A.U.");
+        //h_tem[8]->GetYaxis()->SetTitle("A.U.");
         h_tem[8]->GetYaxis()->SetTitleOffset(0.5);
-        h_tem[8]->GetYaxis()->SetLabelOffset(999);
-        h_tem[8]->GetYaxis()->SetLabelSize(0);
+        //h_tem[8]->GetYaxis()->SetLabelOffset(999);
+        //h_tem[8]->GetYaxis()->SetLabelSize(0);
         c1->SetLeftMargin(0.1);
         h_tem[8]->Draw("hist");
         h_tem[8]->SetMaximum(ymax);
-        //for (int j=0;j<hnum;j++) if (8-j!=3||8-j!=4||8-j!=5)h_tem[8-j]->Draw("histsame");
         for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
         legend->Draw();
         //c1->SetBottomMargin(0.15);
         //c1->SetTopMargin(0.15);
         c1->Update();
         c1->Print((outputName+".pdf").Data());
-    }
+    }  // end of TH1F loop
     //h_HTmerge->Draw("hist");
-    
+    // recalculate pf ratio
+    vector<string> spfList = {"h_1d_hpt","h_1d_hx2","h_1d_hptas","h_1d_hptsd","h_1d_hDeltaR","h_1d_hDeltaEta","h_1d_hDeltaPhi"};
+    int nRatioPlot = spfList.size();
+    TH1F* ratio[nRatioPlot][3];
+    string suffix[3] = {"_fail","_pass","_ratio"};
+    for (int i=0;i<hmerge.size();i++) {
+        TString hName = hmerge[i]->GetName();
+        bool findTitle = false;
+        int ind = -1;
+        for (int j=0;j<spfList.size();j++) if (hName.Contains(spfList[j].data())) {findTitle = true; ind = j;}
+        if (findTitle) {
+            int kk = -1;
+            for (int c=0;c<3;c++) if (hName.Contains(suffix[c].data())) kk = c;
+            if (kk>=0) ratio[ind][kk] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
+        }
+        if (!findTitle) continue;
+    }
+    for (int i=0;i<nRatioPlot;i++) {
+        string name = spfList[i]+"_ratio";
+        ratio[i][2] = (TH1F*)ratio[i][1]->Clone(name.data());
+        ratio[i][2]->SetTitle(name.data());
+    }
+    for (int i=0;i<spfList.size();i++) {
+        c1->Clear();
+        ratio[i][2]->Divide(ratio[i][1],ratio[i][0]);
+        ratio[i][2]->Draw("hist");
+        c1->Update();
+        c1->Print((outputName+".pdf").Data());
+    }
+    TCanvas c2("c2","c2",800,600);
+    c2.Print("pfRatio_var.pdf[");
+    for (int i=0;i<spfList.size();i++) {
+        ratio[i][2]->Rebin(2);
+        ratio[i][2]->Draw("hist");
+        c2.Print("pfRatio_var.pdf");
+    }
+    c2.Print("pfRatio_var.pdf]");
+    c1->cd();
+    // another hist ...
+    string suffixM[3] = {"higgsM","A0M","ZpM"};
+    string suffixB[3] = {"_L","_M","_T"};
+    string cutSelec[3] = {"h_highPt","h_min","h_mean"};
+    nRatioPlot = 9;
+    TH1F* ratio_cut[nRatioPlot][3]; 
+    for (int i=0;i<hmerge.size();i++) {
+        TString hName = hmerge[i]->GetName();
+        if (!hName.Contains(suffixM[0].data())) continue;
+        bool iscut = false, islevel = false;
+        int cut = -1, level = -1;
+        for (int j=0;j<3;j++) if (hName.Contains(cutSelec[j].data())){iscut = true;cut = j;}
+        for (int j=0;j<3;j++) if (hName.Contains(suffixB[j].data())){islevel = true;level = j;}
+        if (!iscut||!islevel) continue;
+        int ind = -1;
+        for (int j=0;j<3;j++) if (hName.Contains(suffix[j].data())) ind=j;
+        ratio_cut[cut*3+level][ind] = (TH1F*)hmerge[i]->Clone(hmerge[i]->GetName());
+    }
+    for (int i=0;i<nRatioPlot;i++) {
+        ratio_cut[i][2]->Divide(ratio_cut[i][1],ratio_cut[i][0]);
+        ratio_cut[i][2]->Draw("hist");
+        c1->Print((outputName+".pdf").Data());
+    }
     // setting th2f
     cout << "merge TH2F" << endl;
     gStyle->SetOptTitle(0);
@@ -199,5 +252,7 @@ void mergeQCD(bool drop=true) {
     TFile* output = new TFile((outputName+".root").Data(),"recreate");
     for (int i=0;i<hmerge.size();i++) hmerge[i]->Write();
     for (int i=0;i<th2f_sum.size();i++) th2f_sum[i]->Write();
+    for (int i=0;i<spfList.size();i++) ratio[i][2]->Write();
+    for (int i=0;i<nRatioPlot;i++)  ratio_cut[i][2]->Write(); 
     output->Close();
 }
