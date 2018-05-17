@@ -129,6 +129,7 @@ void mergeQCD(bool drop=true) {
         //h_tem[8]->GetYaxis()->SetLabelOffset(999);
         //h_tem[8]->GetYaxis()->SetLabelSize(0);
         c1->SetLeftMargin(0.1);
+        if (hName.Contains("ratio")) continue;
         h_tem[8]->Draw("hist");
         h_tem[8]->SetMaximum(ymax);
         for (int j=0;j<hnum;j++) h_tem[8-j]->Draw("histsame");
@@ -164,7 +165,8 @@ void mergeQCD(bool drop=true) {
     for (int i=0;i<spfList.size();i++) {
         c1->Clear();
         ratio[i][2]->Divide(ratio[i][1],ratio[i][0]);
-        ratio[i][2]->Draw("hist");
+        //ratio[i][2]->Draw("hist");
+        ratio[i][2]->Draw("e");
         c1->Update();
         c1->Print((outputName+".pdf").Data());
     }
@@ -198,7 +200,8 @@ void mergeQCD(bool drop=true) {
     }
     for (int i=0;i<nRatioPlot;i++) {
         ratio_cut[i][2]->Divide(ratio_cut[i][1],ratio_cut[i][0]);
-        ratio_cut[i][2]->Draw("hist");
+        //ratio_cut[i][2]->Draw("hist");
+        ratio_cut[i][2]->Draw("e");
         c1->Print((outputName+".pdf").Data());
     }
     // setting th2f
