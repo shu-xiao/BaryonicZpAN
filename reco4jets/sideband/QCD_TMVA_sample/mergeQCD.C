@@ -17,6 +17,8 @@ float getL(int nEvent, float xs) {
 void mergeQCD(bool drop=true) {
     setNCUStyle(true);
 
+    gStyle->SetTitleAlign(33);
+    gStyle->SetTitleX(.99);
     TCanvas *c1 = new TCanvas("c1","c1",800,600);
     // cross-section unit: pb
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
@@ -170,7 +172,8 @@ void mergeQCD(bool drop=true) {
     c2.Print("pfRatio_var.pdf[");
     for (int i=0;i<spfList.size();i++) {
         ratio[i][2]->Rebin(2);
-        ratio[i][2]->Draw("hist");
+        //ratio[i][2]->Draw("hist");
+        ratio[i][2]->Draw("e");
         c2.Print("pfRatio_var.pdf");
     }
     c2.Print("pfRatio_var.pdf]");
