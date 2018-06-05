@@ -175,7 +175,7 @@ Float_t TMVA_15plus3_jetGenJet_nu_3_1(TMVAinputInfo &info, Int_t i, Float_t jjDR
   	Jet_pt_           = info.ak4jet[i]->Pt();//Jet pT
   	Jet_corr_         = info.ak4jet[i]->Pt()/info.rawjet[i]->Pt();//JEC
   	nVtx_             = info.nVtx;//nPVs
-  	Jet_eta_          = info.ak4jet[i]->Eta();//Jet Î·
+  	Jet_eta_          = info.ak4jet[i]->Eta();//Jet ¦Ç
   	Jet_mt_           = info.jetMt[i];//Jet transverse mass
   	Jet_leadTrackPt_  = (info.leadjet[i]->Pt() < 0) ? 0. : info.leadjet[i]->Pt();//pTLeadTrk, transverse momentum of the leading track in the jet
   	static TLorentzVector TJet, TJetLep;
@@ -184,7 +184,7 @@ Float_t TMVA_15plus3_jetGenJet_nu_3_1(TMVAinputInfo &info, Int_t i, Float_t jjDR
   	TVector3 TJetAxis(info.ak4jet[i]->Vect().X(),info.ak4jet[i]->Vect().Y(),info.ak4jet[i]->Vect().Z());
   	Jet_leptonPtRel_  = (info.lepjet[i]->Pt() > 0 && info.lepjet[i]->Pt() < 99900) ?  info.lepjet[i]->Perp(TJetAxis)	:0.;//Soft Lepton pTRel, relative transverse momentum of soft lepton candidate in the jet;
   	Jet_leptonPt_     = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->Pt();//Soft Lepton pT, transverse momentum of soft lepton candidate in the jet;
-  	Jet_leptonDeltaR_ = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->DeltaR(*info.ak4jet[i]);//Soft Lepton dR, relative distance in the Î·-phi space of soft lepton candidate in the jet and the jet;
+  	Jet_leptonDeltaR_ = (info.lepjet[i]->Pt() < 0 || info.lepjet[i]->Pt() > 99900) ? 0. : info.lepjet[i]->DeltaR(*info.ak4jet[i]);//Soft Lepton dR, relative distance in the ¦Ç-phi space of soft lepton candidate in the jet and the jet;
   	Jet_neHEF_        = (info.jetNHF[i] < 1.) ? info.jetNHF[i]:1.;//Neutral hadron energy fraction
   	Jet_neEmEF_       = (info.jetNEF[i] < 1.) ? info.jetNEF[i]:1.;//Photon energy fraction
   	//Jet_chMult_       = (Float_t) jetNCH[i];//total number of jet constituents
@@ -298,6 +298,17 @@ public:
 		weightJetsLT.Hjet2 = 	applyWeight(Jets.Hjet2,		weightLT[1]);
 		weightJetsLT.A0jet1 = 	applyWeight(Jets.A0jet1,	weightLT[2]);
 		weightJetsLT.A0jet2 = 	applyWeight(Jets.A0jet2,	weightLT[3]);
+		// swap index by weight pt
+		if (weightJetsLT.Hjet1->Pt()<weightJetsLT.Hjet2->Pt()) {
+			swap(weightJetsLT.Hjet1,weightJetsLT.Hjet2);
+			swap(weightLT[0],weightLT[1]);
+			swap(ind[0],ind[1]);
+		}
+		if (weightJetsLT.A0jet1->Pt()<weightJetsLT.A0jet2->Pt()) {
+			swap(weightJetsLT.A0jet1,weightJetsLT.A0jet2);
+			swap(weightLT[2],weightLT[3]);
+			swap(ind[2],ind[3]);
+		}
 		// CISVV2
 		for (int i=0;i<4;i++) if (ind[i]>=0) vCISVV2[i] = info.CISVV2[ind[i]];
 	}
@@ -397,7 +408,7 @@ public:
 	inline float Pth()	  	{return (*weightJetsLT.Hjet2+*weightJetsLT.Hjet1).Pt();}
 	inline float HdR()    	{return Jets.Hjet1->DeltaR(*Jets.Hjet2);}
 	inline float HdEta()	{return abs(Jets.Hjet1->Eta()-Jets.Hjet2->Eta());}
-	inline float HdPhi()	{return Jets.Hjet1->DeltaPhi(*Jets.Hjet2);}
+	inline float HdPhi()	{return abs(Jets.Hjet1->DeltaPhi(*Jets.Hjet2));}
 	inline float HptAs()	{
 		return pow(weightJetsLT.Hjet2->Pt()*HdR()/Mh(),2);
 	}

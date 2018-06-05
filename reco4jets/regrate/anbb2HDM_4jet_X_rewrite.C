@@ -15,10 +15,11 @@
 #include "../setNCUStyle.C"
 #include "TMVA_regression_nu_Vali_rewrite.h"
 
-#define saveEffi          true
+#define saveEffi        true
 #define basePtEtaCut    true
 #define doGenMatch      0
 #define doBTagCut       false
+#define saveTree        true
 
 # if doGenMatch != 0 
 #include "../../gen2HDMsample/genMatch.C"
@@ -148,6 +149,8 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     
     setNCUStyle(true);
     //gStyle->SetOptTitle(0);
+    //gStyle->SetTitleAlign(33);
+    //gStyle->SetTitleX(.99);
     gStyle->SetOptStat(0001111101.);
     //gStyle->SetOptStat(0);
 
@@ -173,6 +176,7 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     const int ncom = 50;
     //const float x2MaxCut = 50;
     const float x2MaxCut = 100;
+    const int   maxSaveCom = 50;
     const float CISVV2CUT_L = 0.5426;
     const float CISVV2CUT_M = 0.8484;
     const float CISVV2CUT_T = 0.9535;
@@ -354,15 +358,219 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     TH1F* h_zpDeltaPhi_sw   = new TH1F("h_ZptoHA0DeltaPhi_sw", "h_ZptoHA0DeltaPhi_sw", 32,0,3.2);
     TH1F* h_zpDeltaPhi_ws   = new TH1F("h_ZptoHA0DeltaPhi_ws", "h_ZptoHA0DeltaPhi_ws", 32,0,3.2);
     
-    Int_t nPass[20]={0};
+    // declare test TH1 and TH2
     
+    TH1F* ht_x2        = new TH1F("ht_x2","ht_x2",100,0,300);
+    TH1F* ht_x2_LT     = new TH1F("ht_x2_LT","ht_x2_LT",100,0,300);
+    TH1F* ht_x2_all    = new TH1F("ht_x2_all","ht_x2_all",100,0,300);
+    TH1F* ht_x2_h      = new TH1F("ht_x2_h","ht_x2_h",100,-20,80);
+    TH1F* ht_x2_a0     = new TH1F("ht_x2_a0","ht_x2_a0",100,-20,80);
+    TH1F* ht_x2_zp     = new TH1F("ht_x2_zp","ht_x2_zp",100,-20,80);
+    // 2D plot
+    TH2F* ht_x2_ha0    = new TH2F("ht_x2_ha0","ht_x2_ha0",100,-20,80,100,-20,80);
+    TH2F* ht_x2_hzp    = new TH2F("ht_x2_hzp","ht_x2_hzp",100,-20,80,100,-20,80);
+    TH2F* ht_x2_a0zp   = new TH2F("ht_x2_a0zp","ht_x2_a0zp",100,-20,80,100,-20,80);
+    TH2F* ht_x2_ha0_s    = new TH2F("ht_x2_ha0_s","ht_x2_ha0",100,-5,5,100,-5,5);
+    TH2F* ht_x2_hzp_s    = new TH2F("ht_x2_hzp_s","ht_x2_hzp",100,-5,5,100,-5,5);
+    TH2F* ht_x2_a0zp_s   = new TH2F("ht_x2_a0zp_s","ht_x2_a0zp",100,-5,5,100,-5,5);
+    TH2F* ht_x2_ha01    = new TH2F("ht_x2_ha01","ht_x2_ha01",100,-20,80,100,-20,80);
+    TH2F* ht_x2_hzp1    = new TH2F("ht_x2_hzp1","ht_x2_hzp1",100,-20,80,100,-20,80);
+    TH2F* ht_x2_a0zp1   = new TH2F("ht_x2_a0zp1","ht_x2_a0zp1",100,-20,80,100,-20,80);
+    TH2F* ht_x2_ha0_s1    = new TH2F("ht_x2_ha0_s1","ht_x2_ha01",100,-5,5,100,-5,5);
+    TH2F* ht_x2_hzp_s1    = new TH2F("ht_x2_hzp_s1","ht_x2_hzp1",100,-5,5,100,-5,5);
+    TH2F* ht_x2_a0zp_s1   = new TH2F("ht_x2_a0zp_s1","ht_x2_a0zp1",100,-5,5,100,-5,5);
+    // Mass
+    TH1F* ht_hM        = new TH1F("ht_higgsM", "ht_higgsM", 70,60,200);
+    TH1F* ht_hM_sw     = new TH1F("ht_higgsM_sw", "ht_higgsM_sw", 70,60,200);
+    TH1F* ht_hM_ws     = new TH1F("ht_higgsM_ws", "ht_higgsM_ws", 70,60,200);
+    TH1F* ht_hM_LT     = new TH1F("ht_higgsM_ws_LT", "ht_higgsM_ws_LT", 70,60,200);
+    TH1F* ht_a0M       = new TH1F("ht_a0M", "ht_A0M", 50,0,500);
+    TH1F* ht_a0M_sw    = new TH1F("ht_A0M_sw", "ht_A0M_sw", 50,0,500);
+    TH1F* ht_a0M_ws    = new TH1F("ht_A0M_ws", "ht_A0M_ws", 50,0,500);
+    TH1F* ht_a0M_LT    = new TH1F("ht_A0M_ws_LT", "ht_A0M_ws_LT", 50,0,500);
+    TH1F* ht_zpM       = new TH1F("ht_ZpM", "ht_ZpM", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* ht_zpM_sw    = new TH1F("ht_ZpM_sw", "ht_ZpM_sw", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* ht_zpM_ws    = new TH1F("ht_ZpM_ws", "ht_ZpM_ws", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    TH1F* ht_zpM_LT    = new TH1F("ht_ZpM_ws_LT", "ht_ZpM_ws_LT", 50,Zpmass.Atof()-250,Zpmass.Atof()+250);
+    
+    TH1F* ht_hPt       = new TH1F("ht_higgsPt", "ht_higgsPt", 60,0,1200);
+    TH1F* ht_a0Pt      = new TH1F("ht_a0Pt", "ht_A0Pt", 60,0,1200);
+    TH1F* ht_hPt_sw    = new TH1F("ht_higgsPt_sw", "ht_higgsPt_sw", 60,0,1200);
+    TH1F* ht_a0Pt_sw   = new TH1F("ht_a0Pt_sw", "ht_A0Pt_sw", 60,0,1200);
+    TH1F* ht_hPt_ws    = new TH1F("ht_higgsPt_ws", "ht_higgsPt_ws", 60,0,1200);
+    TH1F* ht_a0Pt_ws   = new TH1F("ht_a0Pt_ws", "ht_A0Pt_ws", 60,0,1200);
+    // study the correlation of CISVV2 and different variables
+    TH2F* ht_2d_hpt    = new TH2F("ht_2d_hpt","ht_2d_hpt",60,0,1200,100,0,1);
+    TH2F* ht_2d_hx2    = new TH2F("ht_2d_hx2","ht_2d_hx2",50,0,50,100,0,1);
+    TH2F* ht_2d_hptas  = new TH2F("ht_2d_hptas","ht_2d_hptas",40,0,2,100,0,1);
+    TH2F* ht_2d_hptsd  = new TH2F("ht_2d_hptsd","ht_2d_hptsd",35,0,0.7,100,0,1);
+    TH2F* ht_2d_hdeltaR  = new TH2F("ht_2d_hdeltaR","ht_2d_hdeltaR",40,0,4,100,0,1);
+    TH2F* ht_2d_hdeltaEta = new TH2F("ht_2d_hdeltaEta","ht_2d_hdeltaEta",40,0,4,100,0,1);
+    TH2F* ht_2d_hdeltaPhi = new TH2F("ht_2d_hdeltaPhi","ht_2d_hdeltaPhi",32,0,3.2,100,0,1);
+    TH1F* ht_1d_hpt[3];
+    TH1F* ht_1d_hx2[3];
+    TH1F* ht_1d_hptas[3],*ht_1d_hptsd[3];
+    TH1F* ht_1d_hDeltaR[3],*ht_1d_hDeltaEta[3], *ht_1d_hDeltaPhi[3];
+    for (int i=0;i<3;i++) {
+        string sPt = "ht_1d_hpt" + suffixA[i];
+        string sx2 = "ht_1d_hx2" + suffixA[i];
+        string sptas = "ht_1d_hptas" + suffixA[i];
+        string sptsd = "ht_1d_hptsd" + suffixA[i];
+        string sdeltaR = "ht_1d_hDeltaR" + suffixA[i];
+        string sdeltaEta = "ht_1d_hDeltaEta" + suffixA[i];
+        string sdeltaPhi = "ht_1d_hDeltaPhi" + suffixA[i];
+
+        ht_1d_hpt[i]   = new TH1F(sPt.data(),sPt.data(),60,0,1200);
+        ht_1d_hx2[i]   = new TH1F(sx2.data(),sx2.data(),50,0,50);
+        ht_1d_hptas[i] = new TH1F(sptas.data(),sptas.data(),40,0,2);
+        ht_1d_hptsd[i] = new TH1F(sptsd.data(),sptsd.data(),35,0,0.7);
+        ht_1d_hDeltaR[i] = new TH1F(sdeltaR.data(),sdeltaR.data(),40,0,4);
+        ht_1d_hDeltaEta[i] = new TH1F(sdeltaEta.data(),sdeltaEta.data(),40,0,4);
+        ht_1d_hDeltaPhi[i] = new TH1F(sdeltaPhi.data(),sdeltaPhi.data(),32,0,3.2);
+    }
+    // Assymetry
+    TH1F* ht_hPtAs     = new TH1F("ht_hPtAs","ht_higgsPtAssymetry",40,0,2);
+    TH1F* ht_hPtAs_sw  = new TH1F("ht_hPtAs_sw","ht_higgsPtAssymetry_sw",40,0,2);
+    TH1F* ht_hPtAs_ws  = new TH1F("ht_hPtAs_ws","ht_higgsPtAssymetry_ws",40,0,2);
+    TH1F* ht_a0PtAs    = new TH1F("ht_a0PtAs","ht_A0PtAssymetry",40,0,2);
+    TH1F* ht_a0PtAs_sw = new TH1F("ht_a0PtAs_sw","ht_A0PtAssymetry_sw",40,0,2);
+    TH1F* ht_a0PtAs_ws = new TH1F("ht_a0PtAs_ws","ht_A0PtAssymetry_ws",40,0,2);
+    TH1F* ht_zpPtAs    = new TH1F("ht_zpPtAs","ht_ZpPtAssymetry",60,0,3.0);
+    TH1F* ht_zpPtAs_sw = new TH1F("ht_zpPtAs_sw","ht_ZpPtAssymetry_sw",60,0,3.0);
+    TH1F* ht_zpPtAs_ws = new TH1F("ht_zpPtAs_ws","ht_ZpPtAssymetry_ws",60,0,3.0);
+
+    TH1F* ht_hPtSD     = new TH1F("ht_hPtSD","ht_higgsPtSD",40,0,0.7);
+    TH1F* ht_hPtSD_sw  = new TH1F("ht_hPtSD_sw","ht_higgsPtSD_sw",40,0,0.7);
+    TH1F* ht_hPtSD_ws  = new TH1F("ht_hPtSD_ws","ht_higgsPtSD_ws",40,0,0.7);
+    TH1F* ht_a0PtSD    = new TH1F("ht_a0PtSD","ht_A0PtSD",30,0,0.6);
+    TH1F* ht_a0PtSD_sw = new TH1F("ht_a0PtSD_sw","ht_A0PtSD_sw",30,0,0.6);
+    TH1F* ht_a0PtSD_ws = new TH1F("ht_a0PtSD_ws","ht_A0PtSD_ws",30,0,0.6);
+    TH1F* ht_zpPtSD    = new TH1F("ht_zpPtSD","ht_ZpPtSD",30,0.1,0.7);
+    TH1F* ht_zpPtSD_sw = new TH1F("ht_zpPtSD_sw","ht_ZpPtSD_sw",30,0.1,0.7);
+    TH1F* ht_zpPtSD_ws = new TH1F("ht_zpPtSD_ws","ht_ZpPtSD_ws",30,0.1,0.7);
+    // CISVV2 & weight
+    TH1F *ht_CISVV2_H[4], *ht_CISVV2_A0[4];
+    TH1F *ht_TMVAweight_sw[2];
+    TH1F *ht_TMVAweight_ws[2];
+    /*
+    ht_hM->SetLineColor(kBlue);
+    ht_zpM->SetLineColor(kBlue);
+    ht_hPt->SetLineColor(kBlue);
+    ht_hDeltaR->SetLineColor(kBlue);
+    ht_hDeltaPhi->SetLineColor(kBlue);
+    ht_hDeltaEta->SetLineColor(kBlue);
+    ht_hPtAs->SetLineColor(kBlue);
+    ht_hPtSD->SetLineColor(kBlue);
+    ht_zpDeltaR->SetLineColor(kBlue);
+    ht_zpDeltaPhi->SetLineColor(kBlue);
+    ht_zpDeltaR->SetLineColor(kBlue);
+    ht_zpDeltaEta->SetLineColor(kBlue);
+    ht_zpPtSD->SetLineColor(kBlue);
+    ht_zpPtAs->SetLineColor(kBlue);
+    */
+    for (int i=0;i<2;i++) {
+        ht_CISVV2_H[i]     = new TH1F(Form("ht_CISVV2_Hsw_%d",i),Form("ht_CISVV2_Hsw_%d",i),50,0.5,1);
+        ht_CISVV2_H[2+i]     = new TH1F(Form("ht_CISVV2_Hws_%d",i),Form("ht_CISVV2_Hws_%d",i),50,0.5,1);
+        ht_CISVV2_A0[i]    = new TH1F(Form("ht_CISVV2_A0sw_%d",i),Form("ht_CISVV2_A0sw_%d",i),50,0.5,1);
+        ht_CISVV2_A0[2+i]    = new TH1F(Form("ht_CISVV2_A0ws_%d",i),Form("ht_CISVV2_A0ws_%d",i),50,0.5,1);
+        ht_TMVAweight_ws[i]  = new TH1F(Form("ht_TMVAweightWS_%d",i),Form("ht_TMVAweightWS_%d",i),40,0.0,2);
+        ht_TMVAweight_sw[i]  = new TH1F(Form("ht_TMVAweightSW_%d",i),Form("ht_TMVAweightSW_%d",i),40,0.0,2);
+        
+    }
+    // pf Ratio
+    TH1F* ht_hM_pfRation[3][3]; // high Pt
+    TH1F* ht_hM_pfRationMin[3][3]; 
+    TH1F* ht_hM_pfRationMean[3][3]; 
+    TH1F* ht_a0M_pfRation[3][3]; 
+    TH1F* ht_zpM_pfRation[3][3];
+    for (int i=0;i<3;i++) {
+        for (int j=0;j<3;j++) {
+            string name[3], name_min[3], name_mean[3];
+            for (int k=0;k<3;k++) name[k] = "ht_highPt"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            for (int k=0;k<3;k++) name_min[k] = "ht_min"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            for (int k=0;k<3;k++) name_mean[k] = "ht_mean"+suffixM[k]+suffixA[i]+suffixB[j]; 
+            ht_hM_pfRationMin[i][j] = new TH1F(name_min[0].data(),name_min[0].data(),32,40,200);
+            ht_hM_pfRationMean[i][j] = new TH1F(name_mean[0].data(),name_mean[0].data(),32,40,200);
+            ht_hM_pfRation[i][j] = new TH1F(name[0].data(),name[0].data(),32,40,200);
+            ht_a0M_pfRation[i][j] = new TH1F(name[1].data(),name[1].data(),60,0,600);
+            ht_zpM_pfRation[i][j] = new TH1F(name[2].data(),name[2].data(),80,Zpmass.Atof()-400,Zpmass.Atof()+400);
+            ht_hM_pfRationMin[i][j]->Sumw2();
+            ht_hM_pfRationMean[i][j]->Sumw2();
+            ht_hM_pfRation[i][j]->Sumw2();
+            ht_a0M_pfRation[i][j]->Sumw2();
+            ht_zpM_pfRation[i][j]->Sumw2();
+        }
+    }
+    // Delta R, theta, phi
+    TH1F* ht_hDeltaR         = new TH1F("ht_HiggstobbDeltaR", "ht_HiggstobbDeltaR", 40,0,4);
+    TH1F* ht_hDeltaR_sw      = new TH1F("ht_HiggstobbDeltaR_sw", "ht_HiggstobbDeltaR_sw", 40,0,4);
+    TH1F* ht_hDeltaR_ws      = new TH1F("ht_HiggstobbDeltaR_ws", "ht_HiggstobbDeltaR_ws", 40,0,4);
+    TH1F* ht_a0DeltaR        = new TH1F("ht_A0tobbDeltaR", "ht_A0tobbDeltaR", 40,0,4);
+    TH1F* ht_a0DeltaR_sw     = new TH1F("ht_A0tobbDeltaR_sw", "ht_A0tobbDeltaR_sw", 40,0,4);
+    TH1F* ht_a0DeltaR_ws     = new TH1F("ht_A0tobbDeltaR_ws", "ht_A0tobbDeltaR_ws", 40,0,4);
+    TH1F* ht_zpDeltaR        = new TH1F("ht_ZptoHA0DeltaR", "ht_ZptoHA0DeltaR_reco", 35,1,4.5);
+    TH1F* ht_zpDeltaR_sw     = new TH1F("ht_ZptoHA0DeltaR_sw", "ht_ZptoHA0DeltaR_sw", 35,1,4.5);
+    TH1F* ht_zpDeltaR_ws     = new TH1F("ht_ZptoHA0DeltaR_ws", "ht_ZptoHA0DeltaR_ws", 35,1,4.5);
+
+    TH1F* ht_hDeltaEta       = new TH1F("ht_HiggstobbDeltaEta", "ht_HiggstobbDeltaEta", 40,0,4);
+    TH1F* ht_hDeltaEta_sw    = new TH1F("ht_HiggstobbDeltaEta_sw", "ht_HiggstobbDeltaEta_sw", 40,0,4);
+    TH1F* ht_hDeltaEta_ws    = new TH1F("ht_HiggstobbDeltaEta_ws", "ht_HiggstobbDeltaEta_ws", 40,0,4);
+    TH1F* ht_a0DeltaEta      = new TH1F("ht_A0tobbDeltaEta", "ht_A0tobbDeltaEta", 40,0,4);
+    TH1F* ht_a0DeltaEta_sw   = new TH1F("ht_A0tobbDeltaEta_sw", "ht_A0tobbDeltaEta_sw", 40,0,4);
+    TH1F* ht_a0DeltaEta_ws   = new TH1F("ht_A0tobbDeltaEta_ws", "ht_A0tobbDeltaEta_ws", 40,0,4);
+    TH1F* ht_zpDeltaEta      = new TH1F("ht_ZptoHA0DeltaEta", "ht_ZptoHA0DeltaEta", 40,0,4);
+    TH1F* ht_zpDeltaEta_sw   = new TH1F("ht_ZptoHA0DeltaEta_sw", "ht_ZptoHA0DeltaEta_sw", 40,0,4);
+    TH1F* ht_zpDeltaEta_ws   = new TH1F("ht_ZptoHA0DeltaEta_ws", "ht_ZptoHA0DeltaEta_ws", 40,0,4);
+
+    TH1F* ht_hDeltaPhi       = new TH1F("ht_HiggstobbDeltaPhi", "ht_HiggstobbDeltaPhi", 32,0,3.2);
+    TH1F* ht_hDeltaPhi_sw    = new TH1F("ht_HiggstobbDeltaPhi_sw", "ht_HiggstobbDeltaPhi_sw", 32,0,3.2);
+    TH1F* ht_hDeltaPhi_ws    = new TH1F("ht_HiggstobbDeltaPhi_ws", "ht_HiggstobbDeltaPhi_ws", 32,0,3.2);
+    TH1F* ht_a0DeltaPhi      = new TH1F("ht_A0tobbDeltaPhi", "ht_A0obbDeltaPhi", 32,0,3.2);
+    TH1F* ht_a0DeltaPhi_sw   = new TH1F("ht_A0tobbDeltaPhi_sw", "ht_A0obbDeltaPhi_sw", 32,0,3.2);
+    TH1F* ht_a0DeltaPhi_ws   = new TH1F("ht_A0tobbDeltaPhi_ws", "ht_A0obbDeltaPhi_ws", 32,0,3.2);
+    TH1F* ht_zpDeltaPhi      = new TH1F("ht_ZptoHA0DeltaPhi", "ht_ZptoHA0DeltaPhi", 32,0,3.2);
+    TH1F* ht_zpDeltaPhi_sw   = new TH1F("ht_ZptoHA0DeltaPhi_sw", "ht_ZptoHA0DeltaPhi_sw", 32,0,3.2);
+    TH1F* ht_zpDeltaPhi_ws   = new TH1F("ht_ZptoHA0DeltaPhi_ws", "ht_ZptoHA0DeltaPhi_ws", 32,0,3.2);
+    // end of declate
+    
+    Int_t nPass[20]={0};
+    TFile *ftree;
+    TTree *tree;
+    Int_t nCom, nGoodJets;
+    Float_t CISVV2_Hb1[maxSaveCom], CISVV2_Hb2[maxSaveCom], CISVV2_A0b1[maxSaveCom], CISVV2_A0b2[maxSaveCom];
+    Float_t TMVAweight_Hb1[maxSaveCom], TMVAweight_Hb2[maxSaveCom], TMVAweight_A0b1[maxSaveCom], TMVAweight_A0b2[maxSaveCom];
+    Float_t Mh[maxSaveCom], Mh_weightLT[maxSaveCom], Mh_weight[maxSaveCom];
+    Float_t hPt[maxSaveCom], hDeltaR[maxSaveCom], hDeltaPhi[maxSaveCom], hDeltaEta[maxSaveCom], hptAs[maxSaveCom], hsdAs[maxSaveCom];
+    if (saveTree) {
+        ftree = new TFile(Form("tree_%d.root",w),"recreate");
+        tree  = new TTree("tree","tree");
+        tree->Branch("nGoodJets",&nGoodJets,"nGoodJets/I");
+        tree->Branch("nCom",&nCom,"nCom/I");
+        tree->Branch("CISVV2_Hb1",CISVV2_Hb1,"CISVV2_Hb1[nCom]/F");
+        tree->Branch("CISVV2_Hb2",CISVV2_Hb2,"CISVV2_Hb2[nCom]/F");
+        tree->Branch("CISVV2_A0b1",CISVV2_A0b1,"CISVV2_A0b1[nCom]/F");
+        tree->Branch("CISVV2_A0b2",CISVV2_A0b2,"CISVV2_A0b2[nCom]/F");
+        tree->Branch("TMVAweightLT_Hb1",TMVAweight_Hb1,"TMVAweightLT_Hb1[nCom]/F");
+        tree->Branch("TMVAweightLT_Hb2",TMVAweight_Hb2,"TMVAweightLT_Hb2[nCom]/F");
+        tree->Branch("TMVAweightLT_A0b1",TMVAweight_A0b1,"TMVAweightLT_A0b1[nCom]/F");
+        tree->Branch("TMVAweightLT_A0b2",TMVAweight_A0b2,"TMVAweightLT_A0b2[nCom]/F");
+        tree->Branch("Mh",Mh,"Mh[nCom]/F");
+        tree->Branch("Mh_weight",Mh_weight,"Mh_weight[nCom]/F");
+        tree->Branch("Mh_weightLT",Mh_weightLT,"Mh_weightLT[nCom]/F");
+        tree->Branch("hPt",hPt,"hPt[nCom]/F");
+        tree->Branch("hDeltaR",hDeltaR,"hDeltaR[nCom]/F");
+        tree->Branch("hDeltaPhi",hDeltaPhi,"hDeltaPhi[nCom]/F");
+        tree->Branch("hDeltaEta",hDeltaEta,"hDeltaEta[nCom]/F");
+        tree->Branch("hptAs",hptAs,"hptAs[nCom]/F");
+        tree->Branch("hsdAs",hsdAs,"hsdAs[nCom]/F");
+    }
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
         if (jEntry %500 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
         //if (jEntry >= 10) break;
         data.GetEntry(jEntry);
         //if (jEntry>50) break; 
-        //if (jEntry>1000) break; 
+        //if (jEntry>100) break; 
         nPass[0]++;
         h_allEvent->Fill(1);
         
@@ -390,6 +598,7 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         for (int i=0;i<nGenJet;i++) {
             if (!vPassID_L[i]) continue;
             //if (CISVV2[i]<CISVV2CUT_L) continue;
+            if (CISVV2[i]<0) continue;
             thisJet = (TLorentzVector*)genjetP4->At(i);
             if (thisJet->Pt()<30) continue;
             if (thisJet->Eta()>2.4) continue;
@@ -398,7 +607,8 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         h_NgoodJets->Fill(goodJet.size());
         if (goodJet.size()<4) continue;
         nPass[2]++;
-        TMVAinputInfo info(data,1);
+        nGoodJets = goodJet.size();
+        TMVAinputInfo info(data,doGenMatch);
         
         static vector<HA0JetInfo> fourJetList;
         static HA0JetInfo minX2, minWeightX2, minWeightX2_2, minWeight_LT; 
@@ -438,98 +648,220 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         }
         h_Ncom->Fill(fourJetList.size());
         if (fourJetList.size()<1) continue;
+        nPass[3]++;
         sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
-        // higgs high pt
-        if (fourJetList[0].isCISVV2_L(0)) h_hM_pfRation[1][0]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRation[0][0]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isCISVV2_M(0)) h_hM_pfRation[1][1]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRation[0][1]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isCISVV2_T(0)) h_hM_pfRation[1][2]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRation[0][2]->Fill(fourJetList[0].Mh(2));
-        // higgs min CISVV2
-        if (fourJetList[0].isMinCISVV2_L(0)) h_hM_pfRationMin[1][0]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMin[0][0]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isMinCISVV2_M(0)) h_hM_pfRationMin[1][1]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMin[0][1]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isMinCISVV2_T(0)) h_hM_pfRationMin[1][2]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMin[0][2]->Fill(fourJetList[0].Mh(2));
-        // higgs mean CISVV2
-        if (fourJetList[0].isMeanCISVV2_L(0)) h_hM_pfRationMean[1][0]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMean[0][0]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isMeanCISVV2_M(0)) h_hM_pfRationMean[1][1]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMean[0][1]->Fill(fourJetList[0].Mh(2));
-        if (fourJetList[0].isMeanCISVV2_T(0)) h_hM_pfRationMean[1][2]->Fill(fourJetList[0].Mh(2));
-        else h_hM_pfRationMean[0][2]->Fill(fourJetList[0].Mh(2));
+        if (nPass[3]%2) {
+            // higgs high pt
+            if (fourJetList[0].isCISVV2_L(0)) h_hM_pfRation[1][0]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRation[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isCISVV2_M(0)) h_hM_pfRation[1][1]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRation[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isCISVV2_T(0)) h_hM_pfRation[1][2]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRation[0][2]->Fill(fourJetList[0].Mh(2));
+            // higgs min CISVV2
+            if (fourJetList[0].isMinCISVV2_L(0)) h_hM_pfRationMin[1][0]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMin[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMinCISVV2_M(0)) h_hM_pfRationMin[1][1]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMin[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMinCISVV2_T(0)) h_hM_pfRationMin[1][2]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMin[0][2]->Fill(fourJetList[0].Mh(2));
+            // higgs mean CISVV2
+            if (fourJetList[0].isMeanCISVV2_L(0)) h_hM_pfRationMean[1][0]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMean[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMeanCISVV2_M(0)) h_hM_pfRationMean[1][1]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMean[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMeanCISVV2_T(0)) h_hM_pfRationMean[1][2]->Fill(fourJetList[0].Mh(2));
+            else h_hM_pfRationMean[0][2]->Fill(fourJetList[0].Mh(2));
+            
+            // save something to test variable
+          
+            h_2d_hpt->Fill(fourJetList[0].Pth(),fourJetList[0].xSqure(2,2));
+            h_2d_hx2->Fill(fourJetList[0].xSqure(2,2),fourJetList[0].xSqure(2,2));
+            h_2d_hptas->Fill(fourJetList[0].HptAs(),fourJetList[0].xSqure(2,2));
+            h_2d_hptsd->Fill(fourJetList[0].HptSD(),fourJetList[0].xSqure(2,2));
+            h_2d_hdeltaR->Fill(fourJetList[0].HdR(),fourJetList[0].xSqure(2,2)); 
+            h_2d_hdeltaEta->Fill(fourJetList[0].HdEta(),fourJetList[0].xSqure(2,2));
+            h_2d_hdeltaPhi->Fill(fourJetList[0].HdPhi(),fourJetList[0].xSqure(2,2));
+            int isPass = fourJetList[0].isCISVV2_L(0);
+            h_1d_hpt[isPass]->Fill(fourJetList[0].Pth());
+            h_1d_hx2[isPass]->Fill(fourJetList[0].xSqure(2,2));
+            h_1d_hptas[isPass]->Fill(fourJetList[0].HptAs());
+            h_1d_hptsd[isPass]->Fill(fourJetList[0].HptSD());
+            h_1d_hDeltaR[isPass]->Fill(fourJetList[0].HdR());
+            h_1d_hDeltaEta[isPass]->Fill(fourJetList[0].HdEta());
+            h_1d_hDeltaPhi[isPass]->Fill(fourJetList[0].HdPhi());
+        }
+        else {
+            // higgs high pt
+            if (fourJetList[0].isCISVV2_L(0)) ht_hM_pfRation[1][0]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRation[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isCISVV2_M(0)) ht_hM_pfRation[1][1]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRation[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isCISVV2_T(0)) ht_hM_pfRation[1][2]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRation[0][2]->Fill(fourJetList[0].Mh(2));
+            // higgs min CISVV2
+            if (fourJetList[0].isMinCISVV2_L(0)) ht_hM_pfRationMin[1][0]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMin[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMinCISVV2_M(0)) ht_hM_pfRationMin[1][1]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMin[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMinCISVV2_T(0)) ht_hM_pfRationMin[1][2]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMin[0][2]->Fill(fourJetList[0].Mh(2));
+            // higgs mean CISVV2
+            if (fourJetList[0].isMeanCISVV2_L(0)) ht_hM_pfRationMean[1][0]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMean[0][0]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMeanCISVV2_M(0)) ht_hM_pfRationMean[1][1]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMean[0][1]->Fill(fourJetList[0].Mh(2));
+            if (fourJetList[0].isMeanCISVV2_T(0)) ht_hM_pfRationMean[1][2]->Fill(fourJetList[0].Mh(2));
+            else ht_hM_pfRationMean[0][2]->Fill(fourJetList[0].Mh(2));
+            
+            // save something to test variable
+          
+            ht_2d_hpt->Fill(fourJetList[0].Pth(),fourJetList[0].xSqure(2,2));
+            ht_2d_hx2->Fill(fourJetList[0].xSqure(2,2),fourJetList[0].xSqure(2,2));
+            ht_2d_hptas->Fill(fourJetList[0].HptAs(),fourJetList[0].xSqure(2,2));
+            ht_2d_hptsd->Fill(fourJetList[0].HptSD(),fourJetList[0].xSqure(2,2));
+            ht_2d_hdeltaR->Fill(fourJetList[0].HdR(),fourJetList[0].xSqure(2,2)); 
+            ht_2d_hdeltaEta->Fill(fourJetList[0].HdEta(),fourJetList[0].xSqure(2,2));
+            ht_2d_hdeltaPhi->Fill(fourJetList[0].HdPhi(),fourJetList[0].xSqure(2,2));
+            int isPass = fourJetList[0].isCISVV2_L(0);
+            ht_1d_hpt[isPass]->Fill(fourJetList[0].Pth());
+            ht_1d_hx2[isPass]->Fill(fourJetList[0].xSqure(2,2));
+            ht_1d_hptas[isPass]->Fill(fourJetList[0].HptAs());
+            ht_1d_hptsd[isPass]->Fill(fourJetList[0].HptSD());
+            ht_1d_hDeltaR[isPass]->Fill(fourJetList[0].HdR());
+            ht_1d_hDeltaEta[isPass]->Fill(fourJetList[0].HdEta());
+            ht_1d_hDeltaPhi[isPass]->Fill(fourJetList[0].HdPhi());
         
-        // save something to test variable
-      
-        h_2d_hpt->Fill(fourJetList[0].Pth(),fourJetList[0].xSqure(2,2));
-        h_2d_hx2->Fill(fourJetList[0].xSqure(2,2),fourJetList[0].xSqure(2,2));
-        h_2d_hptas->Fill(fourJetList[0].HptAs(),fourJetList[0].xSqure(2,2));
-        h_2d_hptsd->Fill(fourJetList[0].HptSD(),fourJetList[0].xSqure(2,2));
-        h_2d_hdeltaR->Fill(fourJetList[0].HdR(),fourJetList[0].xSqure(2,2)); 
-        h_2d_hdeltaEta->Fill(fourJetList[0].HdEta(),fourJetList[0].xSqure(2,2));
-        h_2d_hdeltaPhi->Fill(fourJetList[0].HdPhi(),fourJetList[0].xSqure(2,2));
-        int isPass = fourJetList[0].isCISVV2_L(0);
-        h_1d_hpt[isPass]->Fill(fourJetList[0].Pth());
-        h_1d_hx2[isPass]->Fill(fourJetList[0].xSqure(2,2));
-        h_1d_hptas[isPass]->Fill(fourJetList[0].HptAs());
-        h_1d_hptsd[isPass]->Fill(fourJetList[0].HptSD());
-        h_1d_hDeltaR[isPass]->Fill(fourJetList[0].HdR());
-        h_1d_hDeltaEta[isPass]->Fill(fourJetList[0].HdEta());
-        h_1d_hDeltaPhi[isPass]->Fill(fourJetList[0].HdPhi());
+        }
+        // save tree variables
+        nCom = (fourJetList.size()>maxSaveCom)?maxSaveCom:fourJetList.size();
+        if (saveTree) {
+            for (int i=0;i<nCom;i++) {
+                Mh[i] = fourJetList[i].Mh();
+                Mh_weight[i] = fourJetList[i].Mh(1);
+                Mh_weightLT[i] = fourJetList[i].Mh(2);
+                hPt[i] = fourJetList[i].Pth();
+                hDeltaR[i] = fourJetList[i].HdR();
+                hDeltaPhi[i] = fourJetList[i].HdPhi();
+                hDeltaEta[i] = fourJetList[i].HdEta();
+                hptAs[i] = fourJetList[i].HptAs();
+                hsdAs[i] = fourJetList[i].HptSD();
+                TMVAweight_Hb1[i] = fourJetList[i].getWeightLT(0);
+                TMVAweight_Hb2[i] = fourJetList[i].getWeightLT(1);
+                TMVAweight_A0b1[i] = fourJetList[i].getWeightLT(2);
+                TMVAweight_A0b2[i] = fourJetList[i].getWeightLT(3);
+                CISVV2_Hb1[i] = fourJetList[i].getCISVV2(0);
+                CISVV2_Hb2[i] = fourJetList[i].getCISVV2(1);
+                CISVV2_A0b1[i] = fourJetList[i].getCISVV2(2);
+                CISVV2_A0b2[i] = fourJetList[i].getCISVV2(3);
+            }
+        }
+        if (saveTree) tree->Fill();
         // remain old code
         for (unsigned int i=0;i<fourJetList.size();i++) if (!fourJetList[i].isMinCISVV2_L(0)) fourJetList.erase(fourJetList.begin()+i); 
         if (fourJetList.size()<1) continue;
+        nPass[4]++;
         // Fill hist
-        for (size_t i=0;i<fourJetList.size();i++) {
-            h_x2_all->Fill(fourJetList[i].xSqure()); 
-            h_x2_ha0->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
-            h_x2_hzp->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
-            h_x2_a0zp->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
-            h_x2_ha0_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
-            h_x2_hzp_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
-            h_x2_a0zp_s->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
-        }
-        nPass[3]++;
-        sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
-        minX2       = fourJetList[0];
-        //sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
-        //minWeightX2 = fourJetList[0];
-        sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare_2); 
-        minWeightX2_2 = fourJetList[0];
-        sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
-        minWeight_LT = fourJetList[0];
-        // fill 2D plot
-        h_x2_ha01->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
-        h_x2_hzp1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
-        h_x2_a0zp1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
-        h_x2_ha0_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
-        h_x2_hzp_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
-        h_x2_a0zp_s1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
-        // fill TH1F
-        h_x2_h->Fill(minWeight_LT.xSquare_Xpar(0));
-        h_x2_a0->Fill(minWeight_LT.xSquare_Xpar(1));
-        h_x2_zp->Fill(minWeight_LT.xSquare_Xpar(2));
+        // divide into 2 parts
+        if (nPass[4]%2) {
+            for (size_t i=0;i<fourJetList.size();i++) {
+                h_x2_all->Fill(fourJetList[i].xSqure()); 
+                h_x2_ha0->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+                h_x2_hzp->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+                h_x2_a0zp->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+                h_x2_ha0_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+                h_x2_hzp_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+                h_x2_a0zp_s->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+            }
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
+            minX2       = fourJetList[0];
+            //sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
+            //minWeightX2 = fourJetList[0];
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare_2); 
+            minWeightX2_2 = fourJetList[0];
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
+            minWeight_LT = fourJetList[0];
+            // fill 2D plot
+            h_x2_ha01->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+            h_x2_hzp1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+            h_x2_a0zp1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
+            h_x2_ha0_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+            h_x2_hzp_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+            h_x2_a0zp_s1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
+            // fill TH1F
+            h_x2_h->Fill(minWeight_LT.xSquare_Xpar(0));
+            h_x2_a0->Fill(minWeight_LT.xSquare_Xpar(1));
+            h_x2_zp->Fill(minWeight_LT.xSquare_Xpar(2));
 
-        // Mass 
-        h_hM->Fill(minX2.Mh());
-        //h_hM_sw->Fill(minWeightX2.Mh(1));
-        h_hM_ws->Fill(minWeightX2_2.Mh(1));
-        h_hM_LT->Fill(minWeight_LT.Mh(2));
-        //cout << "MA0 " << minX2.MA0() << "\t" << minX2.MA0(1) << "\t" << minWeightX2.MA0(1) << endl;
-        h_a0M->Fill(minX2.MA0());
-        //h_a0M_sw->Fill(minWeightX2.MA0(1));
-        h_a0M_ws->Fill(minWeightX2_2.MA0(1));
-        h_a0M_LT->Fill(minWeight_LT.MA0(2));
-        h_zpM->Fill(minX2.MZp());
-        //h_zpM_sw->Fill(minWeightX2.MZp(1,0));
-        h_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
-        h_zpM_LT->Fill(minWeight_LT.MZp(2,2));
-        // x2
-        h_x2_LT->Fill(minWeight_LT.xSqure());
-        h_x2->Fill(minWeightX2_2.xSqure());
-        // Pt
+            // Mass 
+            h_hM->Fill(minX2.Mh());
+            //h_hM_sw->Fill(minWeightX2.Mh(1));
+            h_hM_ws->Fill(minWeightX2_2.Mh(1));
+            h_hM_LT->Fill(minWeight_LT.Mh(2));
+            //cout << "MA0 " << minX2.MA0() << "\t" << minX2.MA0(1) << "\t" << minWeightX2.MA0(1) << endl;
+            h_a0M->Fill(minX2.MA0());
+            //h_a0M_sw->Fill(minWeightX2.MA0(1));
+            h_a0M_ws->Fill(minWeightX2_2.MA0(1));
+            h_a0M_LT->Fill(minWeight_LT.MA0(2));
+            h_zpM->Fill(minX2.MZp());
+            //h_zpM_sw->Fill(minWeightX2.MZp(1,0));
+            h_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
+            h_zpM_LT->Fill(minWeight_LT.MZp(2,2));
+            // x2
+            h_x2_LT->Fill(minWeight_LT.xSqure());
+            h_x2->Fill(minWeightX2_2.xSqure());
+            // Pt
+        }
+        else {
+        
+            for (size_t i=0;i<fourJetList.size();i++) {
+                ht_x2_all->Fill(fourJetList[i].xSqure()); 
+                ht_x2_ha0->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+                ht_x2_hzp->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+                ht_x2_a0zp->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+                ht_x2_ha0_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(1));
+                ht_x2_hzp_s->Fill(fourJetList[i].xSquare_Xpar(0),fourJetList[i].xSquare_Xpar(2));
+                ht_x2_a0zp_s->Fill(fourJetList[i].xSquare_Xpar(1),fourJetList[i].xSquare_Xpar(2));
+            }
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquare);
+            minX2       = fourJetList[0];
+            //sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare);
+            //minWeightX2 = fourJetList[0];
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyWeightxSquare_2); 
+            minWeightX2_2 = fourJetList[0];
+            sort(fourJetList.begin(),fourJetList.end(),sortListbyxSquareLT);
+            minWeight_LT = fourJetList[0];
+            // fill 2D plot
+            ht_x2_ha01->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+            ht_x2_hzp1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+            ht_x2_a0zp1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
+            ht_x2_ha0_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(1));
+            ht_x2_hzp_s1->Fill(minWeight_LT.xSquare_Xpar(0),minWeight_LT.xSquare_Xpar(2));
+            ht_x2_a0zp_s1->Fill(minWeight_LT.xSquare_Xpar(1),minWeight_LT.xSquare_Xpar(2));
+            // fill TH1F
+            ht_x2_h->Fill(minWeight_LT.xSquare_Xpar(0));
+            ht_x2_a0->Fill(minWeight_LT.xSquare_Xpar(1));
+            ht_x2_zp->Fill(minWeight_LT.xSquare_Xpar(2));
+
+            // Mass 
+            ht_hM->Fill(minX2.Mh());
+            //ht_hM_sw->Fill(minWeightX2.Mh(1));
+            ht_hM_ws->Fill(minWeightX2_2.Mh(1));
+            ht_hM_LT->Fill(minWeight_LT.Mh(2));
+            //cout << "MA0 " << minX2.MA0() << "\t" << minX2.MA0(1) << "\t" << minWeightX2.MA0(1) << endl;
+            ht_a0M->Fill(minX2.MA0());
+            //ht_a0M_sw->Fill(minWeightX2.MA0(1));
+            ht_a0M_ws->Fill(minWeightX2_2.MA0(1));
+            ht_a0M_LT->Fill(minWeight_LT.MA0(2));
+            ht_zpM->Fill(minX2.MZp());
+            //ht_zpM_sw->Fill(minWeightX2.MZp(1,0));
+            ht_zpM_ws->Fill(minWeightX2_2.MZp(1,1));
+            ht_zpM_LT->Fill(minWeight_LT.MZp(2,2));
+            // x2
+            ht_x2_LT->Fill(minWeight_LT.xSqure());
+            ht_x2->Fill(minWeightX2_2.xSqure());
+            // Pt
+        }
         // delete pointer
         for (size_t i=0;i<fourJetList.size();i++) fourJetList[i].Release();
         /*
@@ -624,6 +956,11 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     h_zpPtSD->SetMaximum(1000);
     h_zpPtAs_ori->SetMaximum(150); 
     */
+    if (saveTree) {
+        tree->Write();
+        ftree->Close();
+    
+    }
     h_x2_all->SetXTitle("#chi^{2}");
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
@@ -644,7 +981,7 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
     h_1d_hDeltaEta[2]->Divide(h_1d_hDeltaEta[1],h_1d_hDeltaEta[0]);
     h_1d_hDeltaPhi[2]->Divide(h_1d_hDeltaPhi[1],h_1d_hDeltaPhi[0]);
     for(int i=0;i<20;i++) if(nPass[i]>0) std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;
-    efferr(nPass[3],nTotal);
+    efferr(nPass[4],nTotal);
     TLegend* leg = new TLegend(0.68,0.8,0.9,0.9);
     //leg->AddEntry(h_hM,"TMVA Reweight");
     //leg->AddEntry(h_hM_ori,"origin");
@@ -853,6 +1190,8 @@ void anbb2HDM_4jet_X_rewrite(int w=0, std::string inputFile="2HDM_MZp1000_MA0300
         for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_a0M_pfRation[i][j]->Write();
         for (int i=0;i<3;i++) for (int j=0;j<3;j++)  h_zpM_pfRation[i][j]->Write();
 
+        if (saveTree) {
+        }
         /*
         h_hPt->Write();
         h_a0Pt->Write();
