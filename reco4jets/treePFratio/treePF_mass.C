@@ -74,10 +74,13 @@ void treePF_mass(bool doscan = false) {
         h_hptas[i]->Sumw2();
         h_hsdas[i]->Sumw2();
     }
-
+    TH1F* h_Mh_bin1 = new TH1F("h_Mh_bin1","h_Mh_bin1",20,90,160);
+    TH1F* h_Mh_bin2 = new TH1F("h_Mh_bin2","h_Mh_bin2",20,90,160);
+    
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     const float L2016=35.9*1000;//35.9 fb^-1
     const int maxCom = 50;
+    int nE = 0;
     string fName[] = {"tree_QCD_TMVA_HT50to100.root","tree_QCD_TMVA_HT100to200.root","tree_QCD_TMVA_HT200to300.root","tree_QCD_TMVA_HT300to500.root","tree_QCD_TMVA_HT500to700.root","tree_QCD_TMVA_HT700to1000.root","tree_QCD_TMVA_HT1000to1500.root","tree_QCD_TMVA_HT1500to2000.root","tree_QCD_TMVA_HT2000toInf.root"};
     Float_t CISVV2, CISVV2_1[maxCom], CISVV2_2[maxCom];
     Float_t hPt[maxCom],Mh[maxCom],hDeltaR[maxCom],hDeltaEta[maxCom], hDeltaPhi[maxCom],hptas[maxCom],hsdas[maxCom];
@@ -109,6 +112,7 @@ void treePF_mass(bool doscan = false) {
             bool isPass = false;
             int ind = 0;
             int find = -1;
+            // search pass events
             for (int j=0;j<nCom;j++) {
                 if (Mh[j]<90||Mh[j]>160) continue;
                 if (CISVV2_1[j]>=CISVV2_CUT) {
@@ -126,25 +130,14 @@ void treePF_mass(bool doscan = false) {
                     }
                 }
             }
-            if (isPass) {
-                h_Mh[i%2*2+isPass]->Fill(Mh[ind],b);
-                h_hPt[i%2*2+isPass]->Fill(hPt[ind],b);
-                h_hDeltaR[i%2*2+isPass]->Fill(hDeltaR[ind],b);
-                h_hDeltaPhi[i%2*2+isPass]->Fill(hDeltaPhi[ind],b);
-                h_hDeltaEta[i%2*2+isPass]->Fill(hDeltaEta[ind],b);
-                h_hptas[i%2*2+isPass]->Fill(hptas[ind],b);
-                h_hsdas[i%2*2+isPass]->Fill(hsdas[ind],b);
-            }
-            else {
-                if (find<0) continue;
-                h_Mh[i%2*2+isPass]->Fill(Mh[find],b);
-                h_hPt[i%2*2+isPass]->Fill(hPt[find],b);
-                h_hDeltaR[i%2*2+isPass]->Fill(hDeltaR[find],b);
-                h_hDeltaPhi[i%2*2+isPass]->Fill(hDeltaPhi[find],b);
-                h_hDeltaEta[i%2*2+isPass]->Fill(hDeltaEta[find],b);
-                h_hptas[i%2*2+isPass]->Fill(hptas[find],b);
-                h_hsdas[i%2*2+isPass]->Fill(hsdas[find],b);
-            }
+            if (!isPass&&find<0) continue;
+            h_Mh[i%2*2+isPass]->Fill(Mh[ind],b);
+            h_hPt[i%2*2+isPass]->Fill(hPt[ind],b);
+            h_hDeltaR[i%2*2+isPass]->Fill(hDeltaR[ind],b);
+            h_hDeltaPhi[i%2*2+isPass]->Fill(hDeltaPhi[ind],b);
+            h_hDeltaEta[i%2*2+isPass]->Fill(hDeltaEta[ind],b);
+            h_hptas[i%2*2+isPass]->Fill(hptas[ind],b);
+            h_hsdas[i%2*2+isPass]->Fill(hsdas[ind],b);
         }
         f->Close();
         if (!doscan)break;
@@ -179,15 +172,15 @@ void treePF_mass(bool doscan = false) {
     leg->AddEntry(f2_s,Form("2nd order poly, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
     leg->Draw();
     c1->Print(fileName.data());
-    h_Mh[5] = applyRatio(h_Mh[2],f1_s);
-    h_Mh[6] = applyRatio(h_Mh[2],f2_s);
-    h_Mh[5]->SetLineColor(kRed);
+    h_Mh_bin1 = applyRatio(h_Mh[2],f1_s);
+    h_Mh_bin2 = applyRatio(h_Mh[2],f2_s);
+    h_Mh_bin1->SetLineColor(kRed);
     h_Mh[3]->SetLineColor(kBlue);
-    h_Mh[6]->SetLineColor(kCyan);
-    setMax(h_Mh[3],h_Mh[5],h_Mh[6]);
+    h_Mh_bin2->SetLineColor(kCyan);
+    setMax(h_Mh[3],h_Mh_bin1,h_Mh_bin2);
     h_Mh[3]->Draw("e");
-    h_Mh[5]->Draw("esame");
-    h_Mh[6]->Draw("esame");
+    h_Mh_bin1->Draw("esame");
+    h_Mh_bin2->Draw("esame");
     leg->Draw();
     c1->Print(fileName.data());
     
@@ -215,7 +208,7 @@ void treePF_mass(bool doscan = false) {
         t1->SetBranchAddress("hptAs",hptas);
         t1->SetBranchAddress("hsdAs",hsdas);
         for (int i=0;i<t1->GetEntries();i++) {
-            if (!i%2) continue;
+            if (i%2==0) continue;
             t1->GetEntry(i);
             bool isPass = false;
             int find = -1;
@@ -227,6 +220,7 @@ void treePF_mass(bool doscan = false) {
                     break;
                 }
             }
+            // veto pass, leave fail
             if (isPass) continue;
             for (int j=0;j<nCom;j++) {
                 if (Mh[j]<90||Mh[j]>160) continue;
@@ -238,6 +232,7 @@ void treePF_mass(bool doscan = false) {
             if (find<0) continue;
             bw = b*f1_s->Eval(Mh[find]);
             b2 = b*f2_s->Eval(Mh[find]);
+            h_Mh[5]->Fill(Mh[find],bw);
             h_hPt[5]->Fill(hPt[find],bw);
             h_hDeltaR[5]->Fill(hDeltaR[find],bw);
             h_hDeltaPhi[5]->Fill(hDeltaPhi[find],bw);
@@ -245,6 +240,7 @@ void treePF_mass(bool doscan = false) {
             h_hptas[5]->Fill(hptas[find],bw);
             h_hsdas[5]->Fill(hsdas[find],bw);
             
+            h_Mh[6]->Fill(Mh[find],b2);
             h_hPt[6]->Fill(hPt[find],b2);
             h_hDeltaR[6]->Fill(hDeltaR[find],b2);
             h_hDeltaPhi[6]->Fill(hDeltaPhi[find],b2);
@@ -255,12 +251,14 @@ void treePF_mass(bool doscan = false) {
         f->Close();
         if (!doscan)break;
     } //end of fill
+    h_Mh[5]->SetLineColor(kRed);
     h_hPt[5]->SetLineColor(kRed);
     h_hDeltaR[5]->SetLineColor(kRed);
     h_hDeltaEta[5]->SetLineColor(kRed);
     h_hDeltaPhi[5]->SetLineColor(kRed);
     h_hptas[5]->SetLineColor(kRed);
     h_hsdas[5]->SetLineColor(kRed);
+    h_Mh[6]->SetLineColor(kCyan);
     h_hPt[6]->SetLineColor(kCyan);
     h_hDeltaR[6]->SetLineColor(kCyan);
     h_hDeltaEta[6]->SetLineColor(kCyan);
@@ -276,6 +274,12 @@ void treePF_mass(bool doscan = false) {
     leg->AddEntry(h_hPt[3],"pass");
     leg->AddEntry(h_hPt[5],"fail*p/f (linier)");
     leg->AddEntry(h_hPt[6],"fail*p/f (2nd poly)");
+    setMax(h_Mh[3],h_Mh[5],h_Mh[6]);
+    h_Mh[3]->Draw("e");
+    h_Mh[5]->Draw("esame");
+    h_Mh[6]->Draw("esame");
+    leg->Draw();
+    c1->Print(fileName.data());
     setMax(h_hPt[3],h_hPt[5],h_hPt[6]);
     h_hPt[3]->Draw("e");
     h_hPt[5]->Draw("esame");
