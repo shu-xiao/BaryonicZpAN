@@ -1,4 +1,5 @@
 #include <iostream>
+#include "../setNCUStyle.C"
 #define CISVV2_CUT 0.5426
 using namespace std;
 bool doReject = true;
@@ -6,8 +7,8 @@ void setMax(TH1F* h1, TH1F* h2) {
     float max = h1->GetMaximum();
     float max2 = h2->GetMaximum();
     if (max<max2) max = max2;
-    h1->SetMaximum(max*1.1);
-    h2->SetMaximum(max*1.1);
+    h1->SetMaximum(max*1.05);
+    h2->SetMaximum(max*1.05);
 }
 void setMax(TH1F* h1, TH1F* h2,TH1F* h3) {
     float max = h1->GetMaximum();
@@ -45,6 +46,59 @@ TH1F* applyRatio(TH1F *hfail,TF1* fratio){
         //}
     }
     return hclone;
+}
+void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfRatioCompare.pdf") {
+    //setNCUStyle(0);
+    setMax(h1,h2);
+    TCanvas* c3 = new TCanvas("c3","c3",3);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+    c3->Divide(1,2,0.01,0.01);
+    c3->cd(1);
+    TH1F* h_copy = new TH1F(*h2);
+    h_copy->Divide(h1);
+    h2->SetLineColor(kBlack);
+    h1->SetLineColor(kBlue);
+    h1->GetYaxis()->SetTitle("A.U.");
+    h1->GetXaxis()->SetTitle(title.data());
+    c3->GetPad(1)->SetLeftMargin(0.12);
+    c3->GetPad(2)->SetLeftMargin(0.12);
+    c3->GetPad(1)->SetBottomMargin(0.12);
+    h1->GetYaxis()->SetTitleSize(0.05);
+    h1->GetXaxis()->SetTitleSize(0.05);
+    //h1->GetXaxis()->SetTitleOffset(0.4);
+    //h1->GetYaxis()->SetTitleOffset(0.4);
+    h2->SetStats(0);
+    h1->Draw("e");
+    h2->Draw("esame");
+    // legend
+    TLegend leg(0.5,0.7,0.88,0.85);
+    TString htitle = h1->GetTitle();
+    if (htitle.Contains("weight2")) leg.AddEntry(h1,"p/f(parabola funciton fit)*f");
+    else leg.AddEntry(h1,"p/f(linear function fit)*f");
+    leg.AddEntry(h2,"pass");
+    leg.SetBorderSize(0);
+    leg.Draw();
+    // ratio
+    c3->cd(2);
+    c3->GetPad(2)->SetGridy();
+    c3->GetPad(2)->SetPad(0.0,0.0,1,0.3);
+    c3->GetPad(1)->SetPad(0.0,0.3,1,1);
+    c3->GetPad(1)->SetTicks();
+    c3->GetPad(2)->SetTicks();
+    h_copy->GetYaxis()->SetRangeUser(0,3);
+    h_copy->GetYaxis()->SetTitle("Ratio");
+    h_copy->GetYaxis()->CenterTitle();
+    h_copy->SetLineColor(kBlack);
+    h_copy->GetXaxis()->SetLabelSize(0);
+    h_copy->GetYaxis()->SetLabelSize(0.1);
+    h_copy->GetYaxis()->SetTitleSize(0.1);
+    h_copy->GetYaxis()->SetTitleOffset(0.5);
+    h_copy->Draw("e");
+    if (io==1) c3->Print((fileName+"[").data());
+    c3->Print(fileName.data());
+    if (io==2) c3->Print((fileName+"]").data());
+    delete c3;
 }
 void treePF_mass(bool doscan = false) {
     
@@ -317,4 +371,19 @@ void treePF_mass(bool doscan = false) {
     leg->Draw();
     c1->Print(fileName.data());
     c1->Print((fileName+"]").data());
+    drawDiff(h_Mh[5],h_Mh[3],"M_{h}",1);
+    drawDiff(h_Mh[6],h_Mh[3],"M_{h}");
+    drawDiff(h_hPt[5],h_hPt[3],"h Pt");
+    drawDiff(h_hPt[6],h_hPt[3],"h Pt");
+    drawDiff(h_hDeltaR[5],h_hDeltaR[3],"#Delta R_{bb}");
+    drawDiff(h_hDeltaR[6],h_hDeltaR[3],"#Delta R_{bb}");
+    drawDiff(h_hDeltaEta[5],h_hDeltaEta[3], "#Delta #eta_{bb}");
+    drawDiff(h_hDeltaEta[6],h_hDeltaEta[3],"#Delta #eta_{bb}");
+    drawDiff(h_hDeltaPhi[5],h_hDeltaPhi[3],"#Delta #phi_{bb}");
+    drawDiff(h_hDeltaPhi[6],h_hDeltaPhi[3],"#Delta #phi_{bb}");
+    drawDiff(h_hptas[5],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
+    drawDiff(h_hptas[6],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
+    drawDiff(h_hsdas[5],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
+    drawDiff(h_hsdas[6],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)",2);
 }
+
