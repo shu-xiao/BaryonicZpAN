@@ -1,5 +1,12 @@
 #include <iostream>
-#include "../setNCUStyle.C"
+#include "TH1F.h"
+#include "TCanvas.h"
+#include "TF1.h"
+#include "TStyle.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TLegend.h"
+
 #define CISVV2_CUT 0.5426
 using namespace std;
 bool doReject = true;
@@ -34,6 +41,30 @@ double pol_2(double *x,double *par) {
     }
     return par[0]+par[1]*x[0]+par[2]*x[0]*x[0];
 }
+TH1F* copyHist(TH1F* h1, bool sig){
+    TH1F* hclone = (TH1F*)h1->Clone(((string)h1->GetName()+Form("_copy%d",sig)).data());
+    hclone->Reset();
+    hclone->Sumw2();
+    float bincenter, binError, binCon;
+    for (int i=0;i<=h1->GetNbinsX();i++) {
+        bincenter = h1->GetXaxis()->GetBinCenter(i);
+        binError = h1->GetBinError(i);
+        binCon = h1->GetBinContent(i);
+        if (sig&&bincenter<140&&bincenter>120) {
+            hclone->SetBinContent(i,binCon);
+            hclone->SetBinError(i,binError);
+        }
+        else if (!sig&&(bincenter>140||bincenter<120)){
+            hclone->SetBinContent(i,binCon);
+            hclone->SetBinError(i,binError);
+
+        }
+    }
+    if (sig) hclone->SetLineColor(kGreen);
+    else hclone->SetLineColor(kBlack);
+    hclone->SetLineWidth(2);
+    return hclone;
+}
 TH1F* applyRatio(TH1F *hfail,TF1* fratio){
     TH1::SetDefaultSumw2(true);
     TH1F* hclone = (TH1F*)hfail->Clone(((string)hfail->GetName()+"_pfratio").data());
@@ -48,17 +79,20 @@ TH1F* applyRatio(TH1F *hfail,TF1* fratio){
     return hclone;
 }
 void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfRatioCompare.pdf") {
-    //setNCUStyle(0);
+    // h1 est, h2 sim
     setMax(h1,h2);
     TCanvas* c3 = new TCanvas("c3","c3",3);
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
     c3->Divide(1,2,0.01,0.01);
     c3->cd(1);
-    TH1F* h_copy = new TH1F(*h2);
-    h_copy->Divide(h1);
-    h2->SetLineColor(kBlack);
+    TH1F* h_copy = new TH1F(*h1);
+    h_copy->Divide(h2);
+    h1->SetLineWidth(2);
+    h2->SetLineWidth(2);
+    h_copy->SetLineWidth(2);
     h1->SetLineColor(kBlue);
+    h2->SetLineColor(kBlack);
     h1->GetYaxis()->SetTitle("A.U.");
     h1->GetXaxis()->SetTitle(title.data());
     c3->GetPad(1)->SetLeftMargin(0.12);
@@ -74,9 +108,12 @@ void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfR
     // legend
     TLegend leg(0.5,0.7,0.88,0.85);
     TString htitle = h1->GetTitle();
-    if (htitle.Contains("weight2")) leg.AddEntry(h1,"p/f(parabola funciton fit)*f");
-    else leg.AddEntry(h1,"p/f(linear function fit)*f");
-    leg.AddEntry(h2,"pass");
+    //if (htitle.Contains("weight2")) leg.AddEntry(h1,"p/f(parabola funciton fit)*f");
+    //else leg.AddEntry(h1,"p/f(linear function fit)*f");
+    // set estimate title
+    if (htitle.Contains("weight2")) leg.AddEntry(h1,"estimation with parabola funciton");
+    else leg.AddEntry(h1,"estimation with linear function");
+    leg.AddEntry(h2,"simulation");
     leg.SetBorderSize(0);
     leg.Draw();
     // ratio
@@ -86,15 +123,22 @@ void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfR
     c3->GetPad(1)->SetPad(0.0,0.3,1,1);
     c3->GetPad(1)->SetTicks();
     c3->GetPad(2)->SetTicks();
-    h_copy->GetYaxis()->SetRangeUser(0,3);
-    h_copy->GetYaxis()->SetTitle("Ratio");
+    h_copy->GetYaxis()->SetRangeUser(0,2);
+    h_copy->GetYaxis()->SetTitle("Estimation/MC");
     h_copy->GetYaxis()->CenterTitle();
     h_copy->SetLineColor(kBlack);
     h_copy->GetXaxis()->SetLabelSize(0);
     h_copy->GetYaxis()->SetLabelSize(0.1);
     h_copy->GetYaxis()->SetTitleSize(0.1);
     h_copy->GetYaxis()->SetTitleOffset(0.5);
-    h_copy->Draw("e");
+    //h_copy->SetMarkerStyle(20);
+    // Y = 1 LINE
+    static TF1 *f1 = 0;
+    if (!f1) f1 = new TF1("f1","1",-1000,1000);
+    //f1->SetLineWidth(2);
+    h_copy->Draw("E1");
+    f1->Draw("same");
+    //h_copy->Draw("e1same");
     if (io==1) c3->Print((fileName+"[").data());
     c3->Print(fileName.data());
     if (io==2) c3->Print((fileName+"]").data());
@@ -102,6 +146,9 @@ void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfR
 }
 void treePF_mass(bool doscan = false) {
     
+    gStyle->SetOptStat(0);
+    doscan = 1;
+
     TCanvas *c1 = new TCanvas("c1","c1",3);
     TFile *ff = new TFile("ttt.root","recreate");
     const int nHist = 7;
@@ -175,6 +222,7 @@ void treePF_mass(bool doscan = false) {
                     break;
                 }
             }
+            // search fail event
             if (!isPass) {
                 for (int j=0;j<nCom;j++) {
                     if (Mh[j]<90||Mh[j]>160) continue;
@@ -185,6 +233,7 @@ void treePF_mass(bool doscan = false) {
                 }
             }
             if (!isPass&&find<0) continue;
+            if (!isPass) ind = find;
             h_Mh[i%2*2+isPass]->Fill(Mh[ind],b);
             h_hPt[i%2*2+isPass]->Fill(hPt[ind],b);
             h_hDeltaR[i%2*2+isPass]->Fill(hDeltaR[ind],b);
@@ -226,6 +275,31 @@ void treePF_mass(bool doscan = false) {
     leg->AddEntry(f2_s,Form("2nd order poly, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
     leg->Draw();
     c1->Print(fileName.data());
+    // empty SR
+    leg->Clear();
+    h_Mh[4]->Fit(f1_s);
+    h_Mh[4]->Fit(f2_s,"+");
+    TH1F* h_SR = copyHist(h_Mh[4],1);
+    TH1F* h_SB = copyHist(h_Mh[4],0);
+    h_SB->Draw("esame");
+    h_SR->Draw("esame");
+    leg->AddEntry(h_SB,"Mh p/f ratio");
+    leg->AddEntry(h_SR,"SR, not used in fitting");
+    leg->AddEntry(f1_s,Form("linear, #chi^{2}/ndf = %.1f/%d",f1_s->GetChisquare(),f1_s->GetNDF()),"l");
+    leg->AddEntry(f2_s,Form("2nd order poly, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
+    leg->Draw();
+    c1->Print(fileName.data());
+    h_SB->Draw("e");
+    c1->Print(fileName.data());
+    h_SR->Draw("e");
+    c1->Print(fileName.data());
+
+    // end
+    h_Mh[0]->Draw("e");
+    c1->Print(fileName.data());
+    h_Mh[1]->Draw("e");
+    c1->Print(fileName.data());
+    // pf ratio
     h_Mh_bin1 = applyRatio(h_Mh[2],f1_s);
     h_Mh_bin2 = applyRatio(h_Mh[2],f2_s);
     h_Mh_bin1->SetLineColor(kRed);
@@ -371,16 +445,17 @@ void treePF_mass(bool doscan = false) {
     leg->Draw();
     c1->Print(fileName.data());
     c1->Print((fileName+"]").data());
+    // 3: sim,  5,6: estimate
     drawDiff(h_Mh[5],h_Mh[3],"M_{h}",1);
     drawDiff(h_Mh[6],h_Mh[3],"M_{h}");
-    drawDiff(h_hPt[5],h_hPt[3],"h Pt");
-    drawDiff(h_hPt[6],h_hPt[3],"h Pt");
-    drawDiff(h_hDeltaR[5],h_hDeltaR[3],"#Delta R_{bb}");
-    drawDiff(h_hDeltaR[6],h_hDeltaR[3],"#Delta R_{bb}");
-    drawDiff(h_hDeltaEta[5],h_hDeltaEta[3], "#Delta #eta_{bb}");
-    drawDiff(h_hDeltaEta[6],h_hDeltaEta[3],"#Delta #eta_{bb}");
-    drawDiff(h_hDeltaPhi[5],h_hDeltaPhi[3],"#Delta #phi_{bb}");
-    drawDiff(h_hDeltaPhi[6],h_hDeltaPhi[3],"#Delta #phi_{bb}");
+    drawDiff(h_hPt[5],h_hPt[3],"higgs Pt");
+    drawDiff(h_hPt[6],h_hPt[3],"higgs Pt");
+    drawDiff(h_hDeltaR[5],h_hDeltaR[3],"#DeltaR_{bb}");
+    drawDiff(h_hDeltaR[6],h_hDeltaR[3],"#DeltaR_{bb}");
+    drawDiff(h_hDeltaEta[5],h_hDeltaEta[3], "#Delta#eta_{bb}");
+    drawDiff(h_hDeltaEta[6],h_hDeltaEta[3],"#Delta#eta_{bb}");
+    drawDiff(h_hDeltaPhi[5],h_hDeltaPhi[3],"#Delta#phi_{bb}");
+    drawDiff(h_hDeltaPhi[6],h_hDeltaPhi[3],"#Delta#phi_{bb}");
     drawDiff(h_hptas[5],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
     drawDiff(h_hptas[6],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
     drawDiff(h_hsdas[5],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
