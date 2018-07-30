@@ -110,10 +110,10 @@ void pfMain(bool dotest=true){
 				diffSel[k].h_Mh[i%2*2+isPass[k]]->Fill(Mh[ind[k]],b);
 				diffSel[k].h_hPt[i%2*2+isPass[k]]->Fill(hPt[ind[k]],b);
 				diffSel[k].h_hDeltaR[i%2*2+isPass[k]]->Fill(hDeltaR[ind[k]],b);
-				diffSel[k].h_hDeltaEta[i%2*2+isPass[k]]->Fill(hDeltaPhi[ind[k]],b);
-				diffSel[k].h_hDeltaPhi[i%2*2+isPass[k]]->Fill(hDeltaEta[ind[k]],b);
-				diffSel[k].h_hsdas[i%2*2+isPass[k]]->Fill(hptas[ind[k]],b);
-				diffSel[k].h_hptas[i%2*2+isPass[k]]->Fill(hsdas[ind[k]],b);
+				diffSel[k].h_hDeltaEta[i%2*2+isPass[k]]->Fill(hDeltaEta[ind[k]],b);
+				diffSel[k].h_hDeltaPhi[i%2*2+isPass[k]]->Fill(hDeltaPhi[ind[k]],b);
+				diffSel[k].h_hsdas[i%2*2+isPass[k]]->Fill(hsdas[ind[k]],b);
+				diffSel[k].h_hptas[i%2*2+isPass[k]]->Fill(hptas[ind[k]],b);
 			}
 		} // end of loop events
 
