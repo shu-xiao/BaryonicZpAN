@@ -27,7 +27,7 @@ def main():
     allList = array('f',[])
     FourJetCorr = []
     FiveJetCorr = []
-    method = ['min #DeltaR (h#rightarrowbb)','min #DeltaMh','min pt As (h#rightarrowbb)','max pt As (zp#rightarrowh+A0)','max #DeltaR (zp#rightarrowh+A0)']
+    method = ['min #DeltaR (A0#rightarrowbb)','min #DeltaMh','min pt As (A0#rightarrowbb)','max pt As (zp#rightarrowh+A0)','max #DeltaR (zp#rightarrowh+A0)']
     for i in range(5):
         FourJetCorr.append(array('f',[]))
         FiveJetCorr.append(array('f',[]))
