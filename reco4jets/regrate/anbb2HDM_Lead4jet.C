@@ -144,6 +144,7 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     const float CISVV2CUT_T = 0.9535;
     
     TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
+    TH1F* h_NbJets = new TH1F("h_NbJets", "h_NbJets", njets,-0.5,njets-0.5);
     TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
     // Mass
     TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 70,60,200);
@@ -371,6 +372,7 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         int orderInd[4];
         TLorentzVector *HA0v4[4];
         // select 4 or 5 jet
+        int nbjet = 0;
         for (int i=0;i<nGenJet;i++) {
             if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
             if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
@@ -382,8 +384,10 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
             if (!vPassID_L[i]) continue;
             if (CISVV2[i]<CISVV2CUT_L) continue;
             if (LeadHA0Jet.size()<5) LeadHA0Jet.push_back(thisJet);
+            nbjet++;
         
         }
+        h_NbJets->Fill(nbjet);
             
         if (matchInd[0]>=0) {h_HmatchIndex1->Fill(matchInd[0]);h_CISVV2_H[0]->Fill(CISVV2[matchInd[0]]);}
         if (matchInd[1]>=0) {h_HmatchIndex2->Fill(matchInd[1]);h_CISVV2_H[1]->Fill(CISVV2[matchInd[1]]);}
@@ -571,8 +575,10 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     }
     float nTotal = data.GetEntriesFast();
     std::cout << "nTotal    = " << nTotal << std::endl;
-    h_HindexDis->Draw("hist");
+    h_NbJets->Draw("hist");
     c1->Print("matchIndex.pdf(");
+    h_HindexDis->Draw("hist");
+    c1->Print("matchIndex.pdf");
     h_CISVV2_H[0]->Draw("hist");
     c1->Print("matchIndex.pdf");
     h_CISVV2_H[1]->Draw("hist");
