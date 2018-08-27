@@ -294,7 +294,9 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     TH1F* h_A0index1 = new TH1F("h_A0index1","h_A0index1",4,0.5,4.5);
     TH1F* h_A0index2 = new TH1F("h_A0index2","h_A0index2",4,0.5,4.5);
     TH1F* h_HindexDis = new TH1F("h_HindexDis","h_HindexDis",16,-0.5,15.5);
+    TH1F* h_HindexDis2 = new TH1F("h_HindexDis2","h_HindexDis",51,-0.5,50.5);
     TH1F* h_A0indexDis = new TH1F("h_A0indexDis","h_A0indexDis",16,-0.5,15.5);
+    TH1F* h_A0indexDis2 = new TH1F("h_A0indexDis2","h_A0indexDis",51,-0.5,50.5);
     
     TH1F* h_HmatchIndex1 = new TH1F("h_HmatchIndex1","",9,-0.5,8.5);
     TH1F* h_HmatchIndex2 = new TH1F("h_HmatchIndex2","",9,-0.5,8.5);
@@ -415,6 +417,8 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
             h_A0HMatchPtAs->Fill(ptAssymetry(&vHA0[0],&vHA0[1]));
             h_HindexDis->Fill(matchInd[0]*matchInd[0]+matchInd[1]*matchInd[1]); 
             h_A0indexDis->Fill(matchInd[2]*matchInd[2]+matchInd[3]*matchInd[3]); 
+            h_HindexDis2->Fill(matchInd[0]*matchInd[0]+matchInd[1]*matchInd[1]); 
+            h_A0indexDis2->Fill(matchInd[2]*matchInd[2]+matchInd[3]*matchInd[3]); 
 
         }
         if (LeadHA0Jet.size()<4) continue;
@@ -579,6 +583,8 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     c1->Print("matchIndex.pdf(");
     h_HindexDis->Draw("hist");
     c1->Print("matchIndex.pdf");
+    h_HindexDis2->Draw("hist");
+    c1->Print("matchIndex.pdf");
     h_CISVV2_H[0]->Draw("hist");
     c1->Print("matchIndex.pdf");
     h_CISVV2_H[1]->Draw("hist");
@@ -588,6 +594,8 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     h_CISVV2_A0[1]->Draw("hist");
     c1->Print("matchIndex.pdf");
     h_A0indexDis->Draw("hist");
+    c1->Print("matchIndex.pdf");
+    h_A0indexDis2->Draw("hist");
     c1->Print("matchIndex.pdf");
     h_HmatchIndex1->Draw("hist");
     c1->Print("matchIndex.pdf");
