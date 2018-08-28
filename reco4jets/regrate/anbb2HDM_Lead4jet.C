@@ -350,7 +350,7 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         TClonesArray* genjetP4 =  (TClonesArray*) data.GetPtrTObject("THINjetP4");
         float *CISVV2 = data.GetPtrFloat("THINjetCISVV2");
         
-        static vector<TLorentzVector*> genHA0Par;
+        vector<TLorentzVector*> genHA0Par;
 # if doGenMatch != 0 || corr !=0 
         if (!isBG) {
             genHA0Par.clear();
@@ -359,7 +359,7 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         }
 # endif
         // find good jet
-        static TLorentzVector* thisJet, *thatJet;
+        TLorentzVector* thisJet, *thatJet;
         vector<TLorentzVector*> LeadHA0Jet;
         int matchInd[4] = {-1,-1,-1,-1};
         int matchOrderInd[4] = {-1,-1,-1,-1};
@@ -371,11 +371,11 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
 
         // loop genJet
         for (int i=0;i<nGenJet;i++) {
+            thisJet = (TLorentzVector*)genjetP4->At(i);
             if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
             if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
             if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&matchInd[2]<0) {matchInd[2]=i;HA0v4[2]=thisJet;}
             if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&matchInd[3]<0) {matchInd[3]=i;HA0v4[3]=thisJet;}
-            thisJet = (TLorentzVector*)genjetP4->At(i);
             if (thisJet->Pt()<30) continue;
             if (abs(thisJet->Eta())>2.4) continue;
             if (!vPassID_L[i]) continue;
