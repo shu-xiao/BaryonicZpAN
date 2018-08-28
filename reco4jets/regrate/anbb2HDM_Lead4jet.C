@@ -359,31 +359,17 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         }
 # endif
         // find good jet
-        static vector<int> goodJet;
-        goodJet.clear();
         static TLorentzVector* thisJet, *thatJet;
         vector<TLorentzVector*> LeadHA0Jet;
-        for (int i=0;i<nGenJet;i++) {
-            if (!doGenMatch) {
-                //if (!vPassID_L[i]) continue;
-                //if (CISVV2[i]<CISVV2CUT_L) continue;
-                //if (CISVV2[i]<0) continue;
-                thisJet = (TLorentzVector*)genjetP4->At(i);
-                //if (thisJet->Pt()<30) continue;
-                //if (abs(thisJet->Eta())>2.4) continue;
-            }
-            goodJet.push_back(i);
-            //if (goodJet.size()<4) goodJet.push_back(i);
-        }
-        h_NgoodJets->Fill(goodJet.size());
         int matchInd[4] = {-1,-1,-1,-1};
-        int matchInd_sort[4];
         int matchOrderInd[4] = {-1,-1,-1,-1};
         int orderInd[4];
         TLorentzVector *HA0v4[4];
         // select 4 or 5 jet
         int nbjet = 0;
         bool find1stJet = false, match1stJet = false;
+
+        // loop genJet
         for (int i=0;i<nGenJet;i++) {
             if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
             if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
@@ -396,12 +382,14 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
             if (CISVV2[i]<CISVV2CUT_L) continue;
             if (LeadHA0Jet.size()<5) LeadHA0Jet.push_back(thisJet);
             nbjet++;
+            // match 1st jet to genPar
             //if (matchInd[0]>=0&&matchInd[1]>=0&&matchInd[2]>=0&&matchInd[3]>=0&&!find1stJet) {
             if (!find1stJet) {
                 find1stJet = true;
                 TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
                 int *genMomParId= data.GetPtrInt("genMomParId");
                 int *genParId= data.GetPtrInt("genParId");
+                // loop genPar to match jet
                 for (int j=0;j<30;j++) {
                     TLorentzVector* genParJet = (TLorentzVector*)genjetP4->At(j);
                     if (thisJet->DeltaR(*genParJet)<0.4) {
