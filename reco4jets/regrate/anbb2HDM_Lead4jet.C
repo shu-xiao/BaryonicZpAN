@@ -19,7 +19,7 @@
 #define basePtEtaCut    0
 #define doGenMatch      0
 #define doBTagCut       false
-#define saveTree        0
+#define saveTree        1
 #define corr            1
 
 # if doGenMatch != 0 || corr != 0 
@@ -118,9 +118,6 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
 
     //get TTree from file ...
     TreeReader data(inputFile.data());
-# if doGenMatch != 0 || corr != 0
-    vector<vector<int>> genPar = genMatch_base(inputFile.data());
-#endif    
     bool isBG = false;
     
     TString Zpmass=gSystem->GetFromPipe(Form("file=%s; test1=${file##*_MZp}; test=${test1%%_MA0*.root}; echo \"${test}\"",inputFile.data()));
@@ -131,8 +128,11 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         A0mass = "300";
         isBG = true;
     }
+    vector<vector<int>> genPar;
+# if doGenMatch != 0 || corr != 0
+    if (!isBG) genPar = genMatch_base(inputFile.data());
+#endif    
     TCanvas* c1       = new TCanvas("c1","",600,600);
-    TH1F* h_allEvent  = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
     
     const int njets = 10;
     const int ncom = 50;
@@ -143,9 +143,12 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     const float CISVV2CUT_M = 0.8484;
     const float CISVV2CUT_T = 0.9535;
     
+    TH1F* h_allEvent  = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
+    TH1F* h_LLLLTTTT = new TH1F("h_LLLLTTTT","h_LLLLTTTT",5,-0.5,4.5);
     TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
     TH1F* h_NbJets = new TH1F("h_NbJets", "h_NbJets", njets,-0.5,njets-0.5);
     TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
+    TH1F* h_Ncisvv2Num = new TH1F("h_Ncisvv2Num","h_Ncisvv2Num",50,-50,500);
     // Mass
     TH1F* h_hM        = new TH1F("h_higgsM", "h_higgsM", 70,60,200);
     TH1F* h_hM_sw     = new TH1F("h_higgsM_sw", "h_higgsM_sw", 70,60,200);
@@ -227,32 +230,6 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         h_TMVAweight_sw[i]  = new TH1F(Form("h_TMVAweightSW_%d",i),Form("h_TMVAweightSW_%d",i),40,0.0,2);
         
     }
-    // pf Ratio
-    TH1F* h_hM_pfRation[3][3]; // high Pt
-    TH1F* h_hM_pfRationMin[3][3]; 
-    TH1F* h_hM_pfRationMean[3][3]; 
-    TH1F* h_a0M_pfRation[3][3]; 
-    TH1F* h_zpM_pfRation[3][3];
-    string suffixM[3] = {"higgsM","A0M","ZpM"}; 
-    string suffixB[3] = {"_L","_M","_T"};
-    for (int i=0;i<3;i++) {
-        for (int j=0;j<3;j++) {
-            string name[3], name_min[3], name_mean[3];
-            for (int k=0;k<3;k++) name[k] = "h_highPt"+suffixM[k]+suffixA[i]+suffixB[j]; 
-            for (int k=0;k<3;k++) name_min[k] = "h_min"+suffixM[k]+suffixA[i]+suffixB[j]; 
-            for (int k=0;k<3;k++) name_mean[k] = "h_mean"+suffixM[k]+suffixA[i]+suffixB[j]; 
-            h_hM_pfRationMin[i][j] = new TH1F(name_min[0].data(),name_min[0].data(),32,40,200);
-            h_hM_pfRationMean[i][j] = new TH1F(name_mean[0].data(),name_mean[0].data(),32,40,200);
-            h_hM_pfRation[i][j] = new TH1F(name[0].data(),name[0].data(),32,40,200);
-            h_a0M_pfRation[i][j] = new TH1F(name[1].data(),name[1].data(),60,0,600);
-            h_zpM_pfRation[i][j] = new TH1F(name[2].data(),name[2].data(),80,Zpmass.Atof()-400,Zpmass.Atof()+400);
-            h_hM_pfRationMin[i][j]->Sumw2();
-            h_hM_pfRationMean[i][j]->Sumw2();
-            h_hM_pfRation[i][j]->Sumw2();
-            h_a0M_pfRation[i][j]->Sumw2();
-            h_zpM_pfRation[i][j]->Sumw2();
-        }
-    }
     // Delta R, theta, phi
     TH1F* h_hDeltaR         = new TH1F("h_HiggstobbDeltaR", "h_HiggstobbDeltaR", 40,0,4);
     TH1F* h_hDeltaR_sw      = new TH1F("h_HiggstobbDeltaR_sw", "h_HiggstobbDeltaR_sw", 40,0,4);
@@ -332,7 +309,18 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     Float_t TMVAweight_Hb1[maxSaveCom], TMVAweight_Hb2[maxSaveCom], TMVAweight_A0b1[maxSaveCom], TMVAweight_A0b2[maxSaveCom];
     Float_t Mh[maxSaveCom], Mh_weightLT[maxSaveCom], Mh_weight[maxSaveCom];
     Float_t hPt[maxSaveCom], hDeltaR[maxSaveCom], hDeltaPhi[maxSaveCom], hDeltaEta[maxSaveCom], hptAs[maxSaveCom], hsdAs[maxSaveCom];
+    Int_t nCisT, nCisM, nCisL; 
+    TFile *ftree;
+    TTree *tree;
+    if (saveTree) {
+        ftree = new TFile(Form("treeLead4jet_%d.root",w),"recreate");
+        tree  = new TTree("tree","tree");
+        tree->Branch("nPassL",&nCisL,"nPassL/I");
+        tree->Branch("nPassM",&nCisM,"nPassM/I");
+        tree->Branch("nPassT",&nCisT,"nPassT/I");
+    }
     
+    Int_t nPTTTT = 0, nPTTLL = 0, nPLLLL = 0;
     vector <int> match1stInd;
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
@@ -368,23 +356,30 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
         // select 4 or 5 jet
         int nbjet = 0;
         bool find1stJet = false, match1stJet = false;
+        int nCisvv2_L = 0, nCisvv2_M = 0, nCisvv2_T = 0;
 
         // loop genJet
         for (int i=0;i<nGenJet;i++) {
             thisJet = (TLorentzVector*)genjetP4->At(i);
-            if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
-            if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
-            if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&matchInd[2]<0) {matchInd[2]=i;HA0v4[2]=thisJet;}
-            if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&matchInd[3]<0) {matchInd[3]=i;HA0v4[3]=thisJet;}
+            if (!isBG) {
+                if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
+                if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
+                if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&matchInd[2]<0) {matchInd[2]=i;HA0v4[2]=thisJet;}
+                if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&matchInd[3]<0) {matchInd[3]=i;HA0v4[3]=thisJet;}
+            }
             if (thisJet->Pt()<30) continue;
             if (abs(thisJet->Eta())>2.4) continue;
             if (!vPassID_L[i]) continue;
             if (CISVV2[i]<CISVV2CUT_L) continue;
             if (LeadHA0Jet.size()<5) LeadHA0Jet.push_back(thisJet);
             nbjet++;
+            // cal number of b jet with L, M, T
+            if (CISVV2[i]>CISVV2CUT_T) nCisvv2_T++;
+            else if (CISVV2[i]>CISVV2CUT_M) nCisvv2_M++;
+            else if (CISVV2[i]>CISVV2CUT_L) nCisvv2_L++;
             // match 1st jet to genPar
             //if (matchInd[0]>=0&&matchInd[1]>=0&&matchInd[2]>=0&&matchInd[3]>=0&&!find1stJet) {
-            if (!find1stJet) {
+            if (!find1stJet&&!isBG) {
                 find1stJet = true;
                 TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
                 int *genMomParId= data.GetPtrInt("genMomParId");
@@ -402,18 +397,30 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
             }
         
         }
-        if (!find1stJet) {
+        if (!find1stJet&&!isBG) {
             //h_1stMatchJetId->Fill("genmatchFail",1); 
             //h_1stMatchJetMomId->Fill("genmatchFail",1); 
             h_1stMatchJetId->Fill("vetoAllJet",1); 
             h_1stMatchJetMomId->Fill("vetoAllJet",1); 
         }
-        else if (!match1stJet) {
+        else if (!match1stJet&&!isBG) {
             h_1stMatchJetId->Fill("findParFail",1); 
             h_1stMatchJetMomId->Fill("findParFail",1); 
         }
         h_NbJets->Fill(nbjet);
-            
+        nCisT = nCisvv2_T;
+        nCisM = nCisvv2_T + nCisvv2_M;
+        nCisL = nCisvv2_T + nCisvv2_M + nCisvv2_L;
+        if ((nCisvv2_L+nCisvv2_M+nCisvv2_T)>=4) {
+            if (nCisvv2_L>=10) h_Ncisvv2Num->Fill(-10);
+            if (nCisvv2_M>=10) h_Ncisvv2Num->Fill(-20);
+            if (nCisvv2_T>=10) h_Ncisvv2Num->Fill(-30);
+            h_Ncisvv2Num->Fill(nCisvv2_T*100+nCisvv2_M*10+nCisvv2_L);
+            if (nCisT>=4) {nPTTTT++;h_LLLLTTTT->Fill(3);}               // TTTT
+            if (nCisL>=2&&nCisvv2_T>=2) {nPTTLL++;h_LLLLTTTT->Fill(2);} // TTLL
+            if (nCisL>=4) {nPLLLL++;h_LLLLTTTT->Fill(1);}               // LLLL
+            if (saveTree) tree->Fill();
+        }
         if (matchInd[0]>=0) {h_HmatchIndex1->Fill(matchInd[0]);h_CISVV2_H[0]->Fill(CISVV2[matchInd[0]]);}
         if (matchInd[1]>=0) {h_HmatchIndex2->Fill(matchInd[1]);h_CISVV2_H[1]->Fill(CISVV2[matchInd[1]]);}
         if (matchInd[2]>=0) {h_A0matchIndex1->Fill(matchInd[2]);h_CISVV2_A0[0]->Fill(CISVV2[matchInd[2]]);}
@@ -613,74 +620,68 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     h_2d_A0index->GetYaxis()->SetTitle("subleading A0 b jet"); 
     
     float nTotal = data.GetEntriesFast();
+    cout << nPTTTT << "  " << nPTTLL << "  " << nPLLLL << endl;
     std::cout << "nTotal    = " << nTotal << std::endl;
-    h_NbJets->Draw("hist");
-    c1->Print("matchIndex.pdf(");
-    h_2d_Hindex->Draw("colz");
-    c1->Print("matchIndex.pdf");
-    h_2d_A0index->Draw("colz");
-    c1->Print("matchIndex.pdf");
-    h_1stMatchJetId->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_1stMatchJetMomId->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HindexDis->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HindexDis2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_CISVV2_H[0]->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_CISVV2_H[1]->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_CISVV2_A0[0]->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_CISVV2_A0[1]->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0indexDis->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0indexDis2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HmatchIndex1->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HmatchIndex2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0matchIndex1->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0matchIndex2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HmatchpassIndex1->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_HmatchpassIndex2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0matchpassIndex1->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0matchpassIndex2->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_hbbMatchDeltaR->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_hbbMatchDeltaEta->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_hbbMatchPtAs->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0bbMatchDeltaR->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0bbMatchDeltaEta->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0bbMatchPtAs->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0HMatchDeltaR->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0HMatchDeltaEta->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_A0HMatchPtAs->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_LeadPtAs->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_LeadHM->Draw("hist");
-    c1->Print("matchIndex.pdf");
-    h_LeadA0M->Draw("hist");
-    c1->Print("matchIndex.pdf)");
-    
+    if (!isBG) {
+        h_NbJets->Draw("hist");
+        c1->Print("matchIndex.pdf(");
+        h_2d_Hindex->Draw("colz");
+        c1->Print("matchIndex.pdf");
+        h_2d_A0index->Draw("colz");
+        c1->Print("matchIndex.pdf");
+        h_CISVV2_H[0]->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_CISVV2_H[1]->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_CISVV2_A0[0]->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_CISVV2_A0[1]->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_HmatchIndex1->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_HmatchIndex2->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0matchIndex1->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0matchIndex2->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_Ncisvv2Num->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_LLLLTTTT->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_HmatchpassIndex1->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_HmatchpassIndex2->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0matchpassIndex1->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0matchpassIndex2->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_hbbMatchDeltaR->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_hbbMatchDeltaEta->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_hbbMatchPtAs->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0bbMatchDeltaR->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0bbMatchDeltaEta->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0bbMatchPtAs->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0HMatchDeltaR->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0HMatchDeltaEta->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_A0HMatchPtAs->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_LeadPtAs->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_LeadHM->Draw("hist");
+        c1->Print("matchIndex.pdf");
+        h_LeadA0M->Draw("hist");
+        c1->Print("matchIndex.pdf)");
+    }
     int lastInd = -1;
     for(int i=0;i<20;i++) if(nPass[i]>0) {std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;lastInd = i;}
     efferr(nPass[lastInd],nTotal);
@@ -688,6 +689,16 @@ void anbb2HDM_Lead4jet(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.ro
     n5Correctness[nSel+1] = nPass[2];
     cout << "4 jets \t5 jets" << endl;
     for (int i=0;i<nSel+1;i++) cout << (float)nCorrectness[i]/nPass[lastInd] << "\t" << (float)n5Correctness[i]/nPass[lastInd]<<  endl;
-    savenPass(nCorrectness,n5Correctness,Form("Correctness/corr_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi()));
-}
+    if (!isBG)savenPass(nCorrectness,n5Correctness,Form("Correctness/corr_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi()));
 
+    string fileName; 
+    if (isBG||true) {
+        if (saveTree) {
+            tree->Write();
+            h_allEvent->Write();
+            h_LLLLTTTT->Write();
+            ftree->Close();
+        
+        }
+    }
+}
