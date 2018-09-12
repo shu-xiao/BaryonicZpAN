@@ -93,6 +93,7 @@ void TTLL() {
         nEvent = h_all->GetEntries();
         nEList[xs] = nEvent;
         nTotalEvent += (nEvent*L2016/getL(nEvent,xsHTbeam[xs]));
+        cout << nEvent << "\t" << nEvent*L2016/getL(nEvent,xsHTbeam[xs]) << "\t" << nTotalEvent << endl;
         for (int i=0;i<15;i++) nPass[i] = 0;
         // loop tree
         for (long iE=0;iE<t->GetEntries();iE++) {
