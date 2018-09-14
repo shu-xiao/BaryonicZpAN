@@ -31,6 +31,7 @@ bool isOverlap(int i1, int i2, int j1, int j2) {
 }
 void arrangeIndex(int& ind0, int& ind1, int& ind2, int& ind3) {
     bool b = false;
+    if (ind0==ind1) return;
     for (int k=0;k<4;k++) {
         if (k==ind0||k==ind1) continue;
         if (!b) {
@@ -489,12 +490,11 @@ void anbb2HDM_TMML(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root")
         float maxPtAs = -1, maxPtAs_5 = -1;  
         float minPtAs = 99, minPtAs_51 = 99, minPtAs_52 = 99;
         float minDeltaR = 99, minDeltaR_51 = 99, minDeltaR_52 = 99; 
-        float mindeMH = 999, mindeMH_5 = 999, mindeMA0_5 = 999;
+        float mindeMH = 999, mindeMH_range = 999, mindeMA0_5 = 999;
         // 4 b jet, H jet, A0 jet
         TLorentzVector *LeadDeltaRHA0Jet[6];
         TLorentzVector *LeadSelHA0Jet[10][6];
         int Hind[10][4];
-        int Hind_5[10][4];
         // loop for 4 jet
         for (int i=0;i<4;i++) {
             for (int j=0;j<i;j++) {
@@ -502,9 +502,14 @@ void anbb2HDM_TMML(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root")
                     minDeltaR = LeadHA0Jet[i]->DeltaR(*LeadHA0Jet[j]);
                     Hind[0][0] = i; Hind[0][1] = j;
                 }
-                if (abs((*LeadHA0Jet[i]+*LeadHA0Jet[j]).M()-125)<mindeMH) {
+                float mh = (*LeadHA0Jet[i]+*LeadHA0Jet[j]).M();
+                if (abs(mh-125)<mindeMH) {
                     mindeMH = abs((*LeadHA0Jet[i]+*LeadHA0Jet[j]).M()-125);
                     Hind[1][0] = i; Hind[1][1] = j;
+                }
+                if (abs(mh-125)<mindeMH_range&&mh<135&&mh>115) {
+                    mindeMH_range = abs(mh-125);
+                    Hind[5][0] = i; Hind[5][1] = j;
                 }
                 if (ptAssymetry(LeadHA0Jet[i],LeadHA0Jet[j])<minPtAs) {
                     minPtAs = ptAssymetry(LeadHA0Jet[i],LeadHA0Jet[j]);    
@@ -513,6 +518,8 @@ void anbb2HDM_TMML(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root")
 
            }
         }
+        bool inWindow = false;
+        //if (Hind[5][0]>0) nPass[5]++;
         for (int i=1;i<4;i++) {
            // v1 and v2 are H and A0 jet
            TLorentzVector v1 = *LeadHA0Jet[0] + *LeadHA0Jet[i];
@@ -639,7 +646,7 @@ void anbb2HDM_TMML(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root")
     // last index is genMatching rate
     for(int i=0;i<20;i++) if(nPass[i]>0) {std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;lastInd = i;}
     efferr(nPass[lastInd],nTotal);
-    cout << "4 jets \t5 jets" << endl;
+    cout << "4 jets" << endl;
     for (int i=0;i<nSel+1;i++) cout << nSelText[i] <<"\t" << (float)nCorrectness[i]/nPass[lastInd] << endl;
     nCorrectness[nSel+1] = nPass[4]; 
     if (!isBG&&false)savenPass(nCorrectness,Form("Correctness/corr_MZp%d_MA0%d_TMML.txt",Zpmass.Atoi(),A0mass.Atoi()));
