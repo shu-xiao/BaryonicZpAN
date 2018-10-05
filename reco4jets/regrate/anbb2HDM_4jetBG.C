@@ -108,7 +108,8 @@ using namespace std;
 void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root"){
     
     //inputFile = "../2HDMfullSimFile/bb2HDM_TMVA10K_MZp600_MA0300.root";
-    inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_76.root";
+    //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_76.root";
+    //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_243.root";
     setNCUStyle(true);
     //gStyle->SetOptTitle(0);
     //gStyle->SetTitleAlign(33);
@@ -129,9 +130,6 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         isBG = true;
     }
     vector<vector<int>> genPar;
-# if doGenMatch != 0 || corr != 0
-    if (!isBG) genPar = genMatch_base(inputFile.data());
-#endif    
     TCanvas* c1       = new TCanvas("c1","",600,600);
     const string suf[4] = {"L","M","T","NULL"}; 
     const int njets = 10;
@@ -306,8 +304,8 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
     Int_t nPTTTT = 0, nPTTLL = 0, nPLLLL = 0;
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
-        if (jEntry %500 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
-        if (jEntry>5000) break;
+        if (jEntry %1000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        //if (jEntry!=4844) continue;
         data.GetEntry(jEntry);
         nPass[0]++;
         h_allEvent->Fill(1);
@@ -323,13 +321,6 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         float *CISVV2 = data.GetPtrFloat("THINjetCISVV2");
         
         vector<TLorentzVector*> genHA0Par;
-# if doGenMatch != 0 || corr !=0 
-        if (!isBG) {
-            genHA0Par.clear();
-            TClonesArray* genParP4 = (TClonesArray*) data.GetPtrTObject("genParP4");
-            for (int i=0;i<4;i++) genHA0Par.push_back((TLorentzVector*)genParP4->At(genPar[jEntry][i]));
-        }
-# endif
         // find good jet
         TLorentzVector* thisJet, *thatJet;
         vector<TLorentzVector*> LeadHA0Jet;
@@ -344,15 +335,10 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         int nCisvv2_L = 0, nCisvv2_M = 0, nCisvv2_T = 0;
         int nLjet = 0, nMjet = 0, nTjet = 0;
         int Hind[10][4];
+        for (int i=0;i<3;i++) for (int j=0;j<4;j++) Hind[i][j] = 0;
         // loop thin Jet
         for (int i=0;i<nGenJet;i++) {
             thisJet = (TLorentzVector*)genjetP4->At(i);
-            if (!isBG) {
-                if (genHA0Par[0]->DeltaR(*thisJet)<0.4&&matchInd[0]<0) {matchInd[0]=i;HA0v4[0]=thisJet;}
-                if (genHA0Par[1]->DeltaR(*thisJet)<0.4&&matchInd[1]<0) {matchInd[1]=i;HA0v4[1]=thisJet;}
-                if (genHA0Par[2]->DeltaR(*thisJet)<0.4&&matchInd[2]<0) {matchInd[2]=i;HA0v4[2]=thisJet;}
-                if (genHA0Par[3]->DeltaR(*thisJet)<0.4&&matchInd[3]<0) {matchInd[3]=i;HA0v4[3]=thisJet;}
-            }
             if (thisJet->Pt()<30) continue;
             if (abs(thisJet->Eta())>2.4) continue;
             if (!vPassID_L[i]) continue;
@@ -459,7 +445,6 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         // 4 b jet, H jet, A0 jet
         TLorentzVector *LeadDeltaRHA0Jet[6];
         TLorentzVector *LeadSelHA0Jet[10][6];
-        for (int i=0;i<3;i++) for (int j=0;j<4;j++) Hind[i][j] = 0;
         bool inWindow = false;
         // loop for higgs and A0
         if (isAntiTag) {
@@ -517,7 +502,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
                     if (hj.M()>a0j.M()) swap(hj,a0j);
                     if (a0j.M()<200) continue;
                     if (abs(hj.M()-125)<mindeMH_range&&hj.M()<135&&hj.M()>115) {
-                        Hind[0][0] = i; Hind[0][1] = j;
+                        Hind[0][0] = j; Hind[0][1] = i;
                         Hind[0][2] = k; Hind[0][3] = g;
                         mindeMH_range = abs(hj.M()-125);
                         inWindow = true;
@@ -527,12 +512,13 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
             if (!inWindow) continue;
         }
         nPass[5]++;
-        cout <<jEntry << "  "<< isTag << isAntiTag << endl;
+        //cout <<jEntry << "  "<< isTag << isAntiTag << "  "  << nMjet << endl;
         //if (inWindow) arrangeIndex(Hind[0][0],Hind[0][1],Hind[0][2],Hind[0][3]);
         // convert index to jet
-        cout << inWindow << "\t" << Hind[0][0] << " " << Hind[0][1] << " " << Hind[0][2] << " " << Hind[0][3] << endl;
+        //cout << inWindow << "\t" << Hind[0][0] << " " << Hind[0][1] << " " << Hind[0][2] << " " << Hind[0][3] << endl;
         // swap h and a0
-        for (int j=0;j<4;j++) LeadSelHA0Jet[0][j] = LeadHA0Jet[Hind[0][j]]; 
+        //for (int j=0;j<4;j++) LeadSelHA0Jet[0][j] = LeadHA0Jet[Hind[0][j]]; 
+        for (int j=0;j<4;j++) LeadSelHA0Jet[0][j] = LeadHA0Jet[j]; 
         LeadSelHA0Jet[0][4] = new TLorentzVector(*LeadSelHA0Jet[0][0]+*LeadSelHA0Jet[0][1]);
         LeadSelHA0Jet[0][5] = new TLorentzVector(*LeadSelHA0Jet[0][2]+*LeadSelHA0Jet[0][3]);
         if (LeadSelHA0Jet[0][4]->M()>LeadSelHA0Jet[0][5]->M()) {
@@ -560,10 +546,10 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         hPt = (*LeadSelHA0Jet[0][0]+*LeadSelHA0Jet[0][1]).Pt();
         a0Pt = (*LeadSelHA0Jet[0][2]+*LeadSelHA0Jet[0][3]).Pt();
         hDeltaR = LeadSelHA0Jet[0][0]->DeltaR(*LeadSelHA0Jet[0][1]);
-        hDeltaPhi = LeadSelHA0Jet[0][0]->DeltaPhi(*LeadSelHA0Jet[0][1]);
+        hDeltaPhi = abs(LeadSelHA0Jet[0][0]->DeltaPhi(*LeadSelHA0Jet[0][1]));
         hDeltaEta = abs(LeadSelHA0Jet[0][0]->Eta()-LeadSelHA0Jet[0][1]->Eta());
         a0DeltaR = LeadSelHA0Jet[0][2]->DeltaR(*LeadSelHA0Jet[0][3]);
-        a0DeltaPhi = LeadSelHA0Jet[0][2]->DeltaPhi(*LeadSelHA0Jet[0][3]);
+        a0DeltaPhi = abs(LeadSelHA0Jet[0][2]->DeltaPhi(*LeadSelHA0Jet[0][3]));
         a0DeltaEta = abs(LeadSelHA0Jet[0][2]->Eta()-LeadSelHA0Jet[0][3]->Eta());
         hptAs = ptAssymetry(LeadSelHA0Jet[0][0],LeadSelHA0Jet[0][1]);
         hsdAs = softDropAs(LeadSelHA0Jet[0][0],LeadSelHA0Jet[0][1]);
@@ -578,7 +564,6 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300_re.root
         nPass[6]++;
         if (inWindow) nPass[7]++;
         nCorrectness[0]++;
-        if (!isBG) if (isCorrect(LeadSelHA0Jet[1],&genHA0Par[0])) nCorrectness[1]++;
         if (true||LeadSelHA0Jet[0][4]->M()>LeadSelHA0Jet[0][5]->M()) {
             delete LeadSelHA0Jet[0][4];
             delete LeadSelHA0Jet[0][5];
