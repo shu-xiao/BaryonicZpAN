@@ -27,15 +27,21 @@ void setMax(TH1F* h1, TH1F* h2,TH1F* h3) {
     h2->SetMaximum(max*1.4);
     h3->SetMaximum(max*1.4);
 }
+void drawAll(TH1F* h1,TH1F* h2, TH1F* h3, TLegend* leg) {
+    h1->Draw("e");
+    h2->Draw("esame");
+    h3->Draw("esame");
+    leg->Draw();
+}
 double linear(double *x,double *par) {
-    if (doReject&&x[0]<140&&x[0]>120) {
+    if (doReject&&x[0]<350&&x[0]>250) {
         TF1::RejectPoint();
         return 0;
     }
     return par[0]+par[1]*x[0];
 }
 double pol_2(double *x,double *par) {
-    if (doReject&&x[0]<140&&x[0]>120) {
+    if (doReject&&x[0]<350&&x[0]>250) {
         TF1::RejectPoint();
         return 0;
     }
@@ -148,7 +154,7 @@ void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfR
 void treePF_mass(bool doscan = false) {
     
     gStyle->SetOptStat(0);
-    //doscan = 1;
+    doscan = 1;
 
     TCanvas *c1 = new TCanvas("c1","c1",3);
     TFile *ff = new TFile("ttt.root","recreate");
@@ -174,7 +180,7 @@ void treePF_mass(bool doscan = false) {
         h_hDeltaEta[i] = new TH1F(Form("h_hDeltaEta%s",suf[i].data()),Form("h_hDeltaEta%s",suf[i].data()),20,0,4);
         h_hptas[i] = new TH1F(Form("h_hptas%s",suf[i].data()),Form("h_hptas%s",suf[i].data()),20,0,2);
         h_hsdas[i] = new TH1F(Form("h_hsdas%s",suf[i].data()),Form("h_hsdas%s",suf[i].data()),30,0,0.6);
-        h_MA0[i] = new TH1F(Form("h_MA0%s",suf[i].data()),Form("h_MA0%s",suf[i].data()),20,250,350);
+        h_MA0[i] = new TH1F(Form("h_MA0%s",suf[i].data()),Form("h_MA0%s",suf[i].data()),20,200,500);
         h_A0Pt[i] = new TH1F(Form("h_A0Pt%s",suf[i].data()),Form("h_A0Pt%s",suf[i].data()),60,0,900);
         h_A0DeltaR[i] = new TH1F(Form("h_A0DeltaR%s",suf[i].data()),Form("h_A0DeltaR%s",suf[i].data()),20,0,4);
         h_A0DeltaPhi[i] = new TH1F(Form("h_A0DeltaPhi%s",suf[i].data()),Form("h_A0DeltaPhi%s",suf[i].data()),32,0,3.2);
@@ -201,7 +207,10 @@ void treePF_mass(bool doscan = false) {
     
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     const float L2016=35.9*1000;//35.9 fb^-1
-    string fName[] = {"tree_QCD_TMVA_HT50to100.root","tree_QCD_TMVA_HT100to200.root","tree_QCD_TMVA_HT200to300.root","tree_QCD_TMVA_HT300to500.root","tree_QCD_TMVA_HT500to700.root","tree_QCD_TMVA_HT700to1000.root","tree_QCD_TMVA_HT1000to1500.root","tree_QCD_TMVA_HT1500to2000.root","tree_QCD_TMVA_HT2000toInf.root"};
+    //string fName[] = {"tree_QCD_TMVA_HT50to100.root","tree_QCD_TMVA_HT100to200.root","tree_QCD_TMVA_HT200to300.root","tree_QCD_TMVA_HT300to500.root","tree_QCD_TMVA_HT500to700.root","tree_QCD_TMVA_HT700to1000.root","tree_QCD_TMVA_HT1000to1500.root","tree_QCD_TMVA_HT1500to2000.root","tree_QCD_TMVA_HT2000toInf.root"};
+    string fName[9];
+    string fNameBase[9] = {"50to100","100to200","200to300","300to500","500to700","700to1000","1000to1500","1500to2000","2000toInf"};
+    for (int i=0;i<9;i++) fName[i] = "../QCDsample_MMMM/QCD_HT" + fNameBase[i] + ".root";
     Float_t CISVV2_Hb1, CISVV2_Hb2, CISVV2_A0b1, CISVV2_A0b2;
     Float_t hPt,Mh,hDeltaR,hDeltaEta, hDeltaPhi,hptas,hsdas;
     Float_t A0Pt,MA0,A0DeltaR,A0DeltaEta, A0DeltaPhi,A0ptas,A0sdas;
@@ -214,6 +223,7 @@ void treePF_mass(bool doscan = false) {
         Int_t nCom, nEvents;
         if (doscan) readFile = fName[ij];
         else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
+        cout << fName[ij] << endl;
         TFile *f = new TFile(readFile.data());
         TH1F* h_allEvent = (TH1F*)f->Get("h_allEvent");
         nEvents = h_allEvent->GetEntries();
@@ -230,15 +240,15 @@ void treePF_mass(bool doscan = false) {
         t1->SetBranchAddress("hDeltaR",&hDeltaR);
         t1->SetBranchAddress("hDeltaPhi",&hDeltaPhi);
         t1->SetBranchAddress("hDeltaEta",&hDeltaEta);
-        t1->SetBranchAddress("hptAs",&hptas);
-        t1->SetBranchAddress("hsdAs",&hsdas);
+        t1->SetBranchAddress("hptas",&hptas);
+        t1->SetBranchAddress("hsdas",&hsdas);
         t1->SetBranchAddress("MA0",&MA0);
         t1->SetBranchAddress("A0Pt",&A0Pt);
         t1->SetBranchAddress("A0DeltaR",&A0DeltaR);
         t1->SetBranchAddress("A0DeltaPhi",&A0DeltaPhi);
         t1->SetBranchAddress("A0DeltaEta",&A0DeltaEta);
-        t1->SetBranchAddress("A0ptAs",&A0ptas);
-        t1->SetBranchAddress("A0sdAs",&A0sdas);
+        t1->SetBranchAddress("A0ptas",&A0ptas);
+        t1->SetBranchAddress("A0sdas",&A0sdas);
         for (int i=0;i<t1->GetEntries();i++) {
             t1->GetEntry(i);
             bool isPass = isTag;
@@ -246,13 +256,19 @@ void treePF_mass(bool doscan = false) {
             // if (Mh<90||Mh>160) continue;
             // search fail event
             h_Mh[i%2*2+isPass]->Fill(Mh,b);
-            h_MA0[i%2*2+isPass]->Fill(MA0,b);
             h_hPt[i%2*2+isPass]->Fill(hPt,b);
             h_hDeltaR[i%2*2+isPass]->Fill(hDeltaR,b);
             h_hDeltaPhi[i%2*2+isPass]->Fill(hDeltaPhi,b);
             h_hDeltaEta[i%2*2+isPass]->Fill(hDeltaEta,b);
             h_hptas[i%2*2+isPass]->Fill(hptas,b);
             h_hsdas[i%2*2+isPass]->Fill(hsdas,b);
+            h_MA0[i%2*2+isPass]->Fill(MA0,b);
+            h_A0Pt[i%2*2+isPass]->Fill(A0Pt,b);
+            h_A0DeltaR[i%2*2+isPass]->Fill(A0DeltaR,b);
+            h_A0DeltaPhi[i%2*2+isPass]->Fill(A0DeltaPhi,b);
+            h_A0DeltaEta[i%2*2+isPass]->Fill(A0DeltaEta,b);
+            h_A0ptas[i%2*2+isPass]->Fill(A0ptas,b);
+            h_A0sdas[i%2*2+isPass]->Fill(A0sdas,b);
         }
         f->Close();
         if (!doscan)break;
@@ -260,18 +276,24 @@ void treePF_mass(bool doscan = false) {
     
     // ratio
     h_Mh[4]->Divide(h_Mh[1],h_Mh[0]);
-    h_MA0[4]->Divide(h_MA0[1],h_MA0[0]);
     h_hPt[4]->Divide(h_hPt[1],h_hPt[0]);
     h_hDeltaR[4]->Divide(h_hDeltaR[1],h_hDeltaR[0]);
     h_hDeltaEta[4]->Divide(h_hDeltaEta[1],h_hDeltaEta[0]);
     h_hDeltaPhi[4]->Divide(h_hDeltaPhi[1],h_hDeltaPhi[0]);
     h_hptas[4]->Divide(h_hptas[1],h_hptas[0]);
     h_hsdas[4]->Divide(h_hsdas[1],h_hsdas[0]);
+    h_MA0[4]->Divide(h_MA0[1],h_MA0[0]);
+    h_A0Pt[4]->Divide(h_A0Pt[1],h_A0Pt[0]);
+    h_A0DeltaR[4]->Divide(h_A0DeltaR[1],h_A0DeltaR[0]);
+    h_A0DeltaEta[4]->Divide(h_A0DeltaEta[1],h_A0DeltaEta[0]);
+    h_A0DeltaPhi[4]->Divide(h_A0DeltaPhi[1],h_A0DeltaPhi[0]);
+    h_A0ptas[4]->Divide(h_A0ptas[1],h_A0ptas[0]);
+    h_A0sdas[4]->Divide(h_A0sdas[1],h_A0sdas[0]);
     ff->Write();
     // Fit
 
-    TF1 *f1_s = new TF1("f1_s",linear,250,350,2);
-    TF1 *f2_s = new TF1("f2_s",pol_2,250,350,3);
+    TF1 *f1_s = new TF1("f1_s",linear,200,500,2);
+    TF1 *f2_s = new TF1("f2_s",pol_2,200,500,3);
     f1_s->SetLineWidth(2);
     f2_s->SetLineWidth(2);
     f2_s->SetLineColor(kBlue);
@@ -330,6 +352,7 @@ void treePF_mass(bool doscan = false) {
     float bw, b2;
     for (int ij=0;ij<9;ij++) {
         if (ij==0&&1) continue;
+        cout << fName[ij] << endl;
         Int_t nCom, nEvents;
         if (doscan) readFile = fName[ij];
         else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
@@ -349,20 +372,20 @@ void treePF_mass(bool doscan = false) {
         t1->SetBranchAddress("hDeltaR",&hDeltaR);
         t1->SetBranchAddress("hDeltaPhi",&hDeltaPhi);
         t1->SetBranchAddress("hDeltaEta",&hDeltaEta);
-        t1->SetBranchAddress("hptAs",&hptas);
-        t1->SetBranchAddress("hsdAs",&hsdas);
+        t1->SetBranchAddress("hptas",&hptas);
+        t1->SetBranchAddress("hsdas",&hsdas);
         t1->SetBranchAddress("MA0",&MA0);
         t1->SetBranchAddress("A0Pt",&A0Pt);
         t1->SetBranchAddress("A0DeltaR",&A0DeltaR);
         t1->SetBranchAddress("A0DeltaPhi",&A0DeltaPhi);
         t1->SetBranchAddress("A0DeltaEta",&A0DeltaEta);
-        t1->SetBranchAddress("A0ptAs",&A0ptas);
-        t1->SetBranchAddress("A0sdAs",&A0sdas);
+        t1->SetBranchAddress("A0ptas",&A0ptas);
+        t1->SetBranchAddress("A0sdas",&A0sdas);
         for (int i=0;i<t1->GetEntries();i++) {
             if (i%2==0) continue;
             t1->GetEntry(i);
             if (isTag) continue;
-            if (MA0>350||MA0<250) continue;
+            if (MA0>200||MA0<500) continue;
             bool isPass = false;
             int find = -1;
             // veto pass, leave fail
@@ -370,7 +393,6 @@ void treePF_mass(bool doscan = false) {
             bw = b*f1_s->Eval(MA0);
             b2 = b*f2_s->Eval(MA0);
             h_Mh[5]->Fill(Mh,bw);
-            h_MA0[5]->Fill(MA0,bw);
             h_hPt[5]->Fill(hPt,bw);
             h_hDeltaR[5]->Fill(hDeltaR,bw);
             h_hDeltaPhi[5]->Fill(hDeltaPhi,bw);
@@ -379,19 +401,33 @@ void treePF_mass(bool doscan = false) {
             h_hsdas[5]->Fill(hsdas,bw);
             
             h_Mh[6]->Fill(Mh,b2);
-            h_MA0[6]->Fill(MA0,b2);
             h_hPt[6]->Fill(hPt,b2);
             h_hDeltaR[6]->Fill(hDeltaR,b2);
             h_hDeltaPhi[6]->Fill(hDeltaPhi,b2);
             h_hDeltaEta[6]->Fill(hDeltaEta,b2);
             h_hptas[6]->Fill(hptas,b2);
             h_hsdas[6]->Fill(hsdas,b2);
+            
+            h_MA0[5]->Fill(MA0,bw);
+            h_A0Pt[5]->Fill(A0Pt,bw);
+            h_A0DeltaR[5]->Fill(A0DeltaR,bw);
+            h_A0DeltaPhi[5]->Fill(A0DeltaPhi,bw);
+            h_A0DeltaEta[5]->Fill(A0DeltaEta,bw);
+            h_A0ptas[5]->Fill(A0ptas,bw);
+            h_A0sdas[5]->Fill(A0sdas,bw);
+            
+            h_MA0[6]->Fill(MA0,b2);
+            h_A0Pt[6]->Fill(A0Pt,b2);
+            h_A0DeltaR[6]->Fill(A0DeltaR,b2);
+            h_A0DeltaPhi[6]->Fill(A0DeltaPhi,b2);
+            h_A0DeltaEta[6]->Fill(A0DeltaEta,b2);
+            h_A0ptas[6]->Fill(A0ptas,b2);
+            h_A0sdas[6]->Fill(A0sdas,b2);
         }
         f->Close();
         if (!doscan)break;
     } //end of fill
     h_Mh[5]->SetLineColor(kRed);
-    h_MA0[5]->SetLineColor(kRed);
     h_hPt[5]->SetLineColor(kRed);
     h_hDeltaR[5]->SetLineColor(kRed);
     h_hDeltaEta[5]->SetLineColor(kRed);
@@ -399,13 +435,26 @@ void treePF_mass(bool doscan = false) {
     h_hptas[5]->SetLineColor(kRed);
     h_hsdas[5]->SetLineColor(kRed);
     h_Mh[6]->SetLineColor(kCyan);
-    h_MA0[6]->SetLineColor(kCyan);
     h_hPt[6]->SetLineColor(kCyan);
     h_hDeltaR[6]->SetLineColor(kCyan);
     h_hDeltaEta[6]->SetLineColor(kCyan);
     h_hDeltaPhi[6]->SetLineColor(kCyan);
     h_hptas[6]->SetLineColor(kCyan);
     h_hsdas[6]->SetLineColor(kCyan);
+    h_MA0[5]->SetLineColor(kRed);
+    h_A0Pt[5]->SetLineColor(kRed);
+    h_A0DeltaR[5]->SetLineColor(kRed);
+    h_A0DeltaEta[5]->SetLineColor(kRed);
+    h_A0DeltaPhi[5]->SetLineColor(kRed);
+    h_A0ptas[5]->SetLineColor(kRed);
+    h_A0sdas[5]->SetLineColor(kRed);
+    h_MA0[6]->SetLineColor(kCyan);
+    h_A0Pt[6]->SetLineColor(kCyan);
+    h_A0DeltaR[6]->SetLineColor(kCyan);
+    h_A0DeltaEta[6]->SetLineColor(kCyan);
+    h_A0DeltaPhi[6]->SetLineColor(kCyan);
+    h_A0ptas[6]->SetLineColor(kCyan);
+    h_A0sdas[6]->SetLineColor(kCyan);
     
     leg->Clear();
     leg->SetX1NDC(0.45);
@@ -419,12 +468,6 @@ void treePF_mass(bool doscan = false) {
     h_Mh[3]->Draw("e");
     h_Mh[5]->Draw("esame");
     h_Mh[6]->Draw("esame");
-    leg->Draw();
-    c1->Print(fileName.data());
-    setMax(h_MA0[3],h_MA0[5],h_MA0[6]);
-    h_MA0[3]->Draw("e");
-    h_MA0[5]->Draw("esame");
-    h_MA0[6]->Draw("esame");
     leg->Draw();
     c1->Print(fileName.data());
     setMax(h_hPt[3],h_hPt[5],h_hPt[6]);
@@ -463,6 +506,21 @@ void treePF_mass(bool doscan = false) {
     h_hsdas[6]->Draw("esame");
     leg->Draw();
     c1->Print(fileName.data());
+    drawAll(h_MA0[3],h_MA0[5],h_MA0[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0Pt[3],h_A0Pt[5],h_A0Pt[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0DeltaR[3],h_A0DeltaR[5],h_A0DeltaR[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0DeltaEta[3],h_A0DeltaEta[5],h_A0DeltaEta[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0DeltaPhi[3],h_A0DeltaPhi[5],h_A0DeltaPhi[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0ptas[3],h_A0ptas[5],h_A0ptas[6],leg);
+    c1->Print(fileName.data());
+    drawAll(h_A0sdas[3],h_A0sdas[5],h_A0sdas[5],leg);
+    c1->Print(fileName.data());
+
     c1->Print((fileName+"]").data());
     // 3: sim,  5,6: estimate
     drawDiff(h_Mh[5],h_Mh[3],"M_{h}",1);
