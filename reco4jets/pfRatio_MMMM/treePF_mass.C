@@ -9,6 +9,10 @@
 
 #define CISVV2_CUT 0.5426
 using namespace std;
+float sigA0Min = 250;
+float sigA0Max = 350;
+float hA0Min = 200;
+float hA0Max = 500;
 bool doReject = true;
 void setMax(TH1F* h1, TH1F* h2) {
     float max = h1->GetMaximum();
@@ -27,21 +31,21 @@ void setMax(TH1F* h1, TH1F* h2,TH1F* h3) {
     h2->SetMaximum(max*1.4);
     h3->SetMaximum(max*1.4);
 }
-void drawAll(TH1F* h1,TH1F* h2, TH1F* h3, TLegend* leg) {
+void drawAll(TH1F* h1,TH1F* h2, TH1F* h3, TLegend* leg=NULL) {
     h1->Draw("e");
     h2->Draw("esame");
     h3->Draw("esame");
-    leg->Draw();
+    if (leg) leg->Draw();
 }
 double linear(double *x,double *par) {
-    if (doReject&&x[0]<350&&x[0]>250) {
+    if (doReject&&x[0]<sigA0Max&&x[0]>sigA0Min) {
         TF1::RejectPoint();
         return 0;
     }
     return par[0]+par[1]*x[0];
 }
 double pol_2(double *x,double *par) {
-    if (doReject&&x[0]<350&&x[0]>250) {
+    if (doReject&&x[0]<sigA0Max&&x[0]>sigA0Min) {
         TF1::RejectPoint();
         return 0;
     }
@@ -56,11 +60,11 @@ TH1F* copyHist(TH1F* h1, bool sig){
         bincenter = h1->GetXaxis()->GetBinCenter(i);
         binError = h1->GetBinError(i);
         binCon = h1->GetBinContent(i);
-        if (sig&&bincenter<140&&bincenter>120) {
+        if (sig&&bincenter<sigA0Max&&bincenter>sigA0Min) {
             hclone->SetBinContent(i,binCon);
             hclone->SetBinError(i,binError);
         }
-        else if (!sig&&(bincenter>140||bincenter<120)){
+        else if (!sig&&(bincenter>sigA0Max||bincenter<sigA0Min)){
             hclone->SetBinContent(i,binCon);
             hclone->SetBinError(i,binError);
 
@@ -117,8 +121,8 @@ void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfR
     //if (htitle.Contains("weight2")) leg.AddEntry(h1,"p/f(parabola funciton fit)*f");
     //else leg.AddEntry(h1,"p/f(linear function fit)*f");
     // set estimate title
-    if (htitle.Contains("weight2")) leg.AddEntry(h1,"estimation with parabola funciton");
-    else leg.AddEntry(h1,"estimation with linear function");
+    if (htitle.Contains("weight2")) leg.AddEntry(h1,"estimation (quadratic)");
+    else leg.AddEntry(h1,"estimation (linear)");
     leg.AddEntry(h2,"simulation");
     leg.SetBorderSize(0);
     leg.Draw();
@@ -180,7 +184,7 @@ void treePF_mass(bool doscan = false) {
         h_hDeltaEta[i] = new TH1F(Form("h_hDeltaEta%s",suf[i].data()),Form("h_hDeltaEta%s",suf[i].data()),20,0,4);
         h_hptas[i] = new TH1F(Form("h_hptas%s",suf[i].data()),Form("h_hptas%s",suf[i].data()),20,0,2);
         h_hsdas[i] = new TH1F(Form("h_hsdas%s",suf[i].data()),Form("h_hsdas%s",suf[i].data()),30,0,0.6);
-        h_MA0[i] = new TH1F(Form("h_MA0%s",suf[i].data()),Form("h_MA0%s",suf[i].data()),20,200,500);
+        h_MA0[i] = new TH1F(Form("h_MA0%s",suf[i].data()),Form("h_MA0%s",suf[i].data()),20,hA0Min,hA0Max);
         h_A0Pt[i] = new TH1F(Form("h_A0Pt%s",suf[i].data()),Form("h_A0Pt%s",suf[i].data()),60,0,900);
         h_A0DeltaR[i] = new TH1F(Form("h_A0DeltaR%s",suf[i].data()),Form("h_A0DeltaR%s",suf[i].data()),20,0,4);
         h_A0DeltaPhi[i] = new TH1F(Form("h_A0DeltaPhi%s",suf[i].data()),Form("h_A0DeltaPhi%s",suf[i].data()),32,0,3.2);
@@ -292,8 +296,8 @@ void treePF_mass(bool doscan = false) {
     ff->Write();
     // Fit
 
-    TF1 *f1_s = new TF1("f1_s",linear,200,500,2);
-    TF1 *f2_s = new TF1("f2_s",pol_2,200,500,3);
+    TF1 *f1_s = new TF1("f1_s",linear,hA0Min,hA0Max,2);
+    TF1 *f2_s = new TF1("f2_s",pol_2,hA0Min,hA0Max,3);
     f1_s->SetLineWidth(2);
     f2_s->SetLineWidth(2);
     f2_s->SetLineColor(kBlue);
@@ -307,7 +311,7 @@ void treePF_mass(bool doscan = false) {
     TLegend *leg = new TLegend(0.1,0.7,0.5,0.9);
     leg->AddEntry(h_MA0[4],"MA0 p/f ratio");
     leg->AddEntry(f1_s,Form("linear, #chi^{2}/ndf = %.1f/%d",f1_s->GetChisquare(),f1_s->GetNDF()),"l");
-    leg->AddEntry(f2_s,Form("2nd order poly, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
+    leg->AddEntry(f2_s,Form("quadratic, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
     leg->Draw();
     c1->Print(fileName.data());
     // empty SR
@@ -319,9 +323,9 @@ void treePF_mass(bool doscan = false) {
     h_SB->Draw("esame");
     h_SR->Draw("esame");
     leg->AddEntry(h_SB,"MA0 p/f ratio");
-    leg->AddEntry(h_SR,"SR, not used in fitting");
+    leg->AddEntry(h_SR,"SR, not used to fit");
     leg->AddEntry(f1_s,Form("linear, #chi^{2}/ndf = %.1f/%d",f1_s->GetChisquare(),f1_s->GetNDF()),"l");
-    leg->AddEntry(f2_s,Form("2nd order poly, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
+    leg->AddEntry(f2_s,Form("quadratic, #chi^{2}/ndf = %.1f/%d",f2_s->GetChisquare(),f2_s->GetNDF()),"l");
     leg->Draw();
     c1->Print(fileName.data());
     h_SB->Draw("e");
@@ -360,6 +364,7 @@ void treePF_mass(bool doscan = false) {
         TH1F* h_allEvent = (TH1F*)f->Get("h_allEvent");
         nEvents = h_allEvent->GetEntries();
         if (doscan) b = L2016*xsHTbeam[ij]/nEvents;
+
         TTree *t1 = (TTree*)f->Get("tree");
         t1->SetBranchAddress("isTag",&isTag);
         t1->SetBranchAddress("isAntiTag",&isAntiTag);
@@ -384,12 +389,9 @@ void treePF_mass(bool doscan = false) {
         for (int i=0;i<t1->GetEntries();i++) {
             if (i%2==0) continue;
             t1->GetEntry(i);
-            if (isTag) continue;
-            if (MA0>200||MA0<500) continue;
-            bool isPass = false;
-            int find = -1;
             // veto pass, leave fail
-            if (find<0) continue;
+            if (isTag) continue;
+            if (MA0<hA0Min||MA0>hA0Max) continue;
             bw = b*f1_s->Eval(MA0);
             b2 = b*f2_s->Eval(MA0);
             h_Mh[5]->Fill(Mh,bw);
@@ -463,7 +465,7 @@ void treePF_mass(bool doscan = false) {
     leg->SetY2NDC(0.9);
     leg->AddEntry(h_hPt[3],"pass");
     leg->AddEntry(h_hPt[5],"fail*p/f (linier)");
-    leg->AddEntry(h_hPt[6],"fail*p/f (2nd poly)");
+    leg->AddEntry(h_hPt[6],"fail*p/f (quadratic)");
     setMax(h_Mh[3],h_Mh[5],h_Mh[6]);
     h_Mh[3]->Draw("e");
     h_Mh[5]->Draw("esame");
