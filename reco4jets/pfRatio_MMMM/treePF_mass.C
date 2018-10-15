@@ -162,7 +162,10 @@ void treePF_mass(bool doscan = false) {
 
     TCanvas *c1 = new TCanvas("c1","c1",3);
     TFile *ff = new TFile("ttt.root","recreate");
-    const int nHist = 7;
+    //vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2"};
+    vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2",\
+        "_fAll","_pAll","_ratioAll","_wAll","_wAll2"};
+    const int nHist = suf.size();  //12
     TH1F* h_Mh[nHist];
     TH1F* h_hPt[nHist];
     TH1F* h_hDeltaR[nHist];
@@ -175,7 +178,9 @@ void treePF_mass(bool doscan = false) {
     TH1F* h_A0DeltaEta[nHist];
     TH1F* h_A0DeltaPhi[nHist];
     TH1F* h_A0ptas[nHist], *h_A0sdas[nHist];
-    string suf[] = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2"};
+    const int nVar = 14;
+    TH1F** hList[nVar] = {h_Mh,h_hPt,h_hDeltaR,h_hDeltaEta,h_hDeltaPhi,h_hptas,h_hsdas,\
+    h_MA0,h_A0Pt,h_A0DeltaR,h_A0DeltaEta,h_A0DeltaPhi,h_A0ptas,h_A0sdas};
     for (int i=0;i<nHist;i++) {
         h_Mh[i] = new TH1F(Form("h_Mh%s",suf[i].data()),Form("h_Mh%s",suf[i].data()),20,90,160);
         h_hPt[i] = new TH1F(Form("h_hPt%s",suf[i].data()),Form("h_hPt%s",suf[i].data()),60,0,900);
@@ -278,6 +283,11 @@ void treePF_mass(bool doscan = false) {
         if (!doscan)break;
     } //end of fill
     
+    // Add hist
+    for (int i=0;i<nVar;i++) {
+        *hList[i][7] = *hList[i][0] + *hList[i][2];  // fail
+        *hList[i][8] = *hList[i][1] + *hList[i][3];  // pass
+    }
     // ratio
     h_Mh[4]->Divide(h_Mh[1],h_Mh[0]);
     h_hPt[4]->Divide(h_hPt[1],h_hPt[0]);
@@ -293,15 +303,24 @@ void treePF_mass(bool doscan = false) {
     h_A0DeltaPhi[4]->Divide(h_A0DeltaPhi[1],h_A0DeltaPhi[0]);
     h_A0ptas[4]->Divide(h_A0ptas[1],h_A0ptas[0]);
     h_A0sdas[4]->Divide(h_A0sdas[1],h_A0sdas[0]);
+    for (int i=0;i<nVar;i++) {
+        hList[i][9]->Divide(hList[i][8],hList[i][7]);
+    }
     ff->Write();
     // Fit
 
     TF1 *f1_s = new TF1("f1_s",linear,hA0Min,hA0Max,2);
     TF1 *f2_s = new TF1("f2_s",pol_2,hA0Min,hA0Max,3);
+    TF1 *f1_a = new TF1("f1_a",linear,hA0Min,hA0Max,2);
+    TF1 *f2_a = new TF1("f2_a",pol_2,hA0Min,hA0Max,3);
     f1_s->SetLineWidth(2);
     f2_s->SetLineWidth(2);
     f2_s->SetLineColor(kBlue);
     f1_s->SetLineColor(kRed);
+    f1_a->SetLineWidth(2);
+    f2_a->SetLineWidth(2);
+    f2_a->SetLineColor(kBlue);
+    f1_a->SetLineColor(kRed);
     h_MA0[4]->Fit(f1_s);
     h_MA0[4]->Fit(f2_s,"+");
     string fileName = "treePFratio_mass.pdf";
@@ -316,8 +335,10 @@ void treePF_mass(bool doscan = false) {
     c1->Print(fileName.data());
     // empty SR
     leg->Clear();
+    doReject = true;
     h_MA0[4]->Fit(f1_s);
     h_MA0[4]->Fit(f2_s,"+");
+    doReject = false;
     TH1F* h_SR = copyHist(h_MA0[4],1);
     TH1F* h_SB = copyHist(h_MA0[4],0);
     h_SB->Draw("esame");
@@ -333,6 +354,24 @@ void treePF_mass(bool doscan = false) {
     h_SR->Draw("e");
     c1->Print(fileName.data());
 
+    // end
+    // plot all
+    leg->Clear();
+    doReject = true;
+    h_MA0[9]->Fit(f1_a);
+    h_MA0[9]->Fit(f2_a,"+");
+    doReject = false;
+    TH1F* h_SRA = copyHist(h_MA0[9],1);
+    TH1F* h_SBA = copyHist(h_MA0[9],0);
+    h_SBA->Draw("esame");
+    h_SRA->Draw("esame");
+    leg->AddEntry(h_SBA,"MA0 p/f ratio (All)");
+    leg->AddEntry(h_SRA,"SR, not used to fit");
+    leg->AddEntry(f1_a,Form("linear, #chi^{2}/ndf = %.1f/%d",f1_a->GetChisquare(),f1_a->GetNDF()),"l");
+    leg->AddEntry(f2_a,Form("quadratic, #chi^{2}/ndf = %.1f/%d",f2_a->GetChisquare(),f2_a->GetNDF()),"l");
+    leg->Draw();
+    c1->Print(fileName.data());
+    
     // end
     h_MA0[0]->Draw("e");
     c1->Print(fileName.data());
@@ -353,7 +392,7 @@ void treePF_mass(bool doscan = false) {
     
     // weight event by event
     b = 1;
-    float bw, b2;
+    float bw, b2,ba,ba2;
     for (int ij=0;ij<9;ij++) {
         if (ij==0&&1) continue;
         cout << fName[ij] << endl;
@@ -387,13 +426,47 @@ void treePF_mass(bool doscan = false) {
         t1->SetBranchAddress("A0ptas",&A0ptas);
         t1->SetBranchAddress("A0sdas",&A0sdas);
         for (int i=0;i<t1->GetEntries();i++) {
-            if (i%2==0) continue;
             t1->GetEntry(i);
             // veto pass, leave fail
             if (isTag) continue;
             if (MA0<hA0Min||MA0>hA0Max) continue;
             bw = b*f1_s->Eval(MA0);
             b2 = b*f2_s->Eval(MA0);
+            ba = b*f1_a->Eval(MA0);
+            ba2 = b*f2_a->Eval(MA0);
+            // fill
+            h_Mh[10]->Fill(Mh,ba);
+            h_hPt[10]->Fill(hPt,ba);
+            h_hDeltaR[10]->Fill(hDeltaR,ba);
+            h_hDeltaPhi[10]->Fill(hDeltaPhi,ba);
+            h_hDeltaEta[10]->Fill(hDeltaEta,ba);
+            h_hptas[10]->Fill(hptas,ba);
+            h_hsdas[10]->Fill(hsdas,ba);
+            
+            h_Mh[11]->Fill(Mh,ba2);
+            h_hPt[11]->Fill(hPt,ba2);
+            h_hDeltaR[11]->Fill(hDeltaR,ba2);
+            h_hDeltaPhi[11]->Fill(hDeltaPhi,ba2);
+            h_hDeltaEta[11]->Fill(hDeltaEta,ba2);
+            h_hptas[11]->Fill(hptas,ba2);
+            h_hsdas[11]->Fill(hsdas,ba2);
+            
+            h_MA0[10]->Fill(MA0,ba);
+            h_A0Pt[10]->Fill(A0Pt,ba);
+            h_A0DeltaR[10]->Fill(A0DeltaR,ba);
+            h_A0DeltaPhi[10]->Fill(A0DeltaPhi,ba);
+            h_A0DeltaEta[10]->Fill(A0DeltaEta,ba);
+            h_A0ptas[10]->Fill(A0ptas,ba);
+            h_A0sdas[10]->Fill(A0sdas,ba);
+            
+            h_MA0[11]->Fill(MA0,ba2);
+            h_A0Pt[11]->Fill(A0Pt,ba2);
+            h_A0DeltaR[11]->Fill(A0DeltaR,ba2);
+            h_A0DeltaPhi[11]->Fill(A0DeltaPhi,ba2);
+            h_A0DeltaEta[11]->Fill(A0DeltaEta,ba2);
+            h_A0ptas[11]->Fill(A0ptas,ba2);
+            h_A0sdas[11]->Fill(A0sdas,ba2);
+            if (i%2==0) continue;
             h_Mh[5]->Fill(Mh,bw);
             h_hPt[5]->Fill(hPt,bw);
             h_hDeltaR[5]->Fill(hDeltaR,bw);
@@ -457,6 +530,10 @@ void treePF_mass(bool doscan = false) {
     h_A0DeltaPhi[6]->SetLineColor(kCyan);
     h_A0ptas[6]->SetLineColor(kCyan);
     h_A0sdas[6]->SetLineColor(kCyan);
+    for (int i=0;i<nVar;i++) {
+        hList[i][10]->SetLineColor(kRed); 
+        hList[i][11]->SetLineColor(kCyan); 
+    }
     
     leg->Clear();
     leg->SetX1NDC(0.45);
@@ -520,8 +597,12 @@ void treePF_mass(bool doscan = false) {
     c1->Print(fileName.data());
     drawAll(h_A0ptas[3],h_A0ptas[5],h_A0ptas[6],leg);
     c1->Print(fileName.data());
-    drawAll(h_A0sdas[3],h_A0sdas[5],h_A0sdas[5],leg);
+    drawAll(h_A0sdas[3],h_A0sdas[5],h_A0sdas[6],leg);
     c1->Print(fileName.data());
+    for (int i=0;i<nVar;i++) {
+        drawAll(hList[i][8],hList[i][10],hList[i][11],leg);
+        c1->Print(fileName.data());
+    }
 
     c1->Print((fileName+"]").data());
     // 3: sim,  5,6: estimate
@@ -540,6 +621,11 @@ void treePF_mass(bool doscan = false) {
     drawDiff(h_hptas[5],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
     drawDiff(h_hptas[6],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
     drawDiff(h_hsdas[5],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
-    drawDiff(h_hsdas[6],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)",2);
+    drawDiff(h_hsdas[6],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
+    for (int i=0;i<nVar;i++) {
+        int g = (i==13)?2:0;
+        drawDiff(hList[i][10],hList[i][8]);
+        drawDiff(hList[i][11],hList[i][8],"",g);
+    }
 }
 
