@@ -14,12 +14,12 @@ float sigA0Max = 350;
 float hA0Min = 200;
 float hA0Max = 500;
 bool doReject = true;
-void setMax(TH1F* h1, TH1F* h2) {
+void setMax(TH1F* h1, TH1F* h2,float weight = 1.05) {
     float max = h1->GetMaximum();
     float max2 = h2->GetMaximum();
     if (max<max2) max = max2;
-    h1->SetMaximum(max*1.05);
-    h2->SetMaximum(max*1.05);
+    h1->SetMaximum(max*weight);
+    h2->SetMaximum(max*weight);
 }
 void setMax(TH1F* h1, TH1F* h2,TH1F* h3) {
     float max = h1->GetMaximum();
@@ -70,7 +70,8 @@ TH1F* copyHist(TH1F* h1, bool sig){
 
         }
     }
-    if (sig) hclone->SetLineColor(kGreen);
+    //if (sig) hclone->SetLineColorAlpha(kOrange,0.5);
+    if (sig) hclone->SetLineColor(kOrange);
     else hclone->SetLineColor(kBlack);
     hclone->SetLineWidth(2);
     return hclone;
@@ -90,7 +91,7 @@ TH1F* applyRatio(TH1F *hfail,TF1* fratio){
 }
 void drawDiff(TH1F* h1, TH1F* h2, string title="",int io=0, string fileName="pfRatioCompare.pdf") {
     // h1 est, h2 sim
-    setMax(h1,h2);
+    setMax(h1,h2,1.3);
     TCanvas* c3 = new TCanvas("c3","c3",3);
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
@@ -164,7 +165,7 @@ void treePF_mass(bool doscan = false) {
     TFile *ff = new TFile("ttt.root","recreate");
     //vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2"};
     vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2",\
-        "_fAll","_pAll","_ratioAll","_wAll","_wAll2"};
+        "_fAll","_pAll","_ratioAll","_wAll","_weight2All"};
     const int nHist = suf.size();  //12
     TH1F* h_Mh[nHist];
     TH1F* h_hPt[nHist];
@@ -622,10 +623,14 @@ void treePF_mass(bool doscan = false) {
     drawDiff(h_hptas[6],h_hptas[3],"pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}");
     drawDiff(h_hsdas[5],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
     drawDiff(h_hsdas[6],h_hsdas[3],"min(pt1,pt2)/(pt1+pt2)");
+    string xTitleList[nVar] = {"M_{h}","higgs Pt","#DeltaR^{h}_{bb}","#Delta#eta^{h}_{bb}",
+        "#Delta#phi^{h}_{bb}","higgs pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}",
+        "higgs min(pt1,pt2)/(pt1+pt2)","M_{A0}","A0 Pt","#DeltaR^{A0}_{bb}",\
+            "#Delta#eta^{A0}_{bb}","#Delta#phi^{A0}_{bb}","A0 pt assymetry (min(Pt1,Pt2)#Delta R/m_{jj})^{2}","A0 min(pt1,pt2)/(pt1+pt2)"};
     for (int i=0;i<nVar;i++) {
         int g = (i==13)?2:0;
-        drawDiff(hList[i][10],hList[i][8]);
-        drawDiff(hList[i][11],hList[i][8],"",g);
+        drawDiff(hList[i][10],hList[i][8],xTitleList[i].data());
+        drawDiff(hList[i][11],hList[i][8],xTitleList[i].data(),g);
     }
 }
 
