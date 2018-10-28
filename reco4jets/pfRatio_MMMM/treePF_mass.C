@@ -14,6 +14,19 @@ float sigA0Max = 350;
 float hA0Min = 200;
 float hA0Max = 500;
 bool doReject = true;
+struct autoCanvas{
+    static int n;
+    TCanvas *c1;
+    string pdfName = "";
+    autoCanvas(){}
+    autoCanvas(string name){
+        pdfName = name;
+        c1 = new TCanvas(Form("cc%d",n),Form("cc%d",n),3);
+        n++;
+    }
+};
+//autoCanvas::n = 0;
+int autoCanvas::n = 0;
 void setMax(TH1F* h1, TH1F* h2,float weight = 1.05) {
     float max = h1->GetMaximum();
     float max2 = h2->GetMaximum();
@@ -164,8 +177,7 @@ void treePF_mass(bool doscan = false) {
     TCanvas *c1 = new TCanvas("c1","c1",3);
     TFile *ff = new TFile("ttt.root","recreate");
     //vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2"};
-    vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2",\
-        "_fAll","_pAll","_ratioAll","_wAll","_weight2All"};
+    vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2","_fAll","_pAll","_ratioAll","_wAll","_weight2All"};
     const int nHist = suf.size();  //12
     TH1F* h_Mh[nHist];
     TH1F* h_hPt[nHist];
@@ -286,8 +298,8 @@ void treePF_mass(bool doscan = false) {
     
     // Add hist
     for (int i=0;i<nVar;i++) {
-        *hList[i][7] = *hList[i][0] + *hList[i][2];  // fail
-        *hList[i][8] = *hList[i][1] + *hList[i][3];  // pass
+        hList[i][7]->Add(hList[i][0],hList[i][2]);
+        hList[i][8]->Add(hList[i][1],hList[i][3]);
     }
     // ratio
     h_Mh[4]->Divide(h_Mh[1],h_Mh[0]);
@@ -307,7 +319,6 @@ void treePF_mass(bool doscan = false) {
     for (int i=0;i<nVar;i++) {
         hList[i][9]->Divide(hList[i][8],hList[i][7]);
     }
-    ff->Write();
     // Fit
 
     TF1 *f1_s = new TF1("f1_s",linear,hA0Min,hA0Max,2);
@@ -502,7 +513,9 @@ void treePF_mass(bool doscan = false) {
         }
         f->Close();
         if (!doscan)break;
-    } //end of fill
+    } 
+    //end of fill
+
     h_Mh[5]->SetLineColor(kRed);
     h_hPt[5]->SetLineColor(kRed);
     h_hDeltaR[5]->SetLineColor(kRed);
@@ -632,5 +645,6 @@ void treePF_mass(bool doscan = false) {
         drawDiff(hList[i][10],hList[i][8],xTitleList[i].data());
         drawDiff(hList[i][11],hList[i][8],xTitleList[i].data(),g);
     }
+    ff->Write();
 }
 
