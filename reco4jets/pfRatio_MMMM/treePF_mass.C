@@ -13,6 +13,8 @@ float sigA0Min = 250;
 float sigA0Max = 350;
 float hA0Min = 200;
 float hA0Max = 500;
+float sighMin = 115;
+float sighMax = 135;
 bool doReject = true;
 struct autoCanvas{
     static int n;
@@ -25,7 +27,6 @@ struct autoCanvas{
         n++;
     }
 };
-//autoCanvas::n = 0;
 int autoCanvas::n = 0;
 void setMax(TH1F* h1, TH1F* h2,float weight = 1.05) {
     float max = h1->GetMaximum();
@@ -175,7 +176,9 @@ void treePF_mass(bool doscan = false) {
     doscan = 1;
 
     TCanvas *c1 = new TCanvas("c1","c1",3);
-    TFile *ff = new TFile("ttt.root","recreate");
+    TFile *ff;
+    if (doscan) ff = new TFile("4bMMMM.root","recreate");
+    else ff = new TFile("4bMMMMSig.root","recreate");
     //vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2"};
     vector<string> suf = {"_fail","_pass","_testF","_testP","_ratio","_weight","_weight2","_fAll","_pAll","_ratioAll","_wAll","_weight2All"};
     const int nHist = suf.size();  //12
@@ -227,6 +230,19 @@ void treePF_mass(bool doscan = false) {
     TH1F* h_MA0_bin1 = new TH1F("h_MA0_bin1","h_MA0_bin1",20,250,350);
     TH1F* h_MA0_bin2 = new TH1F("h_MA0_bin2","h_MA0_bin2",20,250,350);
     
+    // TH2F ratio
+    vector <string> suf2d = {"_fail","_pass","_testF","_testP","_fAll","_pAll"};
+    int n2DRatio = suf2d.size();  // 6
+    TH2F* h_2dRatioMA0Mh[n2DRatio];
+    TH2F* h_2dRatioMA0PtA0[n2DRatio];
+    for (int i=0;i<n2DRatio;i++) {
+        h_2dRatioMA0Mh[i] = new TH2F(Form("h_2dRatioMA0Mh%s",suf2d[i].data()),Form("h_2dRatioMA0Mh%s",suf2d[i].data()),30,hA0Min,hA0Max,30,sighMin-5,sighMax+5);
+        h_2dRatioMA0PtA0[i] = new TH2F(Form("h_2dRatioMA0PtA0%s",suf2d[i].data()),Form("h_2dRatioMA0PtA0%s",suf2d[i].data()),30,hA0Min,hA0Max,50,0,500);
+        h_2dRatioMA0Mh[i]->Sumw2();
+        h_2dRatioMA0PtA0[i]->Sumw2();
+    }
+    
+    
     const float xsHTbeam[9] = {246400000,27990000,1712000,347700,32100,6831,1207,119.9,25.24};
     const float L2016=35.9*1000;//35.9 fb^-1
     //string fName[] = {"tree_QCD_TMVA_HT50to100.root","tree_QCD_TMVA_HT100to200.root","tree_QCD_TMVA_HT200to300.root","tree_QCD_TMVA_HT300to500.root","tree_QCD_TMVA_HT500to700.root","tree_QCD_TMVA_HT700to1000.root","tree_QCD_TMVA_HT1000to1500.root","tree_QCD_TMVA_HT1500to2000.root","tree_QCD_TMVA_HT2000toInf.root"};
@@ -244,8 +260,9 @@ void treePF_mass(bool doscan = false) {
         if (ij==0&&1) continue;
         Int_t nCom, nEvents;
         if (doscan) readFile = fName[ij];
-        else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
-        cout << fName[ij] << endl;
+        else readFile = "../QCDsample_MMMM/treeSig.root";
+        //else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
+        cout << readFile << endl;
         TFile *f = new TFile(readFile.data());
         TH1F* h_allEvent = (TH1F*)f->Get("h_allEvent");
         nEvents = h_allEvent->GetEntries();
@@ -291,9 +308,12 @@ void treePF_mass(bool doscan = false) {
             h_A0DeltaEta[i%2*2+isPass]->Fill(A0DeltaEta,b);
             h_A0ptas[i%2*2+isPass]->Fill(A0ptas,b);
             h_A0sdas[i%2*2+isPass]->Fill(A0sdas,b);
+            // 2D fill
+            h_2dRatioMA0Mh[i%2*2+isPass]->Fill(MA0,Mh,b); 
+            h_2dRatioMA0PtA0[i%2*2+isPass]->Fill(MA0,A0Pt,b); 
         }
         f->Close();
-        if (!doscan)break;
+        if (!doscan) break;
     } //end of fill
     
     // Add hist
@@ -301,6 +321,10 @@ void treePF_mass(bool doscan = false) {
         hList[i][7]->Add(hList[i][0],hList[i][2]);
         hList[i][8]->Add(hList[i][1],hList[i][3]);
     }
+    h_2dRatioMA0Mh[4]->Add(h_2dRatioMA0Mh[0],h_2dRatioMA0Mh[2]);
+    h_2dRatioMA0Mh[5]->Add(h_2dRatioMA0Mh[1],h_2dRatioMA0Mh[3]);
+    h_2dRatioMA0PtA0[4]->Add(h_2dRatioMA0PtA0[0],h_2dRatioMA0PtA0[2]);
+    h_2dRatioMA0PtA0[5]->Add(h_2dRatioMA0PtA0[1],h_2dRatioMA0PtA0[3]);
     // ratio
     h_Mh[4]->Divide(h_Mh[1],h_Mh[0]);
     h_hPt[4]->Divide(h_hPt[1],h_hPt[0]);
@@ -407,10 +431,11 @@ void treePF_mass(bool doscan = false) {
     float bw, b2,ba,ba2;
     for (int ij=0;ij<9;ij++) {
         if (ij==0&&1) continue;
-        cout << fName[ij] << endl;
         Int_t nCom, nEvents;
         if (doscan) readFile = fName[ij];
-        else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
+        else readFile = "../QCDsample_MMMM/treeSig.root";
+        //else readFile = "../QCDsample_MMMM/QCD_HT100to200.root";
+        cout << readFile << endl;
         TFile *f = new TFile(readFile.data());
         TH1F* h_allEvent = (TH1F*)f->Get("h_allEvent");
         nEvents = h_allEvent->GetEntries();
@@ -548,7 +573,8 @@ void treePF_mass(bool doscan = false) {
         hList[i][10]->SetLineColor(kRed); 
         hList[i][11]->SetLineColor(kCyan); 
     }
-    
+    ff->Write();
+    return;
     leg->Clear();
     leg->SetX1NDC(0.45);
     leg->SetX2NDC(0.85);
@@ -617,6 +643,14 @@ void treePF_mass(bool doscan = false) {
         drawAll(hList[i][8],hList[i][10],hList[i][11],leg);
         c1->Print(fileName.data());
     }
+    h_2dRatioMA0Mh[4]->Draw("colz");
+    c1->Print(fileName.data());
+    h_2dRatioMA0Mh[5]->Draw("colz");
+    c1->Print(fileName.data());
+    h_2dRatioMA0PtA0[4]->Draw("colz");
+    c1->Print(fileName.data());
+    h_2dRatioMA0PtA0[5]->Draw("colz");
+    c1->Print(fileName.data());
 
     c1->Print((fileName+"]").data());
     // 3: sim,  5,6: estimate
@@ -645,6 +679,5 @@ void treePF_mass(bool doscan = false) {
         drawDiff(hList[i][10],hList[i][8],xTitleList[i].data());
         drawDiff(hList[i][11],hList[i][8],xTitleList[i].data(),g);
     }
-    ff->Write();
 }
 
