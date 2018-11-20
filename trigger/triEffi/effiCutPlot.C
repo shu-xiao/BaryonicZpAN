@@ -55,6 +55,8 @@ void effiCutPlot() {
     TGraphAsymmErrors* gr = new TGraphAsymmErrors(h_pass,h_all,"cl=0.683 b(1,1) mode");
     TGraphAsymmErrors* gr_Tri[2];
     for (int i=0;i<2;i++) gr_Tri[i] = new TGraphAsymmErrors(h_passTri[i],h_all,"cl=0.683 b(1,1) mode");
+    gr->GetYaxis()->SetRangeUser(0., 1.);
+    for (int i=0;i<2;i++) gr_Tri[i]->GetYaxis()->SetRangeUser(0., 1.);
     gr->SetMarkerStyle(20);
     gr->SetLineWidth(2);
     gr->GetXaxis()->SetTitle("MZp (GeV)");
@@ -81,6 +83,7 @@ void effiCutPlot() {
     //latex.DrawLatex(8.5,1*y,"#splitline{left event}{cut =>}");
     //c1->Update();
     gr->Draw("ALP");
+    c1->Update();
     c1->Print("effiCutPlot.pdf(");
     gr_Tri[0]->Draw("ALP");
     c1->Print("effiCutPlot.pdf");
