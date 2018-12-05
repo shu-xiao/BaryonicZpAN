@@ -4,7 +4,7 @@
 using namespace std;
 int* nEventList (string fileName) {
     int* data;
-    const int size = 6;
+    const int size = 7;
     ifstream inputFile(fileName.data());
     data = new int[size];  
     for(int i=0;i<size;i++)
@@ -25,10 +25,12 @@ void effiCutPlot() {
     for (int i=0;i<2;i++) h_passTri[i] = new TH1F(Form("h_passTri%d",i),Form("h_passTri%d",i),8,zprange);
     TH1F* h_pass = new TH1F("h_pass","h_pass",8,zprange);
     TH1F* h_passHT = new TH1F("h_passHT","h_passtrigger||HT250trigger",8,zprange);
-    TH1F* h_passHT800 = new TH1F("h_passHT","h_passtrigger||HT800trigger",8,zprange);
+    TH1F* h_HT250 = new TH1F("h_HT250","HT250trigger",8,zprange);
+    TH1F* h_passHT800 = new TH1F("h_passHT800","h_passtrigger||HT800trigger",8,zprange);
     TH1F* h_all = new TH1F("h_all","h_all",8,zprange);
     for (int i=0;i<2;i++) h_passTri[i]->Sumw2();
     h_pass->Sumw2();
+    h_HT250->Sumw2();
     h_passHT->Sumw2();
     h_passHT800->Sumw2();
     h_all->Sumw2();
@@ -41,6 +43,7 @@ void effiCutPlot() {
         for (int nE=0;nE<nEvent[3];nE++) h_pass->Fill(zpMass[n]);
         for (int nE=0;nE<nEvent[4];nE++) h_passHT->Fill(zpMass[n]);
         for (int nE=0;nE<nEvent[5];nE++) h_passHT800->Fill(zpMass[n]);
+        for (int nE=0;nE<nEvent[6];nE++) h_HT250->Fill(zpMass[n]);
         //h_all->Fill(zpMass[n],nEvent[0]);
         //for (int i=0;i<2;i++) h_passTri[i]->Fill(zpMass[n],nEvent[i+1]);
         //h_pass->Fill(zpMass[n],nEvent[3]);
@@ -60,6 +63,7 @@ void effiCutPlot() {
     */
     TGraphAsymmErrors* gr = new TGraphAsymmErrors(h_pass,h_all,"cl=0.683 b(1,1) mode");
     TGraphAsymmErrors* grHT = new TGraphAsymmErrors(h_passHT,h_all,"cl=0.683 b(1,1) mode");
+    TGraphAsymmErrors* gr250HT = new TGraphAsymmErrors(h_HT250,h_all,"cl=0.683 b(1,1) mode");
     TGraphAsymmErrors* grHT800 = new TGraphAsymmErrors(h_passHT800,h_all,"cl=0.683 b(1,1) mode");
     TGraphAsymmErrors* gr_Tri[2];
     for (int i=0;i<2;i++) gr_Tri[i] = new TGraphAsymmErrors(h_passTri[i],h_all,"cl=0.683 b(1,1) mode");
@@ -96,6 +100,8 @@ void effiCutPlot() {
     grHT->Draw("ALP");
     c1->Print("effiCutPlot.pdf");
     grHT800->Draw("ALP");
+    c1->Print("effiCutPlot.pdf");
+    gr250HT->Draw("ALP");
     c1->Print("effiCutPlot.pdf");
     gr_Tri[0]->Draw("ALP");
     c1->Print("effiCutPlot.pdf");

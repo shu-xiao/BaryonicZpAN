@@ -571,6 +571,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         if (passTrigger) nPass[8]++;
         if (passTrigger||passHT) nPass[9]++;
         if (passTrigger||passHT800) nPass[10]++;
+        if (passHT) nPass[11]++;
         for (int i=0;i<40;i++) {
             nTriTotle[i]++;
             h_HTtriTotal->Fill(i*40+20);
@@ -735,9 +736,9 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     string fileName; 
     if (!isBG) {
         string txtName = Form("triEffi/triEffi_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi());
-        int np[7];
-        for (int i = 0;i<7;i++)np[i] = 0;
-        for (int i=5;i<=10;i++) {
+        int np[8];
+        for (int i = 0;i<8;i++)np[i] = 0;
+        for (int i=5;i<=11;i++) {
             np[i-5] = nPass[i];
         }
         savenPass(np,txtName);
