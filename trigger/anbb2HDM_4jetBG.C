@@ -107,7 +107,8 @@ void savenPass(int nPass[],int nPass2[],string fileName) {
 using namespace std;
 void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     
-    inputFile = "../reco4jets/2HDMfullSimFile/bb2HDM_TMVA10K_MZp600_MA0300.root";
+    //inputFile = "../reco4jets/2HDMfullSimFile/2HDM_MZp600_MA0400.root";
+    //inputFile = "../reco4jets/2HDMfullSimFile/bb2HDM_TMVA10K_MZp600_MA0300.root";
     //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_76.root";
     //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_243.root";
     setNCUStyle(true);
@@ -330,18 +331,27 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         vector<bool> &trigResult = *((vector<bool>*) data.GetPtr("hlt_trigResult"));
 
         bool passTrigger=false;
+        bool passHT=false;
+        bool passHT800=false;
+        bool isTri[5] = {0};
+        for (int k=0;k<5;k++) isTri[k] = false;
         for(unsigned int it=0; it< trigResult.size(); it++) {
             std::string thisTrig= trigName[it];
             bool results = trigResult[it];
 
-            if( (thisTrig.find("HLT_DoubleJet90_Double30_TripleBTagCSV_p087")!= 
-            std::string::npos && results==1) || 
-             (thisTrig.find("HLT_QuadJet45_TripleBTagCSV_p087")!= 
-             std::string::npos && results==1)) {
-            
-                passTrigger=true;
-                break;
+            if (thisTrig.find("HLT_DoubleJet90_Double30_TripleBTagCSV_p087")!= 
+            std::string::npos && results==1) isTri[0] = true;
+            if (thisTrig.find("HLT_QuadJet45_TripleBTagCSV_p087")!= 
+             std::string::npos && results==1) isTri[1] = true;
+            if (thisTrig.find("HLT_PFHT250")!= 
+             std::string::npos && results==1) passHT = true;
+            if (thisTrig.find("HLT_PFHT800")!= 
+             std::string::npos && results==1) passHT800 = true;
+            if (isTri[0]||isTri[1])  passTrigger = true;
+            if (isTri[0]&&isTri[1]) {
+                //break;
             }
+            
         }
                                                                     
         //if(!passTrigger)continue;
@@ -556,7 +566,11 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
             for (int i=0;i<4;i++) LeadHA0_CISVV2[i] = tem[Hind[0][i]];
         }
         nPass[5]++;
-        if (passTrigger) nPass[6]++;
+        if (isTri[0]) nPass[6]++;
+        if (isTri[1]) nPass[7]++;
+        if (passTrigger) nPass[8]++;
+        if (passTrigger||passHT) nPass[9]++;
+        if (passTrigger||passHT800) nPass[10]++;
         for (int i=0;i<40;i++) {
             nTriTotle[i]++;
             h_HTtriTotal->Fill(i*40+20);
@@ -614,8 +628,6 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         *va02 = *LeadSelHA0Jet[0][3];
         if (saveTree) tree->Fill();
         if (!isMatch) continue;
-        nPass[7]++;
-        if (inWindow) nPass[8]++;
         nCorrectness[0]++;
         delete LeadSelHA0Jet[0][4];
         delete LeadSelHA0Jet[0][5];
@@ -632,6 +644,8 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     h_2d_A0LMT->GetYaxis()->SetTitle("subleading A0 b jet");
     h_2d_HLMT->Scale(1/h_2d_HLMT->Integral());
     h_2d_A0LMT->Scale(1/h_2d_A0LMT->Integral());
+    h_effiTriHT->GetXaxis()->SetTitle("HT selection");
+    h_effiTriHT->GetYaxis()->SetTitle("efficiency (25 GeV)");
     
     float nTotal = data.GetEntriesFast();
     string pdfName = Form("MZp%d_MA0%d_HT.pdf",Zpmass.Atoi(),A0mass.Atoi());
@@ -639,6 +653,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         c1->Print((pdfName+"[").data());
         h_HT4jet->Draw("hist");
         c1->Print(pdfName.data());
+        c1->SetLeftMargin(0.15);
         h_effiTriHT->Draw("ALP");
         c1->Print(pdfName.data());
         h_HTtriTotal->Draw("hist");
@@ -714,16 +729,17 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     // last index is genMatching rate
     std::cout << "nTotal    = " << nTotal << std::endl;
     for(int i=0;i<20;i++) if(nPass[i]>0) {std::cout << "nPass[" << i << "] = " << nPass[i] << std::endl;lastInd = i;}
-    lastInd = 4;
+    lastInd = 5;
     efferr(nPass[lastInd],nTotal);
 
     string fileName; 
-    if (isBG) {
-        if (saveTree) {
-            tree->Write();
-            h_allEvent->Write();
-            ftree->Close();
-        
+    if (!isBG) {
+        string txtName = Form("triEffi/triEffi_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi());
+        int np[7];
+        for (int i = 0;i<7;i++)np[i] = 0;
+        for (int i=5;i<=10;i++) {
+            np[i-5] = nPass[i];
         }
+        savenPass(np,txtName);
     }
 }
