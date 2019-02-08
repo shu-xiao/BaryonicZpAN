@@ -11,6 +11,7 @@
 #include <fstream>
 #include <TCanvas.h>
 #include <TLegend.h>
+#include <TGraphAsymmErrors.h>
 #include "string"
 #include "../setNCUStyle.C"
 
@@ -18,10 +19,20 @@
 #define doGenMatch      0
 #define saveTree        1
 #define corr            0
+#define calTriAll       0
 
 # if doGenMatch != 0 || corr != 0 
 #include "../gen2HDMsample/genMatch.C"
 #endif
+struct tri{
+    int nPass = 0;
+    TString triName;
+    tri(string name,int w) {
+        triName = name;
+        nPass = w;
+    }
+};
+bool sortEffi(tri a, tri b) {return a.nPass>b.nPass;}
 bool isOverlap(int i1, int i2, int j1, int j2) {
     if (i1==j1||i2==j2) return true;
     else if (i1==j2||i2==j1) return true;
@@ -105,9 +116,8 @@ void savenPass(int nPass[],int nPass2[],string fileName) {
 
 }
 using namespace std;
-void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
+void anbb2HDM_4jetBG(int w=0, std::string inputFile="../reco4jets/2HDMfullSimFile/2HDM_MZp600_MA0400.root"){
     
-    //inputFile = "../reco4jets/2HDMfullSimFile/2HDM_MZp600_MA0400.root";
     //inputFile = "../reco4jets/2HDMfullSimFile/bb2HDM_TMVA10K_MZp600_MA0300.root";
     //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_76.root";
     //inputFile = "../../QCDtestBGrootfile/NCUGlobalTuples_243.root";
@@ -143,6 +153,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     const float CISVV2CUT_T = 0.9535;
     
     TH1F* h_allEvent  = new TH1F("h_allEvent","h_allEvent",10,-0.5,9);
+    TH1F* h_triEffi  = new TH1F("h_triEffi","h_triEffi",20,0,20);
     TH1F* h_NgoodJets = new TH1F("h_NgoodJets", "h_NgoodJets", njets,-0.5,njets-0.5);
     TH1F* h_NbJets = new TH1F("h_NbJets", "h_NbJets", njets,-0.5,njets-0.5);
     TH1F* h_Ncom      = new TH1F("h_Ncom", "h_Ncom", ncom,-0.5,ncom-0.5);
@@ -254,6 +265,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     h_HT4jet->GetXaxis()->SetTitle("4jets HT");
     // end of test
     Int_t nPass[20]={0};
+    Int_t nPass_anti[20]={0};
     Int_t nTriPass[40]={0};
     Int_t nTriTotle[40]={0};
     const int nSel = 1;
@@ -312,12 +324,16 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         }
     }
     Int_t nPTTTT = 0, nPTTLL = 0, nPLLLL = 0;
+    vector<TString> triggerList;
+    vector<int> triggerCout;
+    vector<tri> triggervec;
     for(Long64_t jEntry=0; jEntry<data.GetEntriesFast() ;jEntry++){
         
-        if (jEntry %1000 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
-        //if (jEntry!=4844) continue;
+        if (jEntry %100 == 0) fprintf(stderr, "Processing event %lli of %lli\n", jEntry + 1, data.GetEntriesFast());
+        //if (jEntry>1000) break;
         data.GetEntry(jEntry);
         nPass[0]++;
+        nPass_anti[0]++;
         h_allEvent->Fill(1);
         isTag = false;
         isAntiTag = false;
@@ -325,6 +341,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         int nGenJet =  data.GetInt("THINnJet");
         if(nGenJet<4) continue;
         nPass[1]++;
+        nPass_anti[1]++;
         
         // 1. find trigger
         std::string* trigName = data.GetPtrString("hlt_trigName");
@@ -338,7 +355,30 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         for(unsigned int it=0; it< trigResult.size(); it++) {
             std::string thisTrig= trigName[it];
             bool results = trigResult[it];
-
+            bool isnew = true;
+            /*
+            for (unsigned int j=0;j<triggerList.size();j++) {
+                if (!calTriAll) break;
+                //if (!trigResult[it]) continue;
+                if (triggerList[j].EqualTo(thisTrig.data())) {
+                    triggerCout[j]+=trigResult[it];
+                    isnew =false;
+                    break;
+                }
+            }
+            */
+            for (unsigned int j=0;j<triggervec.size();j++) {
+                if (!calTriAll) break;
+                if (!results) continue;
+                if (triggervec[j].triName.EqualTo(thisTrig.data())) {
+                    triggervec[j].nPass++;
+                    isnew =false;
+                    break;
+                }
+            }
+            if (isnew&&calTriAll) {
+                triggervec.push_back(tri(thisTrig,results));
+            }
             if (thisTrig.find("HLT_DoubleJet90_Double30_TripleBTagCSV_p087")!= 
             std::string::npos && results==1) isTri[0] = true;
             if (thisTrig.find("HLT_QuadJet45_TripleBTagCSV_p087")!= 
@@ -408,6 +448,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         }
         if (nMjet<2) continue;
         nPass[2]++;
+        nPass_anti[2]++;
         h_NbJets->Fill(nbjet);
         nCisT = nCisvv2_T;
         nCisM = nCisvv2_T + nCisvv2_M;
@@ -465,6 +506,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         if (nMjet<4) isAntiTag = true;
         if (!isAntiTag&&!isTag) continue;
         nPass[3]++;
+        nPass_anti[3]++;
         // TMML
         if (isMatch) {
             int HId[2] = {3,3};
@@ -532,8 +574,8 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
                 if (inWindow) break;
             }
             if (LeadHA0Jet.size()!=4||!inWindow) continue;
+            nPass_anti[4]++;
         }
-        nPass[4]++;
         if (isTag) {
             for (int i=0,k=0,g=0;i<4;i++) {
                 for (int j=0;j<i;j++) {
@@ -564,11 +606,16 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
             if (!inWindow) continue;
             auto tem = LeadHA0_CISVV2;
             for (int i=0;i<4;i++) LeadHA0_CISVV2[i] = tem[Hind[0][i]];
+            nPass[4]++;
         }
         nPass[5]++;
-        if (isTri[0]) nPass[6]++;
-        if (isTri[1]) nPass[7]++;
-        if (passTrigger) nPass[8]++;
+        nPass_anti[5]++;
+        if (isTri[0]&&isTag) nPass[6]++;
+        if (isTri[1]&&isTag) nPass[7]++;
+        if (isTri[0]&&isAntiTag) nPass_anti[6]++;
+        if (isTri[1]&&isAntiTag) nPass_anti[7]++;
+        if (passTrigger&&isTag) nPass[8]++;
+        if (passTrigger&&isAntiTag) nPass_anti[8]++;
         if (passTrigger||passHT) nPass[9]++;
         if (passTrigger||passHT800) nPass[10]++;
         if (passHT) nPass[11]++;
@@ -632,7 +679,7 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
         nCorrectness[0]++;
         delete LeadSelHA0Jet[0][4];
         delete LeadSelHA0Jet[0][5];
-    } // end of loop over entries
+    } // end of loop over entris
     TGraphAsymmErrors *h_effiTriHT = new TGraphAsymmErrors(h_HTtriPass,h_HTtriTotal,"cl=0.683 b(1,1) mode");
     //TGraphAsymmErrors *h_effiTriHT = new TGraphAsymmErrors(h_HTtriPass,h_HTtriTotal);
     h_2d_Hindex->GetXaxis()->SetTitle("leading H b jet"); 
@@ -733,14 +780,35 @@ void anbb2HDM_4jetBG(int w=0, std::string inputFile="2HDM_MZp1000_MA0300.root"){
     lastInd = 5;
     efferr(nPass[lastInd],nTotal);
 
+    //int triind[640] = {0};
+    //int triarr[640] = {0};
+    //for (int i=0;i<640;i++) triarr[i] = triggerCout[i];
+    //cout << triggerCout.size() << endl;
+    //TMath::Sort((int)triggerCout.size(),triarr,triind);
+    //TMath::Sort((int)triggerCout.size(),triind,triarr);
+    if (calTriAll) sort(&triggervec[0],&triggervec[triggervec.size()-1],sortEffi);
+    //for (int i=0;i<triggerCout.size();i++) {
+    //for (int i=0;i<640;i++) {
+        //if (triind[i]>=20) continue;
+        //cout << triind[i] << "\t" << triarr[i] << endl;
+        //cout << triind[i] << "\t" << triggerList[i]  << "\t" << (float)triarr[i]/nPass[5] << "\t" << triggerCout[i] << endl;
+        //h_triEffi->Fill(triggerList[triind[i]],(float)triggerCout[triind[i]]/nPass[5]);
+    //}
+    if (calTriAll) for (int i=0;i<triggervec.size();i++) cout << i << "\t" << triggervec[i].nPass << "\t" << (float)triggervec[i].nPass/nPass[5] << "\t" << triggervec[i].triName << endl;
+    //h_triEffi->Draw("hist");
+    //c1->SaveAs("triind.png");
     string fileName; 
     if (!isBG) {
         string txtName = Form("triEffi/triEffi_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi());
+        //string txtName = Form("triEffi_T/triEffi_MZp%d_MA0%d.txt",Zpmass.Atoi(),A0mass.Atoi());
         int np[8];
-        for (int i = 0;i<8;i++)np[i] = 0;
-        for (int i=5;i<=11;i++) {
-            np[i-5] = nPass[i];
+        int np2[8];
+        for (int i = 0;i<8;i++) np[i] = 0;
+        for (int i = 0;i<8;i++) np2[i] = 0;
+        for (int i=4;i<=11;i++) {
+            np[i-4] = nPass[i];
+            np2[i-4] = nPass_anti[i];
         }
-        savenPass(np,txtName);
+        savenPass(np,np2,txtName);
     }
 }
