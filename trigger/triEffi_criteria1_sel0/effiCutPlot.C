@@ -48,14 +48,17 @@ void effiCutPlot() {
     TH1F* h_pass_anti = new TH1F("h_antitag","h_antiTag",8,zprange);
     TH1F* h_all = new TH1F("h_all","h_all",8,zprange);
     TH1F* h_all_anti = new TH1F("h_all_anti","h_all_anti",8,zprange);
+    TH1F* h_MCsize = new TH1F("h_MCsize","h_MCsize",8,zprange);
     for (int i=0;i<2;i++) h_passTri[i]->Sumw2();
     h_pass->Sumw2();
     h_all->Sumw2();
+    h_MCsize->Sumw2();
     int xbin[8] = {1,2,3,4,5,6,8,10};
     for (int n=0;n<8;n++) {
         string fname = Form("triEffi_MZp%d_MA0300.txt",zpMass[n]);
         int nEvent[8];
         int nEvent2[8];
+        for (int i=0;i<10000;i++) h_MCsize->Fill(zpMass[n]);
         for (int i=0;i<8;i++) nEvent[i]=0;
         for (int i=0;i<8;i++) nEvent2[i]=0;
         //int* nEvent = nEventList(fname);
@@ -83,6 +86,7 @@ void effiCutPlot() {
     TMultiGraph* mglist[2] = {mg2,mg3};
     TGraphAsymmErrors* gr = new TGraphAsymmErrors(h_pass,h_all,"cl=0.683 b(1,1) mode");
     TGraphAsymmErrors* gr2 = new TGraphAsymmErrors(h_pass_anti,h_all_anti,"cl=0.683 b(1,1) mode");
+    TGraphAsymmErrors* gr_eff = new TGraphAsymmErrors(h_pass,h_MCsize,"cl=0.683 b(1,1) mode");
     
     TGraphAsymmErrors* gr_Tri[2];
     TGraphAsymmErrors* gr_Tri_anti[2];
@@ -106,6 +110,11 @@ void effiCutPlot() {
     mg1->GetYaxis()->SetRangeUser(0., 1.);
     mg1->GetXaxis()->SetTitle("MZp (GeV)");
     mg1->GetYaxis()->SetTitle("Efficiency");
+    gr_eff->GetXaxis()->SetTitle("MZp (GeV)");
+    gr_eff->GetYaxis()->SetTitle("Efficiency");
+    gr_eff->SetTitle("Signal Efficiency");
+    gr_eff->SetLineColor(4);
+    gr_eff->SetMarkerColor(4);
     TLatex latex;
     latex.SetTextSize(0.025);
     latex.SetTextAlign(23);
@@ -149,5 +158,7 @@ void effiCutPlot() {
     c1->Print("effiCutPlot.pdf");
     mglist[1]->Draw("ALP");
     c1->BuildLegend();
+    c1->Print("effiCutPlot.pdf");
+    gr_eff->Draw("ALP");
     c1->Print("effiCutPlot.pdf)");
 }

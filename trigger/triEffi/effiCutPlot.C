@@ -62,11 +62,11 @@ void effiCutPlot() {
         getEventList(fname,nEvent,nEvent2);
         for (int nE=0;nE<nEvent[0];nE++) h_all->Fill(zpMass[n]);
         for (int i=0;i<2;i++) for (int nE=0;nE<nEvent[i+2];nE++)  h_passTri[i]->Fill(zpMass[n]);
-        for (int nE=0;nE<nEvent[4];nE++) h_pass->Fill(zpMass[n]);
+        for (int nE=0;nE<nEvent[3];nE++) h_pass->Fill(zpMass[n]);
         
         for (int nE=0;nE<nEvent2[0];nE++) h_all_anti->Fill(zpMass[n]);
         for (int i=0;i<2;i++) for (int nE=0;nE<nEvent2[i+2];nE++)  h_passTri_anti[i]->Fill(zpMass[n]);
-        for (int nE=0;nE<nEvent2[4];nE++) h_pass_anti->Fill(zpMass[n]);
+        for (int nE=0;nE<nEvent2[3];nE++) h_pass_anti->Fill(zpMass[n]);
     }
     /*
     for (int i=0;i<8;i++) {
